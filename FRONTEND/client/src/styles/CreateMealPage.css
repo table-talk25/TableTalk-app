@@ -1,0 +1,602 @@
+/* ========================================
+   CREATE MEAL PAGE - STYLING COERENTE CON MEALS PAGE
+   ======================================== */
+
+/* Container principale della pagina crea pasto */
+.create-meal-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Effetto decorativo di sfondo */
+.create-meal-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* ========================================
+   HEADER DELLA PAGINA CREA PASTO
+   ======================================== */
+.create-meal-header {
+  text-align: center;
+  padding: 120px 20px 30px;
+  color: white;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 40px;
+}
+
+.create-meal-title {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  animation: fadeInUp 1s ease-out;
+}
+
+.create-meal-subtitle {
+  font-size: 1rem;
+  max-width: 700px;
+  margin: 0 auto;
+  line-height: 1.5;
+  opacity: 0.95;
+  animation: fadeInUp 1s ease-out 0.2s both;
+  margin-bottom: 20px;
+}
+
+/* ========================================
+   CONTENUTO PRINCIPALE
+   ======================================== */
+.create-meal-content {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 25px;
+  padding: 40px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+  margin: 0 20px 30px;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ========================================
+   FORM STYLING
+   ======================================== */
+.create-meal-form {
+  width: 100%;
+}
+
+.form-section {
+  margin-bottom: 40px;
+  padding: 30px;
+  background: linear-gradient(145deg, #f8f9ff 0%, #ffffff 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(102, 126, 234, 0.1);
+  position: relative;
+  animation: slideInUp 0.6s ease-out forwards;
+}
+
+.form-section:nth-child(1) { animation-delay: 0.1s; }
+.form-section:nth-child(2) { animation-delay: 0.2s; }
+.form-section:nth-child(3) { animation-delay: 0.3s; }
+.form-section:nth-child(4) { animation-delay: 0.4s; }
+.form-section:nth-child(5) { animation-delay: 0.5s; }
+
+.form-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 20px 20px 0 0;
+}
+
+.form-section h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-section h2::before {
+  content: '';
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  border-radius: 2px;
+}
+
+/* ========================================
+   FORM GROUPS E CAMPI
+   ======================================== */
+.form-group {
+  margin-bottom: 25px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 15px 18px;
+  border: 2px solid rgba(102, 126, 234, 0.15);
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+  color: #333;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.6;
+}
+
+.form-group input.is-invalid,
+.form-group textarea.is-invalid {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+}
+
+.form-text {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* ========================================
+   DATE PICKER STYLING
+   ======================================== */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container input {
+  width: 100% !important;
+}
+
+/* ========================================
+   TOPICS STYLING
+   ======================================== */
+.topics-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.topic-badge {
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+.topic-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  background: linear-gradient(45deg, #5a67d8, #6b46c1);
+}
+
+.topic-badge i {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+/* ========================================
+   SETTINGS GROUP
+   ======================================== */
+.settings-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.switch-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 15px;
+  background: white;
+  border: 2px solid rgba(102, 126, 234, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  color: #555;
+}
+
+.switch-label:hover {
+  border-color: rgba(102, 126, 234, 0.3);
+  background: rgba(102, 126, 234, 0.02);
+  transform: translateY(-2px);
+}
+
+.switch-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #667eea;
+  cursor: pointer;
+}
+
+/* ========================================
+   BOTTONI
+   ======================================== */
+.form-actions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 2px solid #f1f3f4;
+}
+
+.btn {
+  padding: 16px 32px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  min-width: 180px;
+  justify-content: center;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(45deg, #ff5252, #ff7043);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+}
+
+.btn-primary:disabled {
+  background: linear-gradient(45deg, #ccc, #bbb);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: rgba(102, 126, 234, 0.1);
+  border: 2px solid rgba(102, 126, 234, 0.3);
+  color: #667eea;
+  backdrop-filter: blur(10px);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(102, 126, 234, 0.2);
+  border-color: rgba(102, 126, 234, 0.5);
+  transform: translateY(-2px);
+  color: #5a67d8;
+}
+
+/* ========================================
+   ALERT MESSAGES
+   ======================================== */
+.alert {
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  animation: slideInDown 0.4s ease-out;
+}
+
+.alert-danger {
+  background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.2);
+}
+
+.alert i {
+  font-size: 1.1rem;
+}
+
+/* ========================================
+   ANIMAZIONI
+   ======================================== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+/* Tablet */
+@media (max-width: 992px) {
+  .create-meal-content {
+    margin: 0 10px 20px;
+    padding: 30px;
+    border-radius: 20px;
+  }
+  
+  .create-meal-title {
+    font-size: 2.8rem;
+  }
+  
+  .create-meal-header {
+    padding: 60px 15px 25px;
+  }
+  
+  .form-section {
+    padding: 25px;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .settings-group {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .create-meal-page {
+    background-attachment: scroll;
+  }
+  
+  .create-meal-header {
+    padding: 100px 15px 20px;
+  }
+  
+  .create-meal-title {
+    font-size: 2.2rem;
+  }
+  
+  .create-meal-subtitle {
+    font-size: 1rem;
+  }
+  
+  .create-meal-content {
+    margin: 0 5px 15px;
+    padding: 20px;
+    border-radius: 15px;
+  }
+  
+  .form-section {
+    padding: 20px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .btn {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .topics-container {
+    gap: 8px;
+  }
+  
+  .topic-badge {
+    font-size: 0.85rem;
+    padding: 6px 12px;
+  }
+}
+
+/* Mobile Small */
+@media (max-width: 480px) {
+  .create-meal-header {
+    padding: 30px 10px 15px;
+  }
+  
+  .create-meal-title {
+    font-size: 2rem;
+  }
+  
+  .create-meal-content {
+    margin: 0 2px 10px;
+    padding: 15px;
+  }
+  
+  .form-section {
+    padding: 15px;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 12px 15px;
+  }
+  
+  .switch-label {
+    padding: 12px;
+  }
+}
+
+/* ========================================
+   ACCESSIBILITÀ
+   ======================================== */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus,
+.btn:focus,
+.switch-label:focus-within {
+  outline: 3px solid #ff6b6b;
+  outline-offset: 2px;
+}
+
+/* Riduzione delle animazioni per utenti con preferenze di accessibilità */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+.text-gradient {
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass-effect {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.me-2 {
+  margin-right: 0.5rem;
+}
+
+.text-muted {
+  color: #6c757d;
+}
+
+/* ========================================
+   STATI SPECIALI
+   ======================================== */
+.form-group input:disabled,
+.form-group select:disabled,
+.form-group textarea:disabled {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Spinner per loading */
+.fa-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ========================================
+   ENHANCED FORM INTERACTIONS
+   ======================================== */
+.form-group {
+  position: relative;
+}
+
+.form-group input:not(:placeholder-shown),
+.form-group textarea:not(:placeholder-shown),
+.form-group select:not([value=""]) {
+  border-color: rgba(102, 126, 234, 0.3);
+}
+
+.form-group input:valid,
+.form-group textarea:valid {
+  border-color: #28a745;
+}
+
+.form-group input:invalid:not(:focus):not(:placeholder-shown),
+.form-group textarea:invalid:not(:focus):not(:placeholder-shown) {
+  border-color: #ff6b6b;
+}
+
+/* Effetto hover sui form sections */
+.form-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.1);
+}

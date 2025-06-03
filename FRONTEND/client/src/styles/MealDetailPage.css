@@ -1,0 +1,301 @@
+.meal-detail-page {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+/* Header con immagine di copertina */
+.meal-header {
+  position: relative;
+  height: 400px;
+  overflow: hidden;
+}
+
+.meal-cover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.meal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7));
+  display: flex;
+  align-items: flex-end;
+  padding: 2rem 0;
+}
+
+.meal-overlay h1 {
+  color: white;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.meal-meta {
+  display: flex;
+  gap: 1.5rem;
+  color: white;
+}
+
+.meal-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Contenuto principale */
+.meal-content {
+  padding: 3rem 0;
+}
+
+.meal-section {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.meal-section h2 {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+}
+
+/* Profilo host */
+.host-profile {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.host-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.host-info h3 {
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+}
+
+.host-interests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.interest-tag {
+  background: #e9ecef;
+  color: #495057;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+}
+
+/* Griglia partecipanti */
+.participants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.participant-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.participant-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.participant-info h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.participant-info p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+/* Sidebar */
+.meal-sidebar {
+  position: sticky;
+  top: 2rem;
+}
+
+.meal-info-card,
+.video-call-card,
+.action-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.meal-info-card h3,
+.video-call-card h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 1.4rem;
+}
+
+.info-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.info-list li {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.info-list li:last-child {
+  border-bottom: none;
+}
+
+.info-list i {
+  color: #6c757d;
+  width: 20px;
+}
+
+/* Videochiamata */
+.video-call-card {
+  background: #e3f2fd;
+}
+
+.video-call-card h3 {
+  color: #1976d2;
+}
+
+.video-call-card i {
+  color: #1976d2;
+}
+
+/* Azioni */
+.host-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Loading e Error states */
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-message {
+  color: #dc3545;
+  margin-bottom: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .meal-header {
+    height: 300px;
+  }
+
+  .meal-overlay h1 {
+    font-size: 2.5rem;
+  }
+
+  .meal-sidebar {
+    position: static;
+    margin-top: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .meal-header {
+    height: 250px;
+  }
+
+  .meal-overlay h1 {
+    font-size: 2rem;
+  }
+
+  .meal-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .host-profile {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .host-interests {
+    justify-content: center;
+  }
+
+  .participants-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  .meal-header {
+    height: 200px;
+  }
+
+  .meal-overlay h1 {
+    font-size: 1.8rem;
+  }
+
+  .meal-section {
+    padding: 1.5rem;
+  }
+
+  .participants-grid {
+    grid-template-columns: 1fr;
+  }
+} 

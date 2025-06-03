@@ -1,0 +1,62 @@
+{
+  "short_name": "TableTalk",
+  "name": "TableTalk - Connetti persone attraverso il cibo",
+  "description": "Trova compagni per pranzi e cene, condividi esperienze culinarie e fai nuove amicizie",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "android-chrome-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "android-chrome-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#FF6B6B",
+  "background_color": "#ffffff",
+  "categories": ["social", "food", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "screenshot1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Homepage di TableTalk"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Cerca Pasti",
+      "short_name": "Cerca",
+      "description": "Cerca nuovi pasti disponibili",
+      "url": "/search",
+      "icons": [{ "src": "search-icon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "I Miei Pasti",
+      "short_name": "Miei Pasti",
+      "description": "Visualizza i tuoi pasti",
+      "url": "/my-meals",
+      "icons": [{ "src": "my-meals-icon.png", "sizes": "192x192" }]
+    }
+  ],
+  "lang": "it-IT",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "scope": "/",
+  "display_override": ["window-controls-overlay"],
+  "launch_handler": {
+    "client_mode": ["focus-existing", "auto"]
+  }
+} 

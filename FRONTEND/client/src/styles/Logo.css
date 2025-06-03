@@ -1,0 +1,17 @@
+.logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    height: 48px; /* Altezza della navbar, puoi ridurre se vuoi */
+  }
+  
+  .logo-full-image {
+    height: 164px;      /* Cambia qui per regolare la dimensione del logo */
+    width: auto;
+    display: block;
+    transition: transform 0.2s;
+  }
+  
+  .logo:hover .logo-full-image {
+    transform: scale(1.05) rotate(-2deg);
+  }
