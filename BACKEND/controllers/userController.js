@@ -50,13 +50,30 @@ exports.getMe = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 exports.updateProfile = asyncHandler(async (req, res, next) => {
+  const { nickname, gender, age, interests, languages, bio } = req.body;
+
+  // Verifica che il nickname sia presente
+  if (!nickname) {
+    return next(new ErrorResponse('Il nickname è obbligatorio per completare il profilo', 400));
+  }
+
+  // Verifica che il nickname non sia già in uso
+  const existingUser = await User.findOne({ 
+    nickname, 
+    _id: { $ne: req.user.id } 
+  });
+
+  if (existingUser) {
+    return next(new ErrorResponse('Questo nickname è già in uso', 400));
+  }
+
   const fieldsToUpdate = {
-    nickname: req.body.nickname,
-    gender: req.body.gender,
-    age: req.body.age,
-    interests: req.body.interests,
-    languages: req.body.languages,
-    bio: req.body.bio,
+    nickname,
+    gender,
+    age,
+    interests,
+    languages,
+    bio,
     profileCompleted: true
   };
 

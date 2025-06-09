@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { User, Camera, Save, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
 import '../../styles/ProfilePage.css';
+import ImageUploader from '../../components/common/ImageUploader';
 
 const ProfilePage = () => {
   // Usa il Context dell'utente
@@ -36,16 +37,22 @@ const ProfilePage = () => {
   const loadProfileFromUser = useCallback((userData) => {
     console.log('📥 Caricamento dati utente completi:', userData);
     
+    // Logica per estrarre i dati utente effettivi
+    const actualUserData = userData.user ? userData.user : userData;
+    console.log('👤 Dati utente effettivi da usare:', actualUserData);
+    console.log('🎯 Nickname originale:', actualUserData.nickname);
+
     const newProfileData = {
-      nickname: userData.nickname || '',
-      gender: userData.gender || '',
-      age: userData.age || '',
-      interests: userData.interests || '',
-      language: userData.language || '',
-      profileImage: userData.profileImage || ''
+      nickname: actualUserData.nickname || '', 
+      gender: actualUserData.gender || '',
+      age: actualUserData.age || '',
+      interests: Array.isArray(actualUserData.interests) ? actualUserData.interests.join(', ') : (actualUserData.interests || ''),
+      language: Array.isArray(actualUserData.languages) && actualUserData.languages.length > 0 ? actualUserData.languages[0] : (actualUserData.language || ''),
+      profileImage: actualUserData.profileImage || ''
     };
 
     console.log('📋 Dati profilo impostati:', newProfileData);
+    console.log('🎯 Nickname impostato:', newProfileData.nickname, '(vuoto per nuovi utenti, valore esistente per utenti registrati)');
     setProfileData(newProfileData);
     
     // Imposta l'anteprima dell'immagine
@@ -65,19 +72,21 @@ const ProfilePage = () => {
   // Effetto per tracciare i cambiamenti
   useEffect(() => {
     if (user) {
+      const actualUserData = user.user ? user.user : user; 
+      const originalForComparison = {
+        nickname: actualUserData.nickname || '',
+        gender: actualUserData.gender || '',
+        age: actualUserData.age || '',
+        interests: Array.isArray(actualUserData.interests) ? actualUserData.interests.join(', ') : (actualUserData.interests || ''),
+        language: Array.isArray(actualUserData.languages) && actualUserData.languages.length > 0 ? actualUserData.languages[0] : (actualUserData.language || ''),
+        profileImage: actualUserData.profileImage || ''
+      };
+
       const changes = Object.keys(profileData).some(key => {
         const currentValue = profileData[key];
-        const originalValue = user[key] || '';
-        const hasChange = currentValue !== originalValue;
-        
-        if (hasChange) {
-          console.log(`📝 Campo modificato - ${key}: "${originalValue}" -> "${currentValue}"`);
-        }
-        
-        return hasChange;
+        const originalValue = originalForComparison[key] || ''; // Usa l'oggetto trasformato per il confronto
+        return currentValue !== originalValue;
       });
-      
-      console.log('🔍 Controllo modifiche:', { changes, profileData, userData: user });
       setHasChanges(changes);
     }
   }, [profileData, user]);
@@ -134,78 +143,21 @@ const ProfilePage = () => {
   /**
    * Gestisce il cambiamento dell'immagine del profilo
    */
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      console.log('🖼️ Nuovo file immagine selezionato:', file);
-
-      // Validazione del file
-      if (!file.type.startsWith('image/')) {
-        setMessage({ 
-          type: 'error', 
-          text: 'Per favore seleziona un\'immagine valida.' 
-        });
-      return;
-    }
-
-      if (file.size > 5 * 1024 * 1024) {
-        setMessage({ 
-          type: 'error', 
-          text: 'L\'immagine deve essere inferiore a 5MB.' 
-        });
-        return;
-      }
-      
-      // Anteprima immediata
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        console.log('🖼️ Anteprima immagine caricata');
-        setImagePreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
-      
-      // Carica l'immagine
-      uploadProfileImage(file);
-    }
-  };
-
-  /**
-   * Carica l'immagine del profilo
-   */
-  const uploadProfileImage = async (file) => {
-    console.log('📤 Inizio caricamento immagine profilo...');
-    setSaving(true);
-    setMessage({ type: '', text: '' });
-    
+  const handleImageUpload = async (file) => {
     try {
       const formData = new FormData();
       formData.append('profileImage', file);
       
       console.log('📤 Chiamata updateProfileImage...');
       const result = await updateProfileImage(formData);
-      console.log('✅ Immagine profilo aggiornata:', result);
-
-      setMessage({ 
-        type: 'success', 
-        text: 'Immagine del profilo aggiornata con successo!' 
-      });
       
-      setTimeout(() => {
-        setMessage({ type: '', text: '' });
-      }, 3000);
-      
+      // Aggiorna lo stato o mostra un messaggio di successo
+      console.log('✅ Immagine aggiornata con successo:', result);
+      setMessage({ type: 'success', text: 'Immagine profilo aggiornata!' });
+       setTimeout(() => { setMessage({ type: '', text: '' }); }, 3000);
     } catch (error) {
-      console.error('Errore nel caricamento dell\'immagine:', error);
-      setMessage({ 
-        type: 'error', 
-        text: error.message || 'Errore nel caricamento dell\'immagine.' 
-      });
-      
-      // Ripristina l'anteprima precedente
-       const originalImageUrl = getUserProfileImageUrl ? getUserProfileImageUrl() : '';
-      setImagePreview(originalImageUrl);
-    } finally {
-      setSaving(false);
+      console.error('❌ Errore durante l\'aggiornamento dell\'immagine:', error);
+      setMessage({ type: 'error', text: error.message || 'Errore caricamento immagine.' });
     }
   };
 
@@ -232,8 +184,11 @@ const ProfilePage = () => {
     try {
       // Prepara i dati per l'invio
       const dataToSave = {
-        ...profileData,
-        age: profileData.age ? parseInt(profileData.age) : null
+        nickname: profileData.nickname.trim(),
+        gender: profileData.gender,
+        age: profileData.age ? parseInt(profileData.age) : null,
+        interests: profileData.interests.split(',').map(item => item.trim()).filter(item => item), // Da stringa a array
+        languages: profileData.language ? [profileData.language.trim()] : [] // Da stringa a array (se gestisci una sola lingua nel form)
       };
       
       console.log('📤 Dati da salvare:', dataToSave);
@@ -411,17 +366,24 @@ const ProfilePage = () => {
             <div className="profile-image-section">
               <div className="profile-image-container">
                 <div className="profile-image-wrapper">
-                  {imagePreview ? (
-                    <img 
-                      src={imagePreview} 
-                      alt="Profilo" 
-                      className="profile-image"
-                    />
-                  ) : (
-                    <div className="profile-image-placeholder">
-                      <User className="profile-image-placeholder-icon" />
-                    </div>
-                  )}
+                  <ImageUploader
+                    onImageSelect={handleImageUpload}
+                    maxSizeMB={5}
+                    aspectRatio={1}
+                    minWidth={200}
+                    minHeight={200}
+                    maxWidth={2000}
+                    maxHeight={2000}
+                    className="profile-image-uploader"
+                  >
+                    {user?.profileImage ? (
+                      <img 
+                        src={user.profileImage} 
+                        alt="Immagine profilo" 
+                        className="current-profile-image"
+                      />
+                    ) : null}
+                  </ImageUploader>
                 </div>
                 <label 
                   htmlFor="profileImage" 
@@ -429,14 +391,6 @@ const ProfilePage = () => {
                 >
                   <Camera className="camera-icon" />
                 </label>
-                <input
-                  type="file"
-                  id="profileImage"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  disabled={saving}
-                  className="sr-only"
-                />
               </div>
               <p className="profile-image-hint">Clicca sulla fotocamera per cambiare l'immagine</p>
             </div>
@@ -473,10 +427,10 @@ const ProfilePage = () => {
                   className="form-input"
                 >
                   <option value="">Seleziona genere</option>
-                  <option value="male">Maschio</option>
-                  <option value="female">Femmina</option>
-                  <option value="other">Altro</option>
-                  <option value="prefer_not_to_say">Preferisco non dire</option>
+                  <option value="uomo">Maschio</option>
+                  <option value="donna">Femmina</option>
+                  <option value="altro">Altro</option>
+                  <option value="preferisco_non_dirlo">Preferisco non dire</option>
                 </select>
               </div>
 

@@ -566,3 +566,23 @@
 {"level":"info","message":"🔌 Connessione al database MongoDB stabilita","timestamp":"2025-06-02T22:15:35.401Z"}
 {"level":"info","message":"Variabili d'ambiente caricate:","mongoUri":"Presente","nodeEnv":"development","port":"5001","timestamp":"2025-06-02T22:15:41.909Z"}
 {"level":"info","message":"🔌 Connessione al database MongoDB stabilita","timestamp":"2025-06-02T22:15:42.033Z"}
+{"level":"info","message":"Variabili d'ambiente caricate:","mongoUri":"Presente","nodeEnv":"development","port":"5001","timestamp":"2025-06-03T11:37:45.087Z"}
+{"level":"info","message":"🔌 Connessione al database MongoDB stabilita","timestamp":"2025-06-03T11:37:45.670Z"}
+{"level":"info","message":"Variabili d'ambiente caricate:","mongoUri":"Presente","nodeEnv":"development","port":"5001","timestamp":"2025-06-03T11:40:18.114Z"}
+{"level":"info","message":"🔌 Connessione al database MongoDB stabilita","timestamp":"2025-06-03T11:40:18.683Z"}
+{"level":"info","message":"Variabili d'ambiente caricate:","mongoUri":"Presente","nodeEnv":"development","port":"5001","timestamp":"2025-06-03T11:41:30.029Z"}
+{"level":"info","message":"🔌 Connessione al database MongoDB stabilita","timestamp":"2025-06-03T11:41:30.187Z"}
+{"level":"info","message":"Variabili d'ambiente caricate:","mongoUri":"Presente","nodeEnv":"development","port":"5001","timestamp":"2025-06-03T11:43:27.908Z"}
+{"level":"info","message":"🔌 Connessione al database MongoDB stabilita","timestamp":"2025-06-03T11:43:28.901Z"}
+{"level":"info","message":"Variabili d'ambiente caricate:","mongoUri":"Presente","nodeEnv":"development","port":"5001","timestamp":"2025-06-03T11:44:58.540Z"}
+{"level":"info","message":"🔌 Connessione al database MongoDB stabilita","timestamp":"2025-06-03T11:44:58.680Z"}
+{"level":"info","message":"Variabili d'ambiente caricate:","mongoUri":"Presente","nodeEnv":"development","port":"5001","timestamp":"2025-06-03T11:45:48.328Z"}
+{"level":"info","message":"🔌 Connessione al database MongoDB stabilita","timestamp":"2025-06-03T11:45:49.547Z"}
+{"level":"info","message":"Variabili d'ambiente caricate:","mongoUri":"Presente","nodeEnv":"development","port":"5001","timestamp":"2025-06-03T11:46:08.010Z"}
+{"level":"info","message":"🔌 Connessione al database MongoDB stabilita","timestamp":"2025-06-03T11:46:08.163Z"}
+{"level":"info","message":"Variabili d'ambiente caricate:","mongoUri":"Presente","nodeEnv":"development","port":"5001","timestamp":"2025-06-03T20:37:22.380Z"}
+{"level":"info","message":"🔌 Connessione al database MongoDB stabilita","timestamp":"2025-06-03T20:37:22.537Z"}
+{"level":"info","message":"Variabili d'ambiente caricate:","mongoUri":"Presente","nodeEnv":"development","port":"5001","timestamp":"2025-06-03T20:38:12.845Z"}
+{"level":"info","message":"🔌 Connessione al database MongoDB stabilita","timestamp":"2025-06-03T20:38:12.994Z"}
+{"level":"info","message":"Variabili d'ambiente caricate:","mongoUri":"Presente","nodeEnv":"development","port":"5001","timestamp":"2025-06-03T20:58:45.603Z"}
+{"level":"info","message":"🔌 Connessione al database MongoDB stabilita","timestamp":"2025-06-03T20:58:45.775Z"}

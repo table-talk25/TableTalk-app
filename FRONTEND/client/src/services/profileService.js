@@ -11,6 +11,8 @@ export const getProfile = async () => {
   try {
     const response = await axiosInstance.get('/api/auth/me');
 
+    console.log('RISPOSTA COMPLETA DAL SERVER (/api/auth/me):', JSON.stringify(response, null, 2)); 
+
     // Aggiorna i dati nel localStorage dopo averli recuperati
     if (response.data) {
       authService.updateLocalUserData(response.data);
@@ -59,10 +61,12 @@ export const updateProfile = async (profileData) => {
       }
     });
 
-    console.log('Risposta dal server per aggiornamento profilo:', response.data);
+    // ----> QUESTO È IL LOG CRUCIALE PER L'ERRORE DI AGGIORNAMENTO <----
+    console.log('RISPOSTA DAL SERVER (updateProfile - /api/auth/update-profile) - STATUS:', response.status);
+    console.log('RISPOSTA DAL SERVER (updateProfile - /api/auth/update-profile) - DATA:', JSON.stringify(response.data, null, 2));
 
     // IMPORTANTE: Aggiorna i dati nel localStorage dopo la risposta positiva dal server
-    if (response.data && response.data.success !== false) {
+    if (response.data && response.data.success !== true) {
       // Se il server restituisce l'utente aggiornato
       const updatedUser = response.data.user || response.data;
       authService.updateLocalUserData(updatedUser);

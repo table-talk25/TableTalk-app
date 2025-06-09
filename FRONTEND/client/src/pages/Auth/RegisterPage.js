@@ -12,7 +12,6 @@ const RegisterPage = () => {
     confirmPassword: '',
     name: '',
     surname: '',
-    nickname: ''
   });
   
   const [errors, setErrors] = useState({});
@@ -62,17 +61,6 @@ const RegisterPage = () => {
       formIsValid = false;
     }
 
-    if (!formData.nickname.trim()) {
-      tempErrors.nickname = "Il nickname è obbligatorio";
-      formIsValid = false;
-    } else if (formData.nickname.length < 3) {
-      tempErrors.nickname = "Il nickname deve essere di almeno 3 caratteri";
-      formIsValid = false;
-    } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.nickname)) {
-      tempErrors.nickname = "Il nickname può contenere solo lettere, numeri, trattini e underscore";
-      formIsValid = false;
-    }
-
     setErrors(tempErrors);
     return formIsValid;
   };
@@ -93,7 +81,6 @@ const RegisterPage = () => {
         password: formData.password,
         name: formData.name,
         surname: formData.surname,
-        nickname: formData.nickname
       });
       
       const response = await axiosInstance.post('/auth/register', {
@@ -101,7 +88,6 @@ const RegisterPage = () => {
         password: formData.password,
         name: formData.name,
         surname: formData.surname,
-        nickname: formData.nickname
       });
       
       console.log('Registration successful:', response);
@@ -168,23 +154,6 @@ const RegisterPage = () => {
             {errors.surname && (
               <Form.Control.Feedback type="invalid">
                 {errors.surname}
-              </Form.Control.Feedback>
-            )}
-          </Form.Group>
-
-          <Form.Group className="mb-3">
-            <Form.Label>Nickname</Form.Label>
-            <Form.Control
-              type="text"
-              name="nickname"
-              value={formData.nickname}
-              onChange={handleChange}
-              isInvalid={!!errors.nickname}
-              required
-            />
-            {errors.nickname && (
-              <Form.Control.Feedback type="invalid">
-                {errors.nickname}
               </Form.Control.Feedback>
             )}
           </Form.Group>

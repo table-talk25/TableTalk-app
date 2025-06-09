@@ -1,11 +1,55 @@
 const crypto = require('crypto');
-const { validationResult } = require('express-validator');
+const { validationResult, check } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
 const asyncHandler = require('express-async-handler');
 const ErrorResponse = require('../utils/errorResponse');
 const bcrypt = require('bcryptjs');
+
+// Validazioni per la registrazione
+exports.registerValidation = [
+  check('email')
+    .trim()
+    .isEmail()
+    .withMessage('Inserisci un indirizzo email valido')
+    .normalizeEmail()
+    .isLength({ min: 5, max: 100 })
+    .withMessage('L\'email deve essere tra 5 e 100 caratteri'),
+  
+  check('password')
+    .isLength({ min: 8 })
+    .withMessage('La password deve essere di almeno 8 caratteri')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
+    .withMessage('La password deve contenere almeno una lettera maiuscola, una minuscola, un numero e un carattere speciale'),
+  
+  check('name')
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Il nome deve essere tra 2 e 50 caratteri')
+    .matches(/^[a-zA-Z\s]*$/)
+    .withMessage('Il nome può contenere solo lettere e spazi'),
+  
+  check('surname')
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Il cognome deve essere tra 2 e 50 caratteri')
+    .matches(/^[a-zA-Z\s]*$/)
+    .withMessage('Il cognome può contenere solo lettere e spazi'),
+];
+
+// Validazioni per il login
+exports.loginValidation = [
+  check('email')
+    .trim()
+    .isEmail()
+    .withMessage('Inserisci un indirizzo email valido')
+    .normalizeEmail(),
+  
+  check('password')
+    .notEmpty()
+    .withMessage('La password è obbligatoria')
+];
 
 /**
  * @desc    Registra un nuovo utente
@@ -14,30 +58,28 @@ const bcrypt = require('bcryptjs');
  */
 exports.register = async (req, res) => {
   try {
-    const { email, password, name, surname, nickname } = req.body;
-
-    // Validazione dei dati
-    if (!email || !password || !name || !surname || !nickname) {
+    // Verifica risultati validazione
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        message: 'Per favore fornisci tutti i campi obbligatori: email, password, nome, cognome e nickname'
+        errors: errors.array()
       });
     }
+
+    const { email, password, name, surname, } = req.body;
 
     // Verifica se l'utente esiste già
     let user = await User.findOne({ 
       $or: [
         { email },
-        { nickname }
       ]
     });
     
     if (user) {
       return res.status(400).json({
         success: false,
-        message: user.email === email ? 
-          'Un utente con questa email esiste già' : 
-          'Questo nickname è già in uso'
+        message: 'Un utente con questa email esiste già' 
       });
     }
 
@@ -50,8 +92,7 @@ exports.register = async (req, res) => {
       email,
       password: hashedPassword,
       name,
-      surname,
-      nickname
+      surname
     });
 
     // Salva l'utente nel database
@@ -73,9 +114,8 @@ exports.register = async (req, res) => {
         id: newUser._id,
         email: newUser.email,
         name: newUser.name,
-        surname: newUser.surname,
-        nickname: newUser.nickname
-      }
+        surname: newUser.surname
+            }
     });
 
   } catch (error) {
@@ -94,15 +134,16 @@ exports.register = async (req, res) => {
  */
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    // Validazione dei dati
-    if (!email || !password) {
+    // Verifica risultati validazione
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        message: 'Per favore fornisci email e password'
+        errors: errors.array()
       });
     }
+
+    const { email, password } = req.body;
 
     // Verifica se l'utente esiste
     const user = await User.findOne({ email }).select('+password');
@@ -147,7 +188,6 @@ exports.login = async (req, res) => {
         email: user.email,
         name: user.name,
         surname: user.surname,
-        nickname: user.nickname,
         role: user.role
       }
     });
@@ -175,7 +215,6 @@ exports.getMe = async (req, res) => {
         email: user.email,
         name: user.name,
         surname: user.surname,
-        nickname: user.nickname,
         role: user.role,
         profileCompleted: user.profileCompleted
       }
@@ -288,36 +327,46 @@ exports.updatePassword = async (req, res) => {
 };
 
 /**
- * @desc    Aggiorna profilo
+ * @desc    Aggiorna il profilo base dell'utente 
  * @route   PUT /api/auth/update-profile
  * @access  Private
  */
-exports.updateProfile = async (req, res) => {
+exports.updateProfile = asyncHandler(async (req, res, next) => {
+  const updates = req.body; // Prendi tutti gli aggiornamenti inviati
+
+  const validUpdateKeys = Object.keys(updates).filter(key => updates[key] !== undefined && updates[key] !== null);
+
+  // Validazione dei campi
+  if (validUpdateKeys.length === 0) {
+    return next(new ErrorResponse('Nessun dato fornito per l\'aggiornamento', 400));
+  }
+
+  // Trova l'utente e aggiorna i campi
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return next(new ErrorResponse('Utente non trovato', 404));
+  }
+
   try {
-    const updates = req.body;
-    const user = await User.findById(req.user.id);
+    // Chiama il metodo del modello User che sa come gestire tutti gli aggiornamenti
+    const updatedUser = await user.updateProfile(updates);
 
-    // Aggiorna profilo
-    await user.updateProfile(updates);
-
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'Profilo aggiornato con successo',
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        surname: user.surname,
-        nickname: user.nickname,
-        role: user.role,
-        profileCompleted: user.profileCompleted
-      }
+      user: updatedUser // Restituisci l'utente aggiornato completo (il metodo toJSON lo pulirà)
     });
   } catch (error) {
-    console.error('Errore durante l\'aggiornamento del profilo:', error);
-    res.status(500).json({ message: 'Errore del server' });
+    // Se user.updateProfile (e quindi user.save()) lancia un errore (es. validazione Mongoose)
+    console.error('Errore durante user.updateProfile o user.save():', error);
+    if (error.name === 'ValidationError') {
+      // Estrai messaggi di validazione più specifici se vuoi
+      const messages = Object.values(error.errors).map(val => val.message);
+      return next(new ErrorResponse(`Errore di validazione: ${messages.join(', ')}`, 400));
+    }
+    return next(new ErrorResponse('Errore durante l\'aggiornamento del profilo nel server.', 500));
   }
-};
+});
 
 /**
  * @desc    Elimina account
@@ -401,3 +450,31 @@ exports.resendVerification = async (req, res) => {
     res.status(500).json({ message: 'Errore del server' });
   }
 };
+
+/**
+ * @desc    Aggiorna l'immagine del profilo
+ * @route   PUT /api/auth/profile/image
+ * @access  Private
+ */
+exports.updateProfileImage = asyncHandler(async (req, res, next) => {
+  if (!req.file) {
+    return next(new ErrorResponse('Nessun file caricato', 400));
+  }
+
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return next(new ErrorResponse('Utente non trovato', 404));
+  }
+
+  // Aggiorna l'immagine del profilo
+  user.profileImage = req.file.filename;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Immagine del profilo aggiornata con successo',
+    data: {
+      profileImage: user.profileImage
+    }
+  });
+});

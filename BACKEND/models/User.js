@@ -34,7 +34,6 @@ const UserSchema = new mongoose.Schema({
   },
   nickname: {
     type: String,
-    required: [true, 'Per favore inserisci un nickname'],
     unique: true,
     trim: true,
     minlength: [3, 'Il nickname deve essere di almeno 3 caratteri'],
@@ -270,16 +269,24 @@ UserSchema.methods.updateProfile = async function(updates) {
     'languages', 'bio', 'profileImage', 'settings'
   ];
 
-  Object.keys(updates).forEach(update => {
-    if (allowedUpdates.includes(update)) {
-      this[update] = updates[update];
+  let hasValidUpdate = false;
+  Object.keys(updates).forEach(key => {
+    if (allowedUpdates.includes(key)) {
+      // Aggiungi un controllo per non sovrascrivere con undefined se il campo non è esplicitamente inviato per essere cancellato
+      if (updates[key] !== undefined) {
+        this[key] = updates[key];
+        hasValidUpdate = true;
+      }
     }
   });
 
-  // Verifica se il profilo è completo
+  if (!hasValidUpdate && Object.keys(updates).length > 0) {
+    // Se sono stati inviati solo campi non permessi
+    // Questo caso potrebbe essere gestito meglio nel controller
+  }
+
   this.profileCompleted = this.checkProfileCompletion();
-  
-  return this.save();
+  return this.save(); // Qui avvengono le validazioni Mongoose
 };
 
 // Metodo per verificare se il profilo è completo

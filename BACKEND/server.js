@@ -91,6 +91,9 @@ app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 
+// Servi i file statici dalla cartella uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Carica le rotte API
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
