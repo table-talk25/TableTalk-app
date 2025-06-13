@@ -31,7 +31,9 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     logger.error('❌ Errore Risposta Axios:', error.response || error.message);
-    if (error.response?.status === 401) {
+    const isAuthRoute = error.config.url === '/auth/login' || error.config.url === '/auth/register';
+
+    if (error.response?.status === 401 && !isAuthRoute) {
       logger.warn('🔒 Sessione non valida (401). Eseguo il logout forzato.');
       localStorage.removeItem('token');
       localStorage.removeItem('user');

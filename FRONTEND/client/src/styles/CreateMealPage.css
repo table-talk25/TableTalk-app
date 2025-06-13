@@ -4,6 +4,7 @@
 
 /* Container principale della pagina crea pasto */
 .create-meal-page {
+  padding-top: 80px; /* Altezza della navbar + spazio extra */
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   position: relative;
@@ -37,9 +38,10 @@
 }
 
 .create-meal-title {
-  font-size: 3.5rem;
-  font-weight: 700;
-  margin-bottom: 20px;
+  color: var(--text-primary);
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
   animation: fadeInUp 1s ease-out;
 }
@@ -430,6 +432,7 @@
 /* Mobile */
 @media (max-width: 768px) {
   .create-meal-page {
+    padding-top: 70px;
     background-attachment: scroll;
   }
   
@@ -438,7 +441,7 @@
   }
   
   .create-meal-title {
-    font-size: 2.2rem;
+    font-size: 1.75rem;
   }
   
   .create-meal-subtitle {

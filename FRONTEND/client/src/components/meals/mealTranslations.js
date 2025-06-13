@@ -1,5 +1,5 @@
 // Traduzione del tipo di pasto
-const mealTypeTranslation = {
+export const mealTypeTranslation = {
   'colazione': 'Colazione',
   'pranzo': 'Pranzo',
   'cena': 'Cena',
@@ -7,14 +7,15 @@ const mealTypeTranslation = {
 };
 
 // Traduzione dello stato
-const statusTranslation = {
+export const statusTranslation = {
   'pianificato': 'In arrivo',
   'in corso': 'In corso',
   'completato': 'Completato',
   'cancellato': 'Cancellato'
 };
 
-const statusVariant = {
+// Varianti di stile per gli stati
+export const statusVariant = {
   'pianificato': 'success',
   'in corso': 'warning',
   'completato': 'secondary',

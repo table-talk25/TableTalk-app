@@ -1,79 +1,47 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const ErrorResponse = require('../utils/errorResponse');
 
 /**
  * Middleware per proteggere le route che richiedono autenticazione
  */
 exports.protect = async (req, res, next) => {
-  try {
-    // Ottieni il token dall'header Authorization
-    const token = req.headers.authorization?.split(' ')[1];
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
     
     if (!token) {
-      return res.status(401).json({ 
-        success: false,
-        message: 'Non autorizzato, token non fornito' 
-      });
+    return next(new ErrorResponse('Non autorizzato ad accedere a questa risorsa', 401));
     }
     
-    // Verifica il token
+  try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.id);
     
-    // Ottieni i dati dell'utente dal database
-    const user = await User.findById(decoded.id).select('-password');
-    
-    if (!user) {
-      return res.status(401).json({ 
-        success: false,
-        message: 'Non autorizzato, utente non trovato' 
-      });
+    if (!req.user) {
+      return next(new ErrorResponse('Utente non trovato', 401));
     }
     
     // Verifica se l'utente è attivo
-    if (!user.isActive) {
-      return res.status(401).json({ 
-        success: false,
-        message: 'Account disattivato' 
-      });
+    if (!req.user.isActive) {
+      return next(new ErrorResponse('Account disattivato', 401));
     }
     
-    // Aggiungi l'utente alla richiesta
-    req.user = user;
     next();
-  } catch (error) {
-    console.error('Errore di autenticazione:', error);
-    
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ 
-        success: false,
-        message: 'Token scaduto' 
-      });
-    }
-    
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ 
-        success: false,
-        message: 'Token non valido' 
-      });
-    }
-    
-    res.status(401).json({ 
-      success: false,
-      message: 'Non autorizzato, token non valido' 
-    });
+  } catch (err) {
+    return next(new ErrorResponse('Non autorizzato ad accedere a questa risorsa', 401));
   }
 };
 
 /**
  * Middleware per verificare i ruoli dell'utente
  */
-exports.restrictTo = (...roles) => {
+exports.authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ 
-        success: false,
-        message: 'Non hai i permessi necessari per questa operazione' 
-      });
+      return next(new ErrorResponse('Non autorizzato ad accedere a questa risorsa', 403));
     }
     next();
   };
@@ -87,26 +55,68 @@ exports.isOwner = (model) => async (req, res, next) => {
     const resource = await model.findById(req.params.id);
     
     if (!resource) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Risorsa non trovata' 
-      });
+      return next(new ErrorResponse('Risorsa non trovata', 404));
     }
     
     if (resource.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ 
-        success: false,
-        message: 'Non hai i permessi necessari per questa operazione' 
-      });
+      return next(new ErrorResponse('Non hai i permessi necessari per questa operazione', 403));
     }
     
     req.resource = resource;
     next();
   } catch (error) {
     console.error('Errore durante la verifica del proprietario:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Errore durante la verifica dei permessi' 
-    });
+    next(new ErrorResponse('Errore durante la verifica dei permessi', 500));
+  }
+};
+
+exports.requireCompleteProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return next(new ErrorResponse('Utente non trovato', 404));
+    }
+
+    if (!user.isProfileComplete) {
+      return next(new ErrorResponse('Profilo incompleto', 403));
+    }
+
+    next();
+  } catch (err) {
+    return next(new ErrorResponse('Errore del server', 500));
+  }
+};
+
+exports.requireVerifiedAccount = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return next(new ErrorResponse('Utente non trovato', 404));
+    }
+
+    if (!user.isEmailVerified) {
+      return next(new ErrorResponse('Account non verificato', 403));
+    }
+
+    next();
+  } catch (err) {
+    return next(new ErrorResponse('Errore del server', 500));
+  }
+};
+
+exports.requireHost = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return next(new ErrorResponse('Utente non trovato', 404));
+    }
+
+    if (!user.isHost) {
+      return next(new ErrorResponse('Non sei un host', 403));
+    }
+
+    next();
+  } catch (err) {
+    return next(new ErrorResponse('Errore del server', 500));
   }
 }; 

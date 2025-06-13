@@ -9,23 +9,24 @@
     "test": "jest",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "seed": "node seeder.js",
+    "seed": "node config/seeds.js",
     "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix ../FRONTEND/client && npm run build --prefix ../FRONTEND/client"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "compression": "^1.8.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
     "express-async-handler": "^1.2.0",
     "express-mongo-sanitize": "^2.2.0",
-    "express-rate-limit": "^6.7.0",
-    "express-validator": "^7.0.1",
-    "helmet": "^7.0.0",
+    "express-rate-limit": "^6.11.2",
+    "express-validator": "^7.2.1",
+    "helmet": "^7.2.0",
     "hpp": "^0.2.3",
-    "jsonwebtoken": "^9.0.0",
-    "mongoose": "^7.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.8.7",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.1",
@@ -48,5 +49,7 @@
     "node": ">=14.0.0"
   },
   "author": "TableTalk Team",
-  "license": "MIT"
+  "license": "MIT",
+  "keywords": [],
+  "type": "commonjs"
 }

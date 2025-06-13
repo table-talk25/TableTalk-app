@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { FaCamera } from 'react-icons/fa';
-import '../../styles/ProfileHeader.css';
 import { toast } from 'react-toastify';
 import { authService } from '../../services/authService';
+import '../../styles/profile/ProfilePage.css';
+import '../../styles/profile/ProfileHeader.css';
 
 const ProfileHeader = ({ profileImage, nickname, onUpdateImage }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handleImageChange = async (e) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -26,6 +28,7 @@ const ProfileHeader = ({ profileImage, nickname, onUpdateImage }) => {
     
     try {
       setIsUploading(true);
+      setImageError(false);
       
       // Crea un FormData per caricare l'immagine
       const formData = new FormData();
@@ -39,6 +42,7 @@ const ProfileHeader = ({ profileImage, nickname, onUpdateImage }) => {
     } catch (error) {
       console.error('Errore durante il caricamento dell\'immagine:', error);
       setIsUploading(false);
+      setImageError(true);
       toast.error('Errore durante il caricamento dell\'immagine. Riprova più tardi.');
     }
   };
@@ -50,14 +54,11 @@ const ProfileHeader = ({ profileImage, nickname, onUpdateImage }) => {
     <div className="profile-header">
       <div className="profile-image-container">
         <div className="profile-image">
-          {imageUrl ? (
+          {imageUrl && !imageError ? (
             <img 
               src={imageUrl} 
-              alt={`${nickname} profile`} 
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = '/default-avatar.jpg';
-              }}
+              alt="" 
+              onError={() => setImageError(true)}
             />
           ) : (
             <div className="profile-image-placeholder">

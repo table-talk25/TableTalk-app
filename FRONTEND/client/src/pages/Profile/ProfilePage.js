@@ -1,553 +1,219 @@
+// File: /src/pages/Profile/ProfilePage.js
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, Camera, Save, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
-import { useUser } from '../../contexts/UserContext';
-import '../../styles/ProfilePage.css';
-import ImageUploader from '../../components/common/ImageUploader';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Container, Alert, Spinner } from 'react-bootstrap';
+import { toast } from 'react-toastify';
+
+import { useAuth } from '../../contexts/AuthContext';
+import profileService from '../../services/profileService';
+
+import ProfileHeader from '../../components/profile/ProfileHeader';
+import PersonalInfo from '../../components/profile/PersonalInfo';
+import InterestsSection from '../../components/profile/InterestsSection';
+import ProfileSettings from '../../components/profile/ProfileSettings';
+
+import '../../styles/profile/ProfilePage.css';
 
 const ProfilePage = () => {
-  // Usa il Context dell'utente
-  const { 
-    user, 
-    updateProfile, 
-    updateProfileImage, 
-    getUserProfileImageUrl, 
-    syncUser,
-    isAccountDeactivated 
-  } = useUser();
 
-  // Stati locali per il form
-  const [profileData, setProfileData] = useState({
-    nickname: '',
-    gender: '',
-    age: '',
-    interests: '',
-    language: '',
-    profileImage: ''
-  });
+  console.log('%c[ProfilePage] Inizio Render...', 'color: green;');
+
+  // --- 1. HOOKS E STATO ---
+  // Otteniamo dati e funzioni globali dal nostro AuthContext
+  const { user, updateUser, loading: authLoading } = useAuth();
   
-  const [saving, setSaving] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
-  const [imagePreview, setImagePreview] = useState('');
-  const [hasChanges, setHasChanges] = useState(false);
+  // Hook per la navigazione e per leggere lo stato passato durante il redirect
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { userId } = useParams();
 
-  /**
-   * Carica i dati del profilo dall'oggetto utente
-   */
-  const loadProfileFromUser = useCallback((userData) => {
-    console.log('📥 Caricamento dati utente completi:', userData);
-    
-    // Logica per estrarre i dati utente effettivi
-    const actualUserData = userData.user ? userData.user : userData;
-    console.log('👤 Dati utente effettivi da usare:', actualUserData);
-    console.log('🎯 Nickname originale:', actualUserData.nickname);
+  // Stato specifico di questa pagina
+  const [profileData, setProfileData] = useState(null);
+  const [loading, setLoading] = useState(true); // Per il caricamento iniziale del profilo
+  const [isUpdating, setIsUpdating] = useState(false); // Per gli aggiornamenti successivi (mostra lo spinner sui bottoni)
+  const [error, setError] = useState('');
+  const [isUploading, setIsUploading] = useState(false); // Aggiungiamo uno stato per l'upload
+  const [meals, setMeals] = useState([]);
 
-    const newProfileData = {
-      nickname: actualUserData.nickname || '', 
-      gender: actualUserData.gender || '',
-      age: actualUserData.age || '',
-      interests: Array.isArray(actualUserData.interests) ? actualUserData.interests.join(', ') : (actualUserData.interests || ''),
-      language: Array.isArray(actualUserData.languages) && actualUserData.languages.length > 0 ? actualUserData.languages[0] : (actualUserData.language || ''),
-      profileImage: actualUserData.profileImage || ''
-    };
+  // --- 2. LOGICA DI CARICAMENTO DATI ---
+  // Funzione per caricare il profilo dal backend
+  const loadProfile = useCallback(async () => {
+    console.log('[ProfilePage] Eseguo loadProfile...');
 
-    console.log('📋 Dati profilo impostati:', newProfileData);
-    console.log('🎯 Nickname impostato:', newProfileData.nickname, '(vuoto per nuovi utenti, valore esistente per utenti registrati)');
-    setProfileData(newProfileData);
-    
-    // Imposta l'anteprima dell'immagine
-    const imageUrl = getUserProfileImageUrl ? getUserProfileImageUrl() : '';
-    console.log('🖼️ URL immagine profilo:', imageUrl);
-    setImagePreview(imageUrl);
-  }, [getUserProfileImageUrl]);
-
-  // Effetto per caricare i dati del profilo quando l'utente cambia
-  useEffect(() => {
-    console.log('🔄 Utente cambiato:', user);
-    if (user) {
-      loadProfileFromUser(user);
-    }
-  }, [user, loadProfileFromUser]);
-
-  // Effetto per tracciare i cambiamenti
-  useEffect(() => {
-    if (user) {
-      const actualUserData = user.user ? user.user : user; 
-      const originalForComparison = {
-        nickname: actualUserData.nickname || '',
-        gender: actualUserData.gender || '',
-        age: actualUserData.age || '',
-        interests: Array.isArray(actualUserData.interests) ? actualUserData.interests.join(', ') : (actualUserData.interests || ''),
-        language: Array.isArray(actualUserData.languages) && actualUserData.languages.length > 0 ? actualUserData.languages[0] : (actualUserData.language || ''),
-        profileImage: actualUserData.profileImage || ''
-      };
-
-      const changes = Object.keys(profileData).some(key => {
-        const currentValue = profileData[key];
-        const originalValue = originalForComparison[key] || ''; // Usa l'oggetto trasformato per il confronto
-        return currentValue !== originalValue;
-      });
-      setHasChanges(changes);
-    }
-  }, [profileData, user]);
-
-  /**
-   * Sincronizza i dati con il server
-   */
-  const handleSync = async () => {
-    console.log('🔄 Inizio sincronizzazione...');
-    setSyncing(true);
-    setMessage({ type: '', text: '' });
-    
     try {
-      const syncedUser = await syncUser();
-      console.log('✅ Utente sincronizzato:', syncedUser);
-      
-      setMessage({ 
-        type: 'success', 
-        text: 'Dati sincronizzati con successo!' 
-      });
-      
-      setTimeout(() => {
-        setMessage({ type: '', text: '' });
-      }, 3000);
-      
-    } catch (error) {
-      console.error('❌ Errore durante la sincronizzazione:', error);
-      setMessage({ 
-        type: 'error', 
-        text: 'Errore durante la sincronizzazione. Riprova più tardi.' 
-      });
+      setLoading(true);
+      const data = await profileService.getProfile();
+      console.log('[ProfilePage] ✅ Dati del profilo ricevuti dal servizio:', data);
+
+      setProfileData(data);
+      setMeals(data.createdMeals || []);
+    } catch (err) {
+      console.error('[ProfilePage] ❌ Errore durante il caricamento del profilo:', err);
+
+      toast.error(err.message || 'Errore durante il caricamento del profilo.');
+      setError('Impossibile caricare il profilo. Riprova più tardi.');
     } finally {
-      setSyncing(false);
+      console.log('[ProfilePage] Imposto loading a false.');
+
+      setLoading(false);
     }
-  };
+  }, []);
 
-  /**
-   * Gestisce i cambiamenti nei campi del form
-   */
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    console.log(`📝 Campo modificato: ${name} = "${value}"`);
-    
-    setProfileData(prev => {
-      const newData = {
-        ...prev,
-        [name]: value
-      };
-      console.log('📋 Nuovo stato profileData:', newData);
-      return newData;
-    });
-  };
+  useEffect(() => {
+    // Carichiamo i dati solo se abbiamo un utente autenticato
+    if (user?.id) {
+        console.log('[ProfilePage] useEffect attivato per caricare i dati.');
+        loadProfile();
+    }
+  }, [user, loadProfile]);
 
-  /**
-   * Gestisce il cambiamento dell'immagine del profilo
-   */
-  const handleImageUpload = async (file) => {
+  // useEffect per mostrare il messaggio di benvenuto dopo la registrazione
+  useEffect(() => {
+    if (location.state?.message) {
+      toast.success(location.state.message);
+      // Pulisce lo stato dalla cronologia di navigazione per evitare che il toast riappaia
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
+
+  // --- 3. GESTIONE DEGLI AGGIORNAMENTI ---
+  // Un'unica funzione per gestire tutti gli aggiornamenti del profilo
+  const handleProfileUpdate = async (updatedData) => {
+
+    console.log('[ProfilePage] Dati parziali ricevuti dal figlio:', updatedData);
+
+    const fullProfileData = { ...profileData, ...updatedData };
+
+    console.log('[ProfilePage] Invio il profilo completo e unito al servizio:', fullProfileData);
+
+    setIsUpdating(true);
     try {
-      const formData = new FormData();
-      formData.append('profileImage', file);
+      // Chiamiamo il nostro servizio semplificato. L'interceptor di Axios gestirà il token.
+      const updatedUser = await profileService.updateProfile(fullProfileData);
       
-      console.log('📤 Chiamata updateProfileImage...');
-      const result = await updateProfileImage(formData);
-      
-      // Aggiorna lo stato o mostra un messaggio di successo
-      console.log('✅ Immagine aggiornata con successo:', result);
-      setMessage({ type: 'success', text: 'Immagine profilo aggiornata!' });
-       setTimeout(() => { setMessage({ type: '', text: '' }); }, 3000);
-    } catch (error) {
-      console.error('❌ Errore durante l\'aggiornamento dell\'immagine:', error);
-      setMessage({ type: 'error', text: error.message || 'Errore caricamento immagine.' });
-    }
-  };
+      updateUser(updatedUser);
 
-  /**
-   * Salva i dati del profilo
-   */
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-    console.log('💾 Inizio salvataggio profilo...');
-    
-    // Validazione
-    if (!profileData.nickname.trim()) {
-      console.log('❌ Validazione fallita: nickname mancante');
-      setMessage({ 
-        type: 'error', 
-        text: 'Il nickname è obbligatorio.' 
-      });
-      return;
-    }
-
-    setSaving(true);
-    setMessage({ type: '', text: '' });
-    
-    try {
-      // Prepara i dati per l'invio
-      const dataToSave = {
-        nickname: profileData.nickname.trim(),
-        gender: profileData.gender,
-        age: profileData.age ? parseInt(profileData.age) : null,
-        interests: profileData.interests.split(',').map(item => item.trim()).filter(item => item), // Da stringa a array
-        languages: profileData.language ? [profileData.language.trim()] : [] // Da stringa a array (se gestisci una sola lingua nel form)
-      };
+      setProfileData(updatedUser);
+      setMeals(updatedUser.createdMeals || []);
       
-      console.log('📤 Dati da salvare:', dataToSave);
-      console.log('👤 Utente corrente prima del salvataggio:', user);
-      
-      const updatedUser = await updateProfile(dataToSave);
-      console.log('✅ Profilo aggiornato, utente restituito:', updatedUser);
-
-      // Verifica che i dati siano stati effettivamente salvati
-      if (updatedUser) {
-        console.log('🔄 Ricaricamento dati dal server...');
-        loadProfileFromUser(updatedUser);
-      }
-      
-      setMessage({ 
-        type: 'success', 
-        text: 'Profilo aggiornato con successo!' 
-      });
-      
-      setTimeout(() => {
-        setMessage({ type: '', text: '' });
-      }, 3000);
-      
-    } catch (error) {
-      console.error('❌ Errore nel salvataggio del profilo:', error);
-      console.error('📋 Dettagli errore:', {
-        message: error.message,
-        stack: error.stack,
-        response: error.response
-      });
-      
-      // Gestione specifica per account disattivato
-      if (error.message === 'Account disattivato') {
-        setMessage({ 
-          type: 'error', 
-          text: 'Il tuo account è stato disattivato. Per favore contatta il supporto per maggiori informazioni.' 
-        });
-      } else {
-        setMessage({ 
-          type: 'error', 
-          text: error.message || 'Errore nel salvataggio del profilo. Riprova.' 
-        });
-      }
+      toast.success('Profilo aggiornato con successo!');
+    } catch (err) {
+      // L'errore che arriva qui è già stato processato dall'interceptor
+      toast.error(err.message || 'Si è verificato un errore durante l\'aggiornamento.');
     } finally {
-      setSaving(false);
+      setIsUpdating(false);
     }
   };
 
-  /**
-   * Ripristina i dati originali
-   */
-  const handleReset = () => {
-    console.log('🔄 Ripristino dati originali...');
-    if (user) {
-      loadProfileFromUser(user);
-      setMessage({ type: '', text: '' });
+  console.log('[ProfilePage] Controllo condizioni di rendering:', { authLoading, loading, error, profileData });
+
+  const handleImageUpdate = async (formData) => {
+    setIsUploading(true);
+    try {
+      // Chiama il servizio dedicato all'upload di file
+      const updatedUser = await profileService.updateAvatar(formData);      updateUser(updatedUser); // Aggiorna il context
+      setProfileData(updatedUser); // Aggiorna lo stato locale
+      setMeals(updatedUser.createdMeals || []);
+      toast.success('Immagine aggiornata!');
+    } catch (err) {
+      toast.error(err.message || 'Errore durante l\'upload dell\'immagine.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
-    // Debug dello stato corrente
-    useEffect(() => {
-      console.log('🐛 Debug stato corrente:', {
-        user: user,
-        profileData: profileData,
-        hasChanges: hasChanges,
-        saving: saving
-      });
-    }, [user, profileData, hasChanges, saving]);
+  // --- 4. LOGICA DI RENDER ---
+  // Mostra uno spinner durante il caricamento iniziale dei dati
+  if (authLoading || loading) {
+    console.log('[ProfilePage] Renderizzo: SPINNER');
 
-  if (!user) {
     return (
-      <div className="loading-container">
-        <div className="loading-content">
-          <div className="loading-spinner-large"></div>
-          <p className="loading-text">Caricamento profilo...</p>
-        </div>
-      </div>
+      <Container className="text-center p-5">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Caricamento...</span>
+        </Spinner>
+      </Container>
     );
   }
 
-  if (isAccountDeactivated) {
+  // Mostra un messaggio di errore se il caricamento fallisce
+  if (error) {
+    console.log('[ProfilePage] Renderizzo: ERRORE');
+
     return (
-      <div className="profile-container">
-        <div className="profile-wrapper">
-          <div className="profile-card">
-            <div className="profile-header">
-              <div className="profile-header-content">
-                <div className="profile-title-section">
-                  <AlertCircle className="profile-icon" />
-                  <h1 className="profile-title">Account Disattivato</h1>
-                </div>
-              </div>
-            </div>
-            <div className="message-container message-error">
-              <AlertCircle className="message-icon" />
-              <p className="message-text">
-                Il tuo account è stato disattivato. Per riattivare il tuo account, 
-                contatta il supporto tecnico all'indirizzo support@tabletalk.com
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Container>
+        <Alert variant="danger">{error}</Alert>
+      </Container>
     );
   }
+  
+  // Se non ci sono dati profilo (caso raro ma possibile), mostra un messaggio
+  if (!profileData) {
+    console.log('[ProfilePage] Renderizzo: NESSUN DATO PROFILO');
+
+    return (
+      <Container>
+        <Alert variant="warning">Nessun dato del profilo disponibile.</Alert>
+      </Container>
+    );
+  }
+
+  console.log('[ProfilePage] Renderizzo: CONTENUTO PRINCIPALE');
+
 
   return (
-    <div className="profile-container">
-      <div className="profile-wrapper">
-        <div className="profile-card">
-          {/* Header */}
-          <div className="profile-header">
-            <div className="profile-header-content">
-              <div className="profile-title-section">
-                <User className="profile-icon" />
-                <h1 className="profile-title">Il Tuo Profilo</h1>
-              </div>
-              <button 
-                onClick={handleSync}
-                disabled={syncing}
-                className="sync-button"
-              >
-                <RefreshCw className={`sync-icon ${syncing ? 'spinning' : ''}`} />
-                <span>Sincronizza</span>
-              </button>
+    <div className="profile-page-background">
+      <Container className="profile-container py-5">
+        
+        {/* Mostra un avviso se il profilo non è ancora stato completato */}
+        {user && !user.profileCompleted && (
+          <Alert variant="info" className="mb-4 shadow-sm">
+            <div className="welcome-message">
+              <strong>Benvenuto in TableTalk!</strong> Completa il tuo profilo per iniziare a trovare i compagni di pasto perfetti.
             </div>
+          </Alert>
+        )}
+
+        <div className="profile-grid">
+          {/* Componente per l'header del profilo (foto, nome, bio) */}
+          <div className="profile-header-card">
+            <ProfileHeader
+              profile={profileData}
+              onUpdate={handleProfileUpdate}
+              onUpdateImage={handleImageUpdate}
+              isUpdating={isUpdating || isUploading}
+            />
           </div>
-          
-          {/* Debug info (rimuovi in produzione) */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="debug-section">
-              <details>
-                <summary className="debug-summary">Debug Info (solo sviluppo)</summary>
-                <pre className="debug-content">
-                  {JSON.stringify({ 
-                    userId: user?._id,
-                    hasChanges,
-                    profileData,
-                    userNickname: user?.nickname
-                  }, null, 2)}
-                </pre>
-              </details>
-            </div>
-          )}
 
-          {/* Messaggio di stato */}
-          {message.text && (
-            <div className={`message-container ${
-              message.type === 'success' ? 'message-success' : 'message-error'
-            }`}>
-              {message.type === 'success' ? (
-                <CheckCircle className="message-icon" />
-              ) : (
-                <AlertCircle className="message-icon" />
-              )}
-              <p className="message-text">{message.text}</p>
-            </div>
-          )}
+          {/* Componente per le informazioni personali */}
+          <div className="profile-personal-info-card">
+            <PersonalInfo
+              profileData={profileData}
+              onUpdate={handleProfileUpdate}
+              isUpdating={isUpdating}
+            />
+          </div>
 
-          {/* Indicatore modifiche non salvate */}
-          {hasChanges && (
-            <div className="changes-indicator">
-              <p className="changes-text">Hai modifiche non salvate</p>
-              <button
-                onClick={handleReset}
-                className="reset-button"
-              >
-                Ripristina
-              </button>
-            </div>
-          )}
+          {/* Componente per interessi e lingue */}
+          <div className="profile-interests-card">
+            <InterestsSection
+              profileData={profileData}
+              onUpdate={handleProfileUpdate}
+              isUpdating={isUpdating}
+            />
+          </div>
 
-          <form onSubmit={handleSaveProfile} className="profile-form">
-            {/* Immagine del profilo */}
-            <div className="profile-image-section">
-              <div className="profile-image-container">
-                <div className="profile-image-wrapper">
-                  <ImageUploader
-                    onImageSelect={handleImageUpload}
-                    maxSizeMB={5}
-                    aspectRatio={1}
-                    minWidth={200}
-                    minHeight={200}
-                    maxWidth={2000}
-                    maxHeight={2000}
-                    className="profile-image-uploader"
-                  >
-                    {user?.profileImage ? (
-                      <img 
-                        src={user.profileImage} 
-                        alt="Immagine profilo" 
-                        className="current-profile-image"
-                      />
-                    ) : null}
-                  </ImageUploader>
-                </div>
-                <label 
-                  htmlFor="profileImage" 
-                  className={`camera-button ${saving ? 'disabled' : ''}`}
-                >
-                  <Camera className="camera-icon" />
-                </label>
-              </div>
-              <p className="profile-image-hint">Clicca sulla fotocamera per cambiare l'immagine</p>
-            </div>
-
-            {/* Campi del profilo */}
-            <div className="form-grid">
-              <div className="form-group">
-                <label htmlFor="nickname" className="form-label required">
-                  Nickname
-                </label>
-                <input
-                  type="text"
-                  id="nickname"
-                  name="nickname"
-                  value={profileData.nickname}
-                  onChange={handleInputChange}
-                  required
-                  disabled={saving}
-                  className="form-input"
-                  placeholder="Il tuo nickname"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="gender" className="form-label">
-                  Genere
-                </label>
-                <select
-                  id="gender"
-                  name="gender"
-                  value={profileData.gender}
-                  onChange={handleInputChange}
-                  disabled={saving}
-                  className="form-input"
-                >
-                  <option value="">Seleziona genere</option>
-                  <option value="uomo">Maschio</option>
-                  <option value="donna">Femmina</option>
-                  <option value="altro">Altro</option>
-                  <option value="preferisco_non_dirlo">Preferisco non dire</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="age" className="form-label">
-                  Età
-                </label>
-                <input
-                  type="number"
-                  id="age"
-                  name="age"
-                  value={profileData.age}
-                  onChange={handleInputChange}
-                  disabled={saving}
-                  min="13"
-                  max="120"
-                  className="form-input"
-                  placeholder="La tua età"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="language" className="form-label">
-                  Lingua
-                </label>
-                <select
-                  id="language"
-                  name="language"
-                  value={profileData.language}
-                  onChange={handleInputChange}
-                  disabled={saving}
-                  className="form-input"
-                >
-                  <option value="">Seleziona lingua</option>
-                  <option value="italian">Italiano</option>
-                  <option value="english">Inglese</option>
-                  <option value="spanish">Spagnolo</option>
-                  <option value="french">Francese</option>
-                  <option value="german">Tedesco</option>
-                  <option value="other">Altro</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="form-group form-group-full">
-              <label htmlFor="interests" className="form-label">
-                Interessi
-              </label>
-              <textarea
-                id="interests"
-                name="interests"
-                value={profileData.interests}
-                onChange={handleInputChange}
-                disabled={saving}
-                rows="3"
-                className="form-textarea"
-                placeholder="Parlaci dei tuoi interessi (cucina, viaggi, sport, musica, libri...)"
-              />
-            </div>
-
-            {/* Pulsanti di azione */}
-            <div className="form-actions">
-              <button
-                type="submit"
-                disabled={saving || !hasChanges}
-                className="btn-primary"
-              >
-                {saving ? (
-                  <>
-                    <div className="loading-spinner"></div>
-                    Salvataggio...
-                  </>
-                ) : (
-                  <>
-                    <Save className="btn-icon" />
-                    Salva Profilo
-                  </>
-                )}
-              </button>
-
-              {hasChanges && (
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  disabled={saving}
-                  className="btn-secondary"
-                >
-                  Annulla
-                </button>
-              )}
-            </div>
-          </form>
-        </div>
-
-        {/* Informazioni aggiuntive */}
-        <div className="info-card">
-          <h2 className="info-card-title">Perché completare il profilo?</h2>
-          <div className="info-grid">
-            <div className="info-item">
-              <CheckCircle className="info-icon" />
-              <p className="info-text">Trova persone con interessi simili ai tuoi</p>
-            </div>
-            <div className="info-item">
-              <CheckCircle className="info-icon" />
-              <p className="info-text">Comunicazione più facile con la lingua preferita</p>
-            </div>
-            <div className="info-item">
-              <CheckCircle className="info-icon" />
-              <p className="info-text">Crea connessioni autentiche</p>
-            </div>
-            <div className="info-item">
-              <CheckCircle className="info-icon" />
-              <p className="info-text">Partecipa a pasti virtuali più coinvolgenti</p>
-            </div>
+          {/* Componente per le impostazioni dell'account */}
+          <div className="profile-settings-card">
+            <ProfileSettings
+              profileData={profileData}
+              onUpdate={handleProfileUpdate}
+              isUpdating={isUpdating}
+            />
           </div>
         </div>
-      </div>
+      </Container>
     </div>
   );
 };

@@ -203,15 +203,7 @@ const MealSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
+  }]
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -257,14 +249,45 @@ MealSchema.virtual('averageRating').get(function() {
   return sum / this.ratings.length;
 });
 
-// Middleware pre-save per aggiornare il conteggio dei partecipanti
+// Metodo per ottenere i pasti futuri
+MealSchema.statics.findUpcoming = function() {
+  return this.find({
+    date: { $gt: new Date() },
+    status: 'upcoming'
+  }).sort({ date: 1 });
+};
+
+// Metodo per ottenere i pasti attivi
+MealSchema.statics.findActive = function() {
+  const now = new Date();
+  return this.find({
+    date: { $lte: now },
+    status: 'ongoing'
+  });
+};
+
+// Metodo per ottenere i pasti di un utente
+MealSchema.statics.findUserMeals = function(userId) {
+  return this.find({
+    $or: [
+      { host: userId },
+      { participants: userId }
+    ]
+  }).sort({ date: -1 });
+};
+
+// Unico pre-save hook combinato e corretto
 MealSchema.pre('save', function(next) {
+  // Aggiorna il conteggio dei partecipanti se l'array è stato modificato
   if (this.isModified('participants')) {
     this.participantsCount = this.participants.length;
   }
-  if (this.isModified()) {
-    this.updatedAt = Date.now();
+
+  // Aggiunge automaticamente l'organizzatore (host) ai partecipanti alla creazione del pasto
+  if (this.isNew && !this.participants.includes(this.host)) {
+    this.participants.push(this.host);
   }
+
   next();
 });
 
@@ -281,7 +304,7 @@ MealSchema.methods.isParticipant = function(userId) {
 };
 
 // Metodo per aggiungere un partecipante
-MealSchema.methods.addParticipant = async function(userId) {
+MealSchema.methods.addParticipant = function(userId) {
   if (this.isFull) {
     throw new Error('Il pasto ha raggiunto il numero massimo di partecipanti');
   }
@@ -297,18 +320,19 @@ MealSchema.methods.addParticipant = async function(userId) {
   
   this.participants.push(userId);
   
-  // Aggiungi notifica
+  // Aggiungi notifica all'array, ma non salvare ancora
   this.notifications.push({
     type: 'join',
     message: 'Un nuovo partecipante si è unito al pasto',
     recipient: this.host
   });
   
+  // Un solo salvataggio alla fine
   return this.save();
 };
 
 // Metodo per rimuovere un partecipante
-MealSchema.methods.removeParticipant = async function(userId) {
+MealSchema.methods.removeParticipant = function(userId) {
   if (this.isHost(userId)) {
     throw new Error('L\'host non può lasciare il pasto');
   }
@@ -320,18 +344,19 @@ MealSchema.methods.removeParticipant = async function(userId) {
     p => p.toString() !== userId.toString()
   );
   
-  // Aggiungi notifica
+  // Aggiungi notifica all'array, ma non salvare ancora
   this.notifications.push({
     type: 'leave',
     message: 'Un partecipante ha lasciato il pasto',
     recipient: this.host
   });
   
+  // Un solo salvataggio alla fine
   return this.save();
 };
 
 // Metodo per aggiungere un rating
-MealSchema.methods.addRating = async function(userId, score, comment) {
+MealSchema.methods.addRating = function(userId, score, comment) {
   if (!this.isParticipant(userId)) {
     throw new Error('Solo i partecipanti possono lasciare un rating');
   }
@@ -370,7 +395,7 @@ MealSchema.methods.markNotificationsAsRead = function(userId) {
 };
 
 // Metodo per aggiornare lo stato del pasto
-MealSchema.methods.updateStatus = async function(newStatus) {
+MealSchema.methods.updateStatus = function(newStatus) {
   if (!['upcoming', 'ongoing', 'completed', 'cancelled'].includes(newStatus)) {
     throw new Error('Stato non valido');
   }
@@ -389,53 +414,5 @@ MealSchema.methods.updateStatus = async function(newStatus) {
   
   return this.save();
 };
-
-// Metodo per ottenere i pasti futuri
-MealSchema.statics.findUpcoming = function() {
-  return this.find({
-    date: { $gt: new Date() },
-    status: 'upcoming'
-  }).sort({ date: 1 });
-};
-
-// Metodo per ottenere i pasti attivi
-MealSchema.statics.findActive = function() {
-  const now = new Date();
-  return this.find({
-    date: { $lte: now },
-    status: 'ongoing'
-  });
-};
-
-// Metodo per ottenere i pasti di un utente
-MealSchema.statics.findUserMeals = function(userId) {
-  return this.find({
-    $or: [
-      { host: userId },
-      { participants: userId }
-    ]
-  }).sort({ date: -1 });
-};
-
-// Middleware pre-find per popolare l'host e i partecipanti
-MealSchema.pre(/^find/, function(next) {
-  this.populate({
-    path: 'host',
-    select: 'nickname profileImage'
-  }).populate({
-    path: 'participants',
-    select: 'nickname profileImage'
-  });
-  
-  next();
-});
-
-// Aggiungi automaticamente il creatore ai partecipanti
-MealSchema.pre('save', function(next) {
-  if (this.isNew && !this.participants.includes(this.createdBy)) {
-    this.participants.push(this.createdBy);
-  }
-  next();
-});
 
 module.exports = mongoose.model('Meal', MealSchema);

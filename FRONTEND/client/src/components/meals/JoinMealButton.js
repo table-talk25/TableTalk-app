@@ -1,7 +1,10 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Button, Spinner, Alert } from 'react-bootstrap';
 import { joinMeal, getMealById } from '../../services/mealService';
 import { toast } from 'react-toastify';
+import styles from '../../styles/JoinMealButton.module.css';
 
 const JoinMealButton = ({ mealId, disabled, onSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -45,40 +48,40 @@ const JoinMealButton = ({ mealId, disabled, onSuccess }) => {
   };
 
   return (
-    <div>
+    <div className={styles.container}>
       <Button 
         variant="primary" 
         onClick={handleJoin}
         disabled={disabled || loading}
-        className="w-100"
+        className={styles.joinButton}
       >
         {loading ? (
-          <>
+          <div className={styles.loadingContent}>
             <Spinner
               as="span"
               animation="border"
               size="sm"
               role="status"
               aria-hidden="true"
-              className="me-2"
+              className={styles.spinner}
             />
-            Elaborazione...
-          </>
+            <span>Elaborazione...</span>
+          </div>
         ) : (
-          <>
-            <i className="fas fa-user-plus me-2"></i>
-            Unisciti al pasto
-          </>
+          <div className={styles.buttonContent}>
+            <i className="fas fa-user-plus"></i>
+            <span>Unisciti al pasto</span>
+          </div>
         )}
       </Button>
       {error && (
-        <Alert variant="danger" className="mt-2">
-          <i className="fas fa-exclamation-circle me-2"></i>
-          {error}
+        <Alert variant="danger" className={styles.errorAlert}>
+          <i className="fas fa-exclamation-circle"></i>
+          <span>{error}</span>
         </Alert>
       )}
     </div>
   );
 };
 
-export default JoinMealButton;
+export default JoinMealButton; 

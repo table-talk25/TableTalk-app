@@ -3,21 +3,24 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaBars, FaTimes, FaUser, FaUtensils, FaHome, FaSignInAlt, FaUserPlus, FaBell } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Logo from './Logo';
-import '../styles/Navbar.css';
+import '../../styles/Navbar.css';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userNickname, setUserNickname] = useState('');
   const [notifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Verifica l'autenticazione al caricamento e quando cambia il token
+  // Verifica l'autenticazione e carica il nickname al caricamento e quando cambia il token
   useEffect(() => {
     const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user'));
     setIsAuthenticated(!!token);
+    setUserNickname(user?.nickname || '');
   }, [location.pathname]);
 
   // Gestione dello scroll
@@ -70,7 +73,15 @@ function Navbar() {
   return (
     <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`}>
       <div className="navbar-container">
-        <Logo />
+        <div className="navbar-left">
+          <Logo />
+          {isAuthenticated && userNickname && (
+            <div className="user-nickname">
+              <FaUser className="nav-icon" />
+              <span>{userNickname}</span>
+            </div>
+          )}
+        </div>
         
         <div className="menu-icon" onClick={toggleMenu}>
           {isOpen ? <FaTimes /> : <FaBars />}

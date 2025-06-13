@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import authService from '../services/authService';
+import profileService from '../services/profileService';
+import { toast } from 'react-toastify';
 import axiosInstance from '../config/axiosConfig';
 
 const AuthContext = createContext(null);
@@ -9,6 +11,8 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
+
+  console.log('%c[AuthContext] Renderizzo...', 'color: blue;', { loading, isAuthenticated, user: user?.email });
 
   // Configurazione del token nell'header delle richieste
   useEffect(() => {
@@ -84,6 +88,30 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Eliminazione account
+  const deleteAccount = async (password) => {
+    try {
+      // 1. Chiama il servizio per chiedere al backend di eliminare l'utente.
+      await profileService.deleteAccount(password);
+
+      // 2. Se la chiamata ha successo (altrimenti andrebbe in catch),
+      //    significa che l'utente è stato eliminato dal DB.
+      //    Ora dobbiamo pulire la sessione dal frontend.
+      //    RIUTILIZZIAMO la nostra funzione di logout che fa già tutto il lavoro!
+      logout();
+
+      // Possiamo anche mostrare un messaggio di successo finale.
+      toast.success('Il tuo account è stato eliminato con successo. Ci dispiace vederti andare via!');
+
+    } catch (error) {
+      // Se la chiamata al servizio fallisce (es. password errata),
+      // l'errore verrà catturato qui. Lo rilanciamo in modo che il componente
+      // che ha avviato il processo (ProfileSettings) possa prenderlo e mostrare un messaggio.
+      console.error('Errore durante l\'eliminazione dell\'account nel context:', error);
+      throw error; // Rilancia l'errore
+    }
+  };
+
   // Aggiornamento dei dati utente
   const updateUser = (updatedUser) => {
     setUser(prevUser => ({ ...prevUser, ...updatedUser }));
@@ -104,6 +132,7 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
+        deleteAccount,
         updateUser,
         isAdmin
       }}

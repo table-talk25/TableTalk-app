@@ -1,139 +1,50 @@
-/**
- * Middleware per la gestione centralizzata degli errori
- * @param {Object} err - Oggetto errore
- * @param {Object} req - Richiesta Express
- * @param {Object} res - Risposta Express
- * @param {Function} next - Funzione next di Express
- */
+// File: BACKEND/middleware/error.js (Versione Finale e Corretta)
+
+const ErrorResponse = require('../utils/errorResponse');
+
 const errorHandler = (err, req, res, next) => {
+  // Creiamo una copia dell'errore su cui lavorare
   let error = { ...err };
   error.message = err.message;
 
-  // Log dell'errore per il debug
-  console.error('Errore:', {
-    message: err.message,
-    stack: err.stack,
-    path: req.path,
-    method: req.method,
-    body: req.body,
-    params: req.params,
-    query: req.query,
-    user: req.user ? req.user.id : 'non autenticato'
-  });
+  // Log per noi sviluppatori
+  if (process.env.NODE_ENV === 'development') {
+    console.log('--- GESTORE ERRORI ATTIVATO ---');
+    console.error(err);
+  }
 
-  // Errore di dati duplicati in MongoDB (codice 11000)
+  // === GESTIONE ERRORI SPECIFICI ===
+
+  // 1. Errore di ID non valido (CastError di Mongoose)
+  if (err.name === 'CastError') {
+    const message = `La risorsa richiesta non è valida.`;
+    error = new ErrorResponse(message, 404);
+  }
+
+  // 2. Errore di campo duplicato (es. email già esistente)
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue)[0];
-    const value = err.keyValue[field];
-    const message = `${field.charAt(0).toUpperCase() + field.slice(1)} "${value}" è già registrato. Scegli un altro valore.`;
-    error = new Error(message);
-    error.statusCode = 400;
+    const message = `Un utente con questo ${field} esiste già. Per favore, usane un altro.`;
+    error = new ErrorResponse(message, 400);
   }
 
-  // Errori di validazione Mongoose
-  if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map(val => val.message).join(', ');
-    error = new Error(message);
-    error.statusCode = 400;
-  }
-
-  // Errori di cast Mongoose (ad es. ObjectID non valido)
-  if (err.name === 'CastError') {
-    const message = `Risorsa ${err.path} non valida: ${err.value}`;
-    error = new Error(message);
-    error.statusCode = 400;
-  }
-
-  // Errori JWT
-  if (err.name === 'JsonWebTokenError') {
-    error = new Error('Token non valido. Effettua il login.');
-    error.statusCode = 401;
-  }
-
-  // Token JWT scaduto
-  if (err.name === 'TokenExpiredError') {
-    error = new Error('Sessione scaduta. Effettua nuovamente il login.');
-    error.statusCode = 401;
-  }
-
-  // Errore di limite di dimensione del file
-  if (err.name === 'MulterError') {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      error = new Error('Il file caricato supera la dimensione massima consentita');
-      error.statusCode = 400;
-    } else {
-      error = new Error('Errore durante il caricamento del file');
-      error.statusCode = 400;
-    }
-  }
-
-  // Errore di tipo di file non supportato
-  if (err.name === 'UnsupportedMediaTypeError') {
-    error = new Error('Tipo di file non supportato');
-    error.statusCode = 415;
-  }
-
-  // Errore di rate limiting
-  if (err.name === 'RateLimitExceeded') {
-    error = new Error('Troppe richieste. Riprova più tardi.');
-    error.statusCode = 429;
-  }
-
-  // Errore di timeout
-  if (err.name === 'TimeoutError') {
-    error = new Error('La richiesta ha impiegato troppo tempo. Riprova.');
-    error.statusCode = 408;
-  }
-
-  // Errore di connessione al database
-  if (err.name === 'MongoServerError') {
-    error = new Error('Errore di connessione al database. Riprova più tardi.');
-    error.statusCode = 503;
-  }
-
-  // Errore di validazione dei dati
+  // 3. Errore di validazione di Mongoose (es. campo 'required' mancante)
   if (err.name === 'ValidationError') {
     const messages = Object.values(err.errors).map(val => val.message);
-    error = new Error(messages.join(', '));
-    error.statusCode = 400;
+    const details = Object.values(err.errors).map(val => ({ path: val.path, msg: val.message }));
+    error = new ErrorResponse(messages.join('. '), 400, details);
   }
 
-  // Errore di autorizzazione
-  if (err.name === 'AuthorizationError') {
-    error = new Error('Non hai i permessi necessari per questa azione');
-    error.statusCode = 403;
-  }
 
-  // Errore di risorsa non trovata
-  if (err.name === 'NotFoundError') {
-    error = new Error('La risorsa richiesta non è stata trovata');
-    error.statusCode = 404;
-  }
+  // === RISPOSTA FINALE AL FRONTEND ===
 
-  // Errore di conflitto
-  if (err.name === 'ConflictError') {
-    error = new Error('Si è verificato un conflitto con lo stato attuale della risorsa');
-    error.statusCode = 409;
-  }
-
-  // Errore di validazione dei parametri
-  if (err.name === 'ParameterValidationError') {
-    error = new Error('Parametri non validi: ' + err.message);
-    error.statusCode = 400;
-  }
-
-  // Restituisci la risposta di errore
+  // Prepariamo la risposta JSON.
+  // Se l'errore originale (err) aveva una lista di 'details' (dal nostro ErrorResponse),
+  // ci assicuriamo di includerla nella risposta finale.
   res.status(error.statusCode || 500).json({
     success: false,
-    error: {
-    message: error.message || 'Errore interno del server',
-      code: error.statusCode || 500,
-      type: err.name || 'ServerError',
-      timestamp: new Date().toISOString(),
-      path: req.path,
-      method: req.method
-    },
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    message: error.message || 'Errore Interno del Server',
+    errors: err.details || [], // Usiamo err.details per preservare l'array originale
   });
 };
 

@@ -1,232 +1,158 @@
-import React, { useState } from 'react';
+// File: frontend/client/src/pages/Auth/RegisterPage.js (Versione Finale e Completa)
+
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Form, Button, Alert } from 'react-bootstrap';
-import axiosInstance from '../../config/axiosConfig';
+import { Form, Button, Alert, InputGroup } from 'react-bootstrap';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { useAuth } from '../../contexts/AuthContext';
+import { toast } from 'react-toastify';
 import '../../styles/RegisterPage.css';
 
 const RegisterPage = () => {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    name: '',
-    surname: '',
-  });
-  
-  const [errors, setErrors] = useState({});
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+    const navigate = useNavigate();
+    const { register, isAuthenticated } = useAuth();
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
+    const [formData, setFormData] = useState({ name: '', surname: '', email: '', password: '', confirmPassword: '' });
+    const [errors, setErrors] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const validateForm = () => {
-    let tempErrors = {};
-    let formIsValid = true;
+    useEffect(() => {
+        if (isAuthenticated) navigate('/profile');
+    }, [isAuthenticated, navigate]);
 
-    if (!formData.email.trim()) {
-      tempErrors.email = "L'email è obbligatoria";
-      formIsValid = false;
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      tempErrors.email = "Email non valida";
-      formIsValid = false;
-    }
-
-    if (!formData.password) {
-      tempErrors.password = "La password è obbligatoria";
-      formIsValid = false;
-    } else if (formData.password.length < 6) {
-      tempErrors.password = "La password deve essere di almeno 6 caratteri";
-      formIsValid = false;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      tempErrors.confirmPassword = "Le password non coincidono";
-      formIsValid = false;
-    }
-
-    if (!formData.name.trim()) {
-      tempErrors.name = "Il nome è obbligatorio";
-      formIsValid = false;
-    }
-
-    if (!formData.surname.trim()) {
-      tempErrors.surname = "Il cognome è obbligatorio";
-      formIsValid = false;
-    }
-
-    setErrors(tempErrors);
-    return formIsValid;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    if (!validateForm()) {
-      setIsLoading(false);
-      return;
-    }
-    
-    try {
-      console.log('Sending registration data:', { 
-        email: formData.email,
-        password: formData.password,
-        name: formData.name,
-        surname: formData.surname,
-      });
-      
-      const response = await axiosInstance.post('/auth/register', {
-        email: formData.email,
-        password: formData.password,
-        name: formData.name,
-        surname: formData.surname,
-      });
-      
-      console.log('Registration successful:', response);
-
-      // Salva il token nel localStorage
-      localStorage.setItem('token', response.data.token);
-      
-      // Reindirizza alla pagina del profilo
-      navigate('/profile', { 
-        state: { 
-          message: 'Registrazione completata con successo! Completa il tuo profilo.' 
-        } 
-      });
-    } catch (err) {
-      console.error('Registration error:', err);
-      
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.message) {
-        setError(err.message);
-      } else {
-        setError('Si è verificato un errore durante la registrazione. Riprova più tardi.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="register-page">
-      <div className="register-card">
-        <h2 className="text-center">Registrati su TableTalk</h2>
+    // --- FUNZIONE DI VALIDAZIONE COMPLETA ---
+    const validateForm = () => {
+        const newErrors = {};
         
-        {error && <Alert variant="danger">{error}</Alert>}
+        // Validazione Nome
+        if (!formData.name) newErrors.name = 'Il nome è obbligatorio.';
+        else if (!/^[a-zA-Z\s]*$/.test(formData.name)) newErrors.name = 'Il nome può contenere solo lettere e spazi.';
+
+        // Validazione Cognome
+        if (!formData.surname) newErrors.surname = 'Il cognome è obbligatorio.';
+        else if (!/^[a-zA-Z\s]*$/.test(formData.surname)) newErrors.surname = 'Il cognome può contenere solo lettere e spazi.';
+
+        // Validazione Email
+        if (!formData.email) newErrors.email = 'L\'email è obbligatoria.';
+        else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Inserisci un\'email valida.';
+
+        // Validazione Password
+        const isPasswordValid = 
+            formData.password.length >= 8 &&
+            /[A-Z]/.test(formData.password) &&
+            /[a-z]/.test(formData.password) &&
+            /\d/.test(formData.password) &&
+            /[@$!%*?&]/.test(formData.password);
+
+        if (!formData.password) newErrors.password = 'La password è obbligatoria.';
+        else if (!isPasswordValid) newErrors.password = 'La password non rispetta tutti i requisiti.';
         
-        <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3">
-            <Form.Label>Nome</Form.Label>
-            <Form.Control
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              isInvalid={!!errors.name}
-              required
-            />
-            {errors.name && (
-              <Form.Control.Feedback type="invalid">
-                {errors.name}
-              </Form.Control.Feedback>
-            )}
-          </Form.Group>
+        // Validazione Conferma Password
+        if (formData.password !== formData.confirmPassword) {
+            newErrors.confirmPassword = 'Le password non coincidono.';
+        }
 
-          <Form.Group className="mb-3">
-            <Form.Label>Cognome</Form.Label>
-            <Form.Control
-              type="text"
-              name="surname"
-              value={formData.surname}
-              onChange={handleChange}
-              isInvalid={!!errors.surname}
-              required
-            />
-            {errors.surname && (
-              <Form.Control.Feedback type="invalid">
-                {errors.surname}
-              </Form.Control.Feedback>
-            )}
-          </Form.Group>
+        setErrors(newErrors);
+        // Il form è valido solo se l'oggetto degli errori è vuoto
+        return Object.keys(newErrors).length === 0;
+    };
 
-          <Form.Group className="mb-3">
-            <Form.Label>Email</Form.Label>
-            <Form.Control
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              isInvalid={!!errors.email}
-              required
-            />
-            {errors.email && (
-              <Form.Control.Feedback type="invalid">
-                {errors.email}
-              </Form.Control.Feedback>
-            )}
-          </Form.Group>
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        // Pulisce l'errore per quel campo non appena l'utente inizia a correggere
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: null }));
+        }
+    };
 
-          <Form.Group className="mb-3">
-            <Form.Label>Password</Form.Label>
-            <Form.Control
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              isInvalid={!!errors.password}
-              required
-            />
-            {errors.password && (
-              <Form.Control.Feedback type="invalid">
-                {errors.password}
-              </Form.Control.Feedback>
-            )}
-          </Form.Group>
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        // Eseguiamo la nostra validazione completa prima di inviare
+        if (!validateForm()) {
+            toast.error('Per favore, correggi gli errori nel modulo.');
+            return;
+        }
+        
+        setIsLoading(true);
+        try {
+            await register({
+                name: formData.name,
+                surname: formData.surname,
+                email: formData.email,
+                password: formData.password,
+            });
+            toast.success('Registrazione avvenuta con successo!');
+            navigate('/profile', { state: { message: 'Benvenuto/a! Completa il tuo profilo.' } });
+        } catch (err) {
+            // Gestisce errori specifici dal backend (es. email già in uso)
+            toast.error(err.message || 'Errore durante la registrazione.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-          <Form.Group className="mb-4">
-            <Form.Label>Conferma Password</Form.Label>
-            <Form.Control
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              isInvalid={!!errors.confirmPassword}
-              required
-            />
-            {errors.confirmPassword && (
-              <Form.Control.Feedback type="invalid">
-                {errors.confirmPassword}
-              </Form.Control.Feedback>
-            )}
-          </Form.Group>
+    return (
+        <div className="register-page">
+            <div className="register-card">
+                <h2 className="text-center">Crea il tuo Account</h2>
+                <Form onSubmit={handleSubmit} noValidate>
+                    {/* Campi con validazione specifica di Bootstrap */}
+                    <Form.Group className="mb-3">
+                        <Form.Label>Nome</Form.Label>
+                        <Form.Control type="text" name="name" value={formData.name} onChange={handleChange} isInvalid={!!errors.name} required />
+                        <Form.Control.Feedback type="invalid">{errors.name}</Form.Control.Feedback>
+                    </Form.Group>
 
-          <Button 
-            variant="primary" 
-            type="submit" 
-            className="w-100 mb-3"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Registrazione in corso...' : 'Registrati'}
-          </Button>
-          
-          <div className="text-center">
-            <p className="mb-0">
-              Hai già un account? <Link to="/login">Accedi</Link>
-            </p>
-          </div>
-        </Form>
-      </div>
-    </div>
-  );
+                    <Form.Group className="mb-3">
+                        <Form.Label>Cognome</Form.Label>
+                        <Form.Control type="text" name="surname" value={formData.surname} onChange={handleChange} isInvalid={!!errors.surname} required />
+                        <Form.Control.Feedback type="invalid">{errors.surname}</Form.Control.Feedback>
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                        <Form.Label>Email</Form.Label>
+                        <Form.Control type="email" name="email" value={formData.email} onChange={handleChange} isInvalid={!!errors.email} required />
+                        <Form.Control.Feedback type="invalid">{errors.email}</Form.Control.Feedback>
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                        <Form.Label>Password</Form.Label>
+                        <InputGroup hasValidation>
+                            <Form.Control type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} isInvalid={!!errors.password} required />
+                            <InputGroup.Text onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer' }}>{showPassword ? <FaEyeSlash /> : <FaEye />}</InputGroup.Text>
+                            <Form.Control.Feedback type="invalid">{errors.password}</Form.Control.Feedback>
+                        </InputGroup>
+                    </Form.Group>
+                    
+                    <div className="password-requirements">
+                        <ul>
+                            <li>Almeno 8 caratteri</li>
+                            <li>Una maiuscola, una minuscola, un numero e un carattere speciale (@$!%*?&)</li>
+                        </ul>
+                    </div>
+
+                    <Form.Group className="mb-4">
+                        <Form.Label>Conferma Password</Form.Label>
+                        <InputGroup hasValidation>
+                            <Form.Control type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} isInvalid={!!errors.confirmPassword} required />
+                            <InputGroup.Text onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ cursor: 'pointer' }}>{showConfirmPassword ? <FaEyeSlash /> : <FaEye />}</InputGroup.Text>
+                            <Form.Control.Feedback type="invalid">{errors.confirmPassword}</Form.Control.Feedback>
+                        </InputGroup>
+                    </Form.Group>
+
+                    <Button variant="primary" type="submit" className="w-100 mb-3" disabled={isLoading}>
+                        {isLoading ? 'Registrazione...' : 'Registrati'}
+                    </Button>
+                    
+                    <div className="text-center"><p className="mb-0">Hai già un account? <Link to="/login">Accedi</Link></p></div>
+                </Form>
+            </div>
+        </div>
+    );
 };
 
 export default RegisterPage;

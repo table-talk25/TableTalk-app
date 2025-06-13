@@ -56,18 +56,14 @@ exports.loginValidation = [
  * @route   POST /api/auth/register
  * @access  Public
  */
-exports.register = async (req, res) => {
-  try {
+exports.register = asyncHandler(async (req, res, next) => {
     // Verifica risultati validazione
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
+    return next(new ErrorResponse('Dati di registrazione non validi', 400, errors.array()));
     }
 
-    const { email, password, name, surname, } = req.body;
+  const { email, password, name, surname } = req.body;
 
     // Verifica se l'utente esiste già
     let user = await User.findOne({ 
@@ -77,10 +73,7 @@ exports.register = async (req, res) => {
     });
     
     if (user) {
-      return res.status(400).json({
-        success: false,
-        message: 'Un utente con questa email esiste già' 
-      });
+    return next(new ErrorResponse('Un utente con questa email esiste già', 400));
     }
 
     // Hash della password
@@ -117,30 +110,18 @@ exports.register = async (req, res) => {
         surname: newUser.surname
             }
     });
-
-  } catch (error) {
-    console.error('Errore durante la registrazione:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Errore del server durante la registrazione' 
-    });
-  }
-};
+});
 
 /**
  * @desc    Autentica un utente
  * @route   POST /api/auth/login
  * @access  Public
  */
-exports.login = async (req, res) => {
-  try {
+exports.login = asyncHandler(async (req, res, next) => {
     // Verifica risultati validazione
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
+    return next(new ErrorResponse('Dati di login non validi', 400, errors.array()));
     }
 
     const { email, password } = req.body;
@@ -148,28 +129,19 @@ exports.login = async (req, res) => {
     // Verifica se l'utente esiste
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Credenziali non valide'
-      });
+    return next(new ErrorResponse('Credenziali non valide', 401));
     }
 
     // Verifica se l'account è bloccato
     if (user.isLocked()) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account bloccato. Riprova più tardi.'
-      });
+    return next(new ErrorResponse('Account bloccato. Riprova più tardi.', 401));
     }
 
     // Verifica password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       await user.incrementLoginAttempts();
-      return res.status(401).json({
-        success: false,
-        message: 'Credenziali non valide'
-      });
+    return next(new ErrorResponse('Credenziali non valide', 401));
     }
 
     // Reset tentativi di login
@@ -191,23 +163,19 @@ exports.login = async (req, res) => {
         role: user.role
       }
     });
-  } catch (error) {
-    console.error('Errore durante il login:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Errore del server durante il login'
     });
-  }
-};
 
 /**
  * @desc    Ottiene le informazioni dell'utente loggato
  * @route   GET /api/auth/me
  * @access  Private
  */
-exports.getMe = async (req, res) => {
-  try {
+exports.getMe = asyncHandler(async (req, res, next) => {
     const user = await User.findById(req.user.id);
+  if (!user) {
+    return next(new ErrorResponse('Utente non trovato', 404));
+  }
+
     res.json({
       success: true,
       user: {
@@ -219,11 +187,7 @@ exports.getMe = async (req, res) => {
         profileCompleted: user.profileCompleted
       }
     });
-  } catch (error) {
-    console.error('Errore durante il recupero del profilo:', error);
-    res.status(500).json({ message: 'Errore del server' });
-  }
-};
+});
 
 /**
  * @desc    Logout - Cancella il cookie con il token
@@ -239,13 +203,12 @@ exports.logout = (req, res) => {
  * @route   POST /api/auth/forgot-password
  * @access  Public
  */
-exports.forgotPassword = async (req, res) => {
-  try {
+exports.forgotPassword = asyncHandler(async (req, res, next) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(404).json({ message: 'Utente non trovato' });
+    return next(new ErrorResponse('Credenziali non valide', 404));
     }
 
     // Genera token di reset
@@ -261,19 +224,14 @@ exports.forgotPassword = async (req, res) => {
     });
 
     res.json({ success: true, message: 'Email di reset inviata' });
-  } catch (error) {
-    console.error('Errore durante il recupero password:', error);
-    res.status(500).json({ message: 'Errore del server' });
-  }
-};
+});
 
 /**
  * @desc    Reset della password
  * @route   POST /api/auth/reset-password/:token
  * @access  Public
  */
-exports.resetPassword = async (req, res) => {
-  try {
+exports.resetPassword = asyncHandler(async (req, res, next) => {
     const { token } = req.params;
     const { password } = req.body;
 
@@ -283,7 +241,7 @@ exports.resetPassword = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ message: 'Token non valido o scaduto' });
+    return next(new ErrorResponse('Token non valido o scaduto', 400));
     }
 
     // Aggiorna password
@@ -293,26 +251,21 @@ exports.resetPassword = async (req, res) => {
     await user.save();
 
     res.json({ success: true, message: 'Password resettata con successo' });
-  } catch (error) {
-    console.error('Errore durante il reset della password:', error);
-    res.status(500).json({ message: 'Errore del server' });
-  }
-};
+});
 
 /**
  * @desc    Aggiorna password
  * @route   PUT /api/auth/update-password
  * @access  Private
  */
-exports.updatePassword = async (req, res) => {
-  try {
+exports.updatePassword = asyncHandler(async (req, res, next) => {
     const { currentPassword, newPassword } = req.body;
     const user = await User.findById(req.user.id).select('+password');
 
     // Verifica password attuale
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Password attuale non valida' });
+    return next(new ErrorResponse('Password attuale non valida', 401));
     }
 
     // Aggiorna password
@@ -320,52 +273,6 @@ exports.updatePassword = async (req, res) => {
     await user.save();
 
     res.json({ success: true, message: 'Password aggiornata con successo' });
-  } catch (error) {
-    console.error('Errore durante l\'aggiornamento della password:', error);
-    res.status(500).json({ message: 'Errore del server' });
-  }
-};
-
-/**
- * @desc    Aggiorna il profilo base dell'utente 
- * @route   PUT /api/auth/update-profile
- * @access  Private
- */
-exports.updateProfile = asyncHandler(async (req, res, next) => {
-  const updates = req.body; // Prendi tutti gli aggiornamenti inviati
-
-  const validUpdateKeys = Object.keys(updates).filter(key => updates[key] !== undefined && updates[key] !== null);
-
-  // Validazione dei campi
-  if (validUpdateKeys.length === 0) {
-    return next(new ErrorResponse('Nessun dato fornito per l\'aggiornamento', 400));
-  }
-
-  // Trova l'utente e aggiorna i campi
-  const user = await User.findById(req.user.id);
-  if (!user) {
-    return next(new ErrorResponse('Utente non trovato', 404));
-  }
-
-  try {
-    // Chiama il metodo del modello User che sa come gestire tutti gli aggiornamenti
-    const updatedUser = await user.updateProfile(updates);
-
-    res.status(200).json({
-      success: true,
-      message: 'Profilo aggiornato con successo',
-      user: updatedUser // Restituisci l'utente aggiornato completo (il metodo toJSON lo pulirà)
-    });
-  } catch (error) {
-    // Se user.updateProfile (e quindi user.save()) lancia un errore (es. validazione Mongoose)
-    console.error('Errore durante user.updateProfile o user.save():', error);
-    if (error.name === 'ValidationError') {
-      // Estrai messaggi di validazione più specifici se vuoi
-      const messages = Object.values(error.errors).map(val => val.message);
-      return next(new ErrorResponse(`Errore di validazione: ${messages.join(', ')}`, 400));
-    }
-    return next(new ErrorResponse('Errore durante l\'aggiornamento del profilo nel server.', 500));
-  }
 });
 
 /**
@@ -373,23 +280,22 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
  * @route   DELETE /api/auth/delete-account
  * @access  Private
  */
-exports.deleteAccount = async (req, res) => {
-  try {
-    await User.findByIdAndDelete(req.user.id);
-    res.json({ success: true, message: 'Account eliminato con successo' });
-  } catch (error) {
-    console.error('Errore durante l\'eliminazione dell\'account:', error);
-    res.status(500).json({ message: 'Errore del server' });
+exports.deleteAccount = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return next(new ErrorResponse('Utente non trovato', 404));
   }
-};
+
+  await User.deleteOne({ _id: req.user.id });
+  res.json({ success: true, message: 'Account eliminato con successo' });
+});
 
 /**
  * @desc    Verifica email
  * @route   POST /api/auth/verify-email/:token
  * @access  Public
  */
-exports.verifyEmail = async (req, res) => {
-  try {
+exports.verifyEmail = asyncHandler(async (req, res, next) => {
     const { token } = req.params;
 
     const user = await User.findOne({
@@ -398,7 +304,7 @@ exports.verifyEmail = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ message: 'Token non valido o scaduto' });
+    return next(new ErrorResponse('Token non valido o scaduto', 400));
     }
 
     // Verifica email
@@ -408,28 +314,23 @@ exports.verifyEmail = async (req, res) => {
     await user.save();
 
     res.json({ success: true, message: 'Email verificata con successo' });
-  } catch (error) {
-    console.error('Errore durante la verifica email:', error);
-    res.status(500).json({ message: 'Errore del server' });
-  }
-};
+});
 
 /**
  * @desc    Reinvio verifica email
  * @route   POST /api/auth/resend-verification
  * @access  Public
  */
-exports.resendVerification = async (req, res) => {
-  try {
+exports.resendVerification = asyncHandler(async (req, res, next) => {
     const { email } = req.body;
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(404).json({ message: 'Utente non trovato' });
+    return next(new ErrorResponse('Utente non trovato', 404));
     }
 
     if (user.isVerified) {
-      return res.status(400).json({ message: 'Email già verificata' });
+    return next(new ErrorResponse('Email già verificata', 400));
     }
 
     // Genera nuovo token
@@ -445,36 +346,67 @@ exports.resendVerification = async (req, res) => {
     });
 
     res.json({ success: true, message: 'Email di verifica reinviata' });
-  } catch (error) {
-    console.error('Errore durante il reinvio della verifica:', error);
-    res.status(500).json({ message: 'Errore del server' });
-  }
-};
+});
 
 /**
- * @desc    Aggiorna l'immagine del profilo
- * @route   PUT /api/auth/profile/image
- * @access  Private
+ * @desc    Imposta il primo amministratore del sistema
+ * @route   POST /api/auth/setup-first-admin
+ * @access  Public
  */
-exports.updateProfileImage = asyncHandler(async (req, res, next) => {
-  if (!req.file) {
-    return next(new ErrorResponse('Nessun file caricato', 400));
-  }
-
-  const user = await User.findById(req.user.id);
-  if (!user) {
-    return next(new ErrorResponse('Utente non trovato', 404));
-  }
-
-  // Aggiorna l'immagine del profilo
-  user.profileImage = req.file.filename;
-  await user.save();
-
-  res.status(200).json({
-    success: true,
-    message: 'Immagine del profilo aggiornata con successo',
-    data: {
-      profileImage: user.profileImage
+exports.setupFirstAdmin = asyncHandler(async (req, res, next) => {
+    // Verifica se esiste già un amministratore
+    const adminExists = await User.findOne({ role: 'admin' });
+    if (adminExists) {
+    return next(new ErrorResponse('Un amministratore esiste già nel sistema', 400));
     }
-  });
+
+    // Credenziali predefinite per l'amministratore
+    const adminCredentials = {
+      email: 'admin@tabletalk.com',
+      password: 'Admin123!',
+      name: 'Admin',
+      surname: 'TableTalk',
+      nickname: 'admin_tabletalk'
+    };
+
+    // Hash della password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(adminCredentials.password, salt);
+
+    // Crea il nuovo amministratore
+    const admin = new User({
+      email: adminCredentials.email,
+      password: hashedPassword,
+      name: adminCredentials.name,
+      surname: adminCredentials.surname,
+      nickname: adminCredentials.nickname,
+      role: 'admin',
+      isVerified: true,
+      profileCompleted: true
+    });
+
+    // Salva l'amministratore nel database
+    await admin.save();
+
+    // Genera token JWT
+    const token = jwt.sign(
+      { id: admin._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Risposta al client
+    res.status(201).json({
+      success: true,
+      message: 'Amministratore creato con successo',
+      token,
+      user: {
+        id: admin._id,
+        email: admin.email,
+        name: admin.name,
+        surname: admin.surname,
+        nickname: admin.nickname,
+        role: admin.role
+      }
+    });
 });

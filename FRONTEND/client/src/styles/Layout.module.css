@@ -1,0 +1,19 @@
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.mainContent {
+  display: flex;
+  flex: 1;
+  margin-top: 64px; /* altezza navbar */
+}
+
+.content {
+  flex: 1;
+  margin-left: 220px; /* larghezza sidebar */
+  padding: 2rem;
+  background: #fff;
+  min-height: calc(100vh - 64px - 80px); /* altezza navbar e footer */
+} 

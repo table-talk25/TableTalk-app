@@ -3,6 +3,7 @@ const Meal = require('../models/Meal');
 const User = require('../models/User');
 const asyncHandler = require('express-async-handler');
 const ErrorResponse = require('../utils/errorResponse');
+const { validationResult } = require('express-validator');
 
 /**
  * // @desc    Invia un messaggio in una chat di un pasto

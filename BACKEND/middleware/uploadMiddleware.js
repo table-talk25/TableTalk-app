@@ -1,76 +1,58 @@
 const multer = require('multer');
 const path = require('path');
+const ErrorResponse = require('../utils/errorResponse');
 
-// Configurazione di multer per il caricamento delle immagini
+// Configurazione storage per multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/profile-images');
+    cb(null, 'uploads/');
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, `${Date.now()}-${file.originalname}`);
   }
 });
 
+// Filtro per i file
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
+  // Estensione file
+  const ext = path.extname(file.originalname).toLowerCase();
+  
+  // Tipi di file consentiti
+  const allowedTypes = ['.jpg', '.jpeg', '.png', '.gif'];
+  
+  if (allowedTypes.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error('Solo le immagini sono permesse!'), false);
+    cb(new ErrorResponse('Tipo di file non supportato. Usa solo immagini (jpg, jpeg, png, gif)', 400), false);
   }
 };
 
+// Configurazione multer
 const upload = multer({
   storage: storage,
-  fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB max
-  }
+    fileSize: 5 * 1024 * 1024 // 5MB
+  },
+  fileFilter: fileFilter
 });
 
-// Middleware per gestire gli errori di multer
-const handleMulterError = (err, req, res, next) => {
+// Middleware per gestire gli errori di upload
+const handleUploadError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
-    // Errore di multer
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({
-        success: false,
-        message: 'Il file è troppo grande. Dimensione massima consentita: 5MB'
-      });
+      return next(new ErrorResponse('File troppo grande. Dimensione massima: 5MB', 400));
     }
-    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-      return res.status(400).json({
-        success: false,
-        message: 'Troppi file caricati. È consentito caricare un solo file alla volta'
-      });
-    }
-    return res.status(400).json({
-      success: false,
-      message: `Errore durante il caricamento del file: ${err.message}`
-    });
-  } else if (err) {
-    // Altri errori
-    return res.status(400).json({
-      success: false,
-      message: err.message || 'Errore durante il caricamento del file'
-    });
+    return next(new ErrorResponse('Errore durante l\'upload del file', 400));
   }
-  next();
-};
-
-// Middleware per verificare se è stato caricato un file
-const checkFileUpload = (req, res, next) => {
-  if (!req.file) {
-    return res.status(400).json({
-      success: false,
-      message: 'Nessun file caricato. Per favore, seleziona un\'immagine'
-    });
+  
+  if (err) {
+    return next(new ErrorResponse(err.message, 400));
   }
+  
   next();
 };
 
 module.exports = {
   upload,
-  handleMulterError,
-  checkFileUpload
+  handleUploadError
 }; 

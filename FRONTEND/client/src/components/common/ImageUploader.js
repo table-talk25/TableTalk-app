@@ -130,6 +130,7 @@ const ImageUploader = ({
           <li>Dimensioni massime: {maxWidth}x{maxHeight}px</li>
           <li>Rapporto: {aspectRatio}:1</li>
         </ul>
+        <p style={{ marginTop: '8px', fontStyle: 'italic' }}>Per un risultato migliore, usa un'immagine quadrata.</p>
       </div>
     </div>
   );

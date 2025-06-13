@@ -1,9 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaUtensils, FaUsers, FaCalendarAlt, FaLanguage, FaComments } from 'react-icons/fa';
+import { useAuth } from '../../contexts/AuthContext'; 
 import '../../styles/HomePage.css';
 
 function HomePage() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <div className="home-container">
       <section className="hero-section">
@@ -13,12 +16,25 @@ function HomePage() {
           Organizza o partecipa a pasti condivisi, impara nuove lingue e crea connessioni significative.
         </p>
         <div className="hero-buttons">
-          <Link to="/meals/create" className="btn btn-primary">
-            Crea un Pasto
-          </Link>
-          <Link to="/meals" className="btn btn-secondary">
-            Esplora i Pasti
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <Link to="/meals/create" className="btn btn-primary">
+                Crea un Pasto
+              </Link>
+              <Link to="/meals" className="btn btn-secondary">
+                Esplora i Pasti
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/register" className="btn btn-primary">
+                Registrati Ora
+              </Link>
+              <Link to="/login" className="btn btn-secondary">
+                Accedi
+              </Link>
+            </>
+          )}
         </div>
       </section>
 
@@ -75,12 +91,15 @@ function HomePage() {
           i tuoi pasti, le tue storie e le tue passioni.
         </p>
         <div className="cta-buttons">
-          <Link to="/meals/create" className="btn btn-primary">
-            Crea un Pasto
-          </Link>
-          <Link to="/register" className="btn btn-secondary">
-            Registrati
-          </Link>
+          {isAuthenticated ? (
+            <Link to="/meals/create" className="btn btn-primary">
+              Crea il Tuo Prossimo Pasto
+            </Link>
+          ) : (
+            <Link to="/register" className="btn btn-primary">
+              Iscriviti Gratuitamente
+            </Link>
+          )}
         </div>
       </section>
     </div>

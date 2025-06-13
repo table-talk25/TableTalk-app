@@ -9,7 +9,7 @@ const ErrorResponse = require('../utils/errorResponse');
 // Configurazione di multer per il caricamento delle immagini
 const storage = multer.diskStorage({
   destination: function(req, file, cb) {
-    cb(null, 'uploads/profiles/');
+    cb(null, 'uploads/profile-images/');
   },
   filename: function(req, file, cb) {
     cb(null, `user-${req.user.id}-${Date.now()}${path.extname(file.originalname)}`);
@@ -38,59 +38,6 @@ const upload = multer({
  */
 exports.getMe = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user.id);
-  res.status(200).json({
-    success: true,
-    data: user
-  });
-});
-
-/**
- * @desc    Aggiorna i dettagli del profilo utente
- * @route   PUT /api/users/profile
- * @access  Private
- */
-exports.updateProfile = asyncHandler(async (req, res, next) => {
-  const { nickname, gender, age, interests, languages, bio } = req.body;
-
-  // Verifica che il nickname sia presente
-  if (!nickname) {
-    return next(new ErrorResponse('Il nickname è obbligatorio per completare il profilo', 400));
-  }
-
-  // Verifica che il nickname non sia già in uso
-  const existingUser = await User.findOne({ 
-    nickname, 
-    _id: { $ne: req.user.id } 
-  });
-
-  if (existingUser) {
-    return next(new ErrorResponse('Questo nickname è già in uso', 400));
-  }
-
-  const fieldsToUpdate = {
-    nickname,
-    gender,
-    age,
-    interests,
-    languages,
-    bio,
-    profileCompleted: true
-  };
-
-  // Rimuovi campi undefined
-  Object.keys(fieldsToUpdate).forEach(key => 
-    fieldsToUpdate[key] === undefined && delete fieldsToUpdate[key]
-  );
-
-  const user = await User.findByIdAndUpdate(
-    req.user.id,
-    fieldsToUpdate,
-    {
-      new: true,
-      runValidators: true
-    }
-  );
-
   res.status(200).json({
     success: true,
     data: user
@@ -146,40 +93,75 @@ exports.uploadProfileImage = (req, res, next) => {
 };
 
 /**
- * @desc    Ottieni tutti gli utenti (solo admin)
+ * @desc    Ottieni tutti gli utenti
  * @route   GET /api/users
  * @access  Private/Admin
  */
-exports.getUsers = asyncHandler(async (req, res, next) => {
-  if (req.user.role !== 'admin') {
-    return next(new ErrorResponse('Non autorizzato ad accedere a questa risorsa', 403));
-  }
+exports.getUsers = async (req, res, next) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      role,
+      status,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
 
-  const users = await User.find();
-  res.status(200).json({
-    success: true,
-    count: users.length,
-    data: users
-  });
-});
+    // Costruisci la query
+    const query = {};
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (role) query.role = role;
+    if (status) query.status = status;
+
+    // Esegui la query con paginazione
+    const users = await User.find(query)
+      .select('-password')
+      .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    // Conta il totale degli utenti
+    const count = await User.countDocuments(query);
+
+    res.json({
+      users,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      totalUsers: count
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Errore del server');
+  }
+};
 
 /**
- * @desc    Ottieni un utente specifico tramite ID
+ * @desc    Ottieni un utente specifico
  * @route   GET /api/users/:id
  * @access  Private
  */
-exports.getUserById = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.params.id).select('-email -role');
-
+exports.getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
   if (!user) {
-    return next(new ErrorResponse(`Utente non trovato con id ${req.params.id}`, 404));
+      return res.status(404).json({ msg: 'Utente non trovato' });
+    }
+    res.json(user);
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ msg: 'Utente non trovato' });
   }
-
-  res.status(200).json({
-    success: true,
-    data: user
-  });
-});
+    res.status(500).send('Errore del server');
+  }
+};
 
 /**
  * @desc    Cambia la password dell'utente
@@ -209,15 +191,127 @@ exports.searchUsers = asyncHandler(async (req, res, next) => {
   res.status(200).json({ success: true, message: 'Ricerca utenti non ancora implementata.' });
 });
 
-// Placeholder per blocco utente
-exports.blockUser = asyncHandler(async (req, res, next) => {
-  res.status(200).json({ success: true, message: 'Blocco utente non ancora implementato.' });
-});
+/**
+ * @desc    Blocca un utente
+ * @route   POST /api/users/:id/block
+ * @access  Private
+ */
+exports.blockUser = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        status: 'blocked',
+        blockedAt: Date.now(),
+        blockReason: reason
+      },
+      { new: true }
+    ).select('-password');
 
-// Placeholder per sblocco utente
-exports.unblockUser = asyncHandler(async (req, res, next) => {
-  res.status(200).json({ success: true, message: 'Sblocco utente non ancora implementato.' });
-});
+    if (!user) {
+      return res.status(404).json({ msg: 'Utente non trovato' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ msg: 'Utente non trovato' });
+    }
+    res.status(500).send('Errore del server');
+  }
+};
+
+/**
+ * @desc    Sblocca un utente
+ * @route   DELETE /api/users/:id/block
+ * @access  Private
+ */
+exports.unblockUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        status: 'active',
+        $unset: { blockedAt: 1, blockReason: 1 }
+      },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ msg: 'Utente non trovato' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ msg: 'Utente non trovato' });
+    }
+    res.status(500).send('Errore del server');
+  }
+};
+
+/**
+ * @desc    Cambia il ruolo di un utente
+ * @route   PUT /api/users/:id/role
+ * @access  Private/Admin
+ */
+exports.changeUserRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { role },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ msg: 'Utente non trovato' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ msg: 'Utente non trovato' });
+    }
+    res.status(500).send('Errore del server');
+  }
+};
+
+/**
+ * @desc    Cambia lo stato di un utente
+ * @route   PUT /api/users/:id/status
+ * @access  Private/Admin
+ */
+exports.changeUserStatus = async (req, res) => {
+  try {
+    const { status, reason } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        status,
+        statusReason: reason,
+        statusChangedAt: Date.now()
+      },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ msg: 'Utente non trovato' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ msg: 'Utente non trovato' });
+    }
+    res.status(500).send('Errore del server');
+  }
+};
 
 // Placeholder per ottenere la lista degli utenti bloccati
 exports.getBlockedUsers = asyncHandler(async (req, res, next) => {

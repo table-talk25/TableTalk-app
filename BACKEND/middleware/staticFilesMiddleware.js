@@ -5,26 +5,6 @@ const fs = require('fs').promises;
 // Configurazione per servire i file statici
 const staticOptions = {
   maxAge: '1d', // Cache per 1 giorno
-  setHeaders: (res, filePath) => {
-    // Imposta header di sicurezza
-    res.set('X-Content-Type-Options', 'nosniff');
-    res.set('X-Frame-Options', 'DENY');
-    res.set('X-XSS-Protection', '1; mode=block');
-    
-    // Imposta il Content-Type corretto per le immagini
-    const ext = path.extname(filePath).toLowerCase();
-    const mimeTypes = {
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.gif': 'image/gif',
-      '.webp': 'image/webp'
-    };
-    
-    if (mimeTypes[ext]) {
-      res.set('Content-Type', mimeTypes[ext]);
-    }
-  }
 };
 
 // Middleware per verificare l'esistenza della cartella uploads
