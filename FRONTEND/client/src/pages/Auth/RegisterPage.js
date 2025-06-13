@@ -84,6 +84,7 @@ const RegisterPage = () => {
                 surname: formData.surname,
                 email: formData.email,
                 password: formData.password,
+                confirmPassword: formData.confirmPassword 
             });
             toast.success('Registrazione avvenuta con successo!');
             navigate('/profile', { state: { message: 'Benvenuto/a! Completa il tuo profilo.' } });
