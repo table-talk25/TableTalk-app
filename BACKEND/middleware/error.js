@@ -1,50 +1,46 @@
-// File: BACKEND/middleware/error.js (Versione Finale e Corretta)
+// File: BACKEND/middleware/error.js (Versione Finale con Gestione Duplicati)
 
 const ErrorResponse = require('../utils/errorResponse');
 
 const errorHandler = (err, req, res, next) => {
-  // Creiamo una copia dell'errore su cui lavorare
   let error = { ...err };
   error.message = err.message;
 
-  // Log per noi sviluppatori
   if (process.env.NODE_ENV === 'development') {
     console.log('--- GESTORE ERRORI ATTIVATO ---');
     console.error(err);
   }
 
-  // === GESTIONE ERRORI SPECIFICI ===
+  // --- GESTIONE ERRORI SPECIFICI ---
 
-  // 1. Errore di ID non valido (CastError di Mongoose)
+  // Errore Mongoose - ID non valido (es. /api/meals/123)
   if (err.name === 'CastError') {
-    const message = `La risorsa richiesta non è valida.`;
-    error = new ErrorResponse(message, 404);
+    error.message = `La risorsa richiesta non è valida.`;
+    error.statusCode = 404;
   }
 
-  // 2. Errore di campo duplicato (es. email già esistente)
+  // --- LA NUOVA REGOLA FONDAMENTALE ---
+  // Errore di campo duplicato (es. email o nickname già esistente)
   if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
-    const message = `Un utente con questo ${field} esiste già. Per favore, usane un altro.`;
-    error = new ErrorResponse(message, 400);
+    // Prende il nome del campo che ha causato l'errore (es. 'email')
+    const field = Object.keys(err.keyValue)[0]; 
+    const message = `Un account con questo ${field} esiste già. Prova ad accedere.`;
+    error = new ErrorResponse(message, 400); // Crea un errore 400 con il messaggio specifico
   }
 
-  // 3. Errore di validazione di Mongoose (es. campo 'required' mancante)
-  if (err.name === 'ValidationError') {
-    const messages = Object.values(err.errors).map(val => val.message);
-    const details = Object.values(err.errors).map(val => ({ path: val.path, msg: val.message }));
-    error = new ErrorResponse(messages.join('. '), 400, details);
+  // Errore di validazione (es. campo 'required' mancante o password non valida)
+  if (err.name === 'ValidationError' || (err.details && err.details.length > 0)) {
+    // Unisce i messaggi di errore specifici dei campi
+    const messages = err.details ? err.details.map(e => e.msg) : Object.values(err.errors).map(e => e.message);
+    error.message = messages.join(', ');
+    error.statusCode = 400;
   }
 
-
-  // === RISPOSTA FINALE AL FRONTEND ===
-
-  // Prepariamo la risposta JSON.
-  // Se l'errore originale (err) aveva una lista di 'details' (dal nostro ErrorResponse),
-  // ci assicuriamo di includerla nella risposta finale.
+  // Risposta finale standardizzata al frontend
   res.status(error.statusCode || 500).json({
     success: false,
     message: error.message || 'Errore Interno del Server',
-    errors: err.details || [], // Usiamo err.details per preservare l'array originale
+    errors: err.details || [],
   });
 };
 
