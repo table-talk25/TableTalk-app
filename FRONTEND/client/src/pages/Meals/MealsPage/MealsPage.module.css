@@ -1,0 +1,87 @@
+/* File: src/pages/Meals/MealsPage/MealsPage.module.css (Versione con Allineamento Corretto) */
+
+.page {
+  width: 100%;
+}
+
+.header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+  background: white;
+  position: sticky;
+  top: var(--navbar-height, 80px);
+  z-index: 990;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  border: 1px solid #e9ecef;
+}
+.searchIcon { margin-right: 1rem; color: #777; }
+.searchBar input { border: none; outline: none; width: 100%; font-size: 1rem; background: transparent; }
+
+.contentContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.mainHeader {
+  display: flex;
+  flex-wrap: wrap; /* Permette al pulsante di andare a capo su mobile */
+  justify-content: space-between; /* Titolo a sx, pulsante a dx */
+  align-items: center; /* Allineamento verticale */
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.contentTitle { 
+  font-size: 1.8rem; 
+  font-weight: 600; 
+  margin: 0; 
+}
+
+.createButton {
+  background: var(--primary-color);
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.createButton:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.resultsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.carouselSection { margin-bottom: 3rem; }
+.sectionTitle { font-size: 1.6rem; font-weight: 600; color: #3c3c3c; margin-bottom: 1rem; }
+.carousel { display: flex; overflow-x: auto; gap: 1.5rem; padding: 1rem 0.25rem; scrollbar-width: none; -ms-overflow-style: none; }
+.carousel::-webkit-scrollbar { display: none; }
+.carouselItem { flex: 0 0 300px; }
+
+/* Media Queries per Mobile */
+@media (max-width: 768px) {
+  .header { padding: 1rem; }
+  .contentContainer { padding: 1.5rem 1rem; }
+  .mainHeader { justify-content: center; text-align: center; } /* Su mobile, tutto centrato */
+  .contentTitle { width: 100%; margin-bottom: 1rem; } /* Il titolo occupa tutta la larghezza */
+  .carouselItem { flex: 0 0 260px; }
+}

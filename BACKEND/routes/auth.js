@@ -1,94 +1,48 @@
+// File: BACKEND/routes/auth.js (Versione Finale e Corretta)
+
 const express = require('express');
 const router = express.Router();
+const { check } = require('express-validator'); 
+const rateLimit = require('express-rate-limit'); // <-- IMPORT NECESSARIO
 const authController = require('../controllers/authController');
-const { check } = require('express-validator');
-const rateLimit = require('express-rate-limit');
+const { protect } = require('../middleware/auth');
 
-// Configurazione rate limiter per prevenire abusi
+const { 
+  registerValidation, 
+  loginValidation, 
+  forgotPasswordValidation, 
+  resetPasswordValidation 
+} = require('../middleware/validators/authValidator');
+
+// Configurazione rate limiter
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minuti
-  max: 5, // 5 tentativi
-  message: 'Troppi tentativi di login. Riprova tra 15 minuti.'
+  windowMs: 15 * 60 * 1000,
+  max: 10, 
+  message: 'Troppi tentativi di login. Riprova tra 10 minuti.'
 });
 
 const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 ora
-  max: 3, // 3 registrazioni all'ora
+  windowMs: 60 * 60 * 1000,
+  max: 5, 
   message: 'Troppe registrazioni. Riprova tra un\'ora.'
 });
 
-/**
- * @route   POST /api/auth/register
- * @desc    Registra un nuovo utente
- * @access  Public
- */
-router.post('/register', [
-  registerLimiter,
-  check('name', 'Nome obbligatorio').not().isEmpty(),
-  check('email', 'Email non valida').isEmail(),
-  check('password', 'Password obbligatoria')
-    .isLength({ min: 8 })
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
-    .withMessage('La password deve contenere almeno 8 caratteri, una lettera maiuscola, una minuscola, un numero e un carattere speciale'),
-  check('confirmPassword', 'Le password non coincidono')
-    .custom((value, { req }) => value === req.body.password)
-], authController.register);
+// --- DEFINIZIONE DELLE ROTTE ---
 
-/**
- * @route   POST /api/auth/login
- * @desc    Login utente
- * @access  Public
- */
-router.post('/login', [
-  loginLimiter,
-  check('email', 'Email non valida').isEmail(),
-  check('password', 'Password obbligatoria').exists()
-], authController.login);
+router.post('/register', registerLimiter, registerValidation, authController.register);
 
-/**
- * @route   POST /api/auth/logout
- * @desc    Logout utente
- * @access  Private
- */
+router.post('/login', loginLimiter, loginValidation, authController.login);
+
 router.post('/logout', authController.logout);
 
-/**
- * @route   POST /api/auth/forgot-password
- * @desc    Richiedi reset password
- * @access  Public
- */
-router.post('/forgot-password', [
-  check('email', 'Email non valida').isEmail()
-], authController.forgotPassword);
+router.get('/me', protect, authController.getMe);
 
-/**
- * @route   POST /api/auth/reset-password/:token
- * @desc    Reset password
- * @access  Public
- */
-router.post('/reset-password/:token', [
-  check('password', 'Password obbligatoria')
-    .isLength({ min: 8 })
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
-    .withMessage('La password deve contenere almeno 8 caratteri, una lettera maiuscola, una minuscola, un numero e un carattere speciale'),
-  check('confirmPassword', 'Le password non coincidono')
-    .custom((value, { req }) => value === req.body.password)
-], authController.resetPassword);
+router.post('/forgot-password', forgotPasswordValidation, authController.forgotPassword);
 
-/**
- * @route   POST /api/auth/verify-email/:token
- * @desc    Verifica email
- * @access  Public
- */
+router.post('/reset-password/:token', resetPasswordValidation, authController.resetPassword);
+
 router.post('/verify-email/:token', authController.verifyEmail);
 
-/**
- * @route   POST /api/auth/resend-verification
- * @desc    Reinvia email di verifica
- * @access  Public
- */
-router.post('/resend-verification', [
-  check('email', 'Email non valida').isEmail()
-], authController.resendVerification);
+router.post('/resend-verification', [check('email', 'Email non valida').isEmail()], authController.resendVerification);
 
 module.exports = router;

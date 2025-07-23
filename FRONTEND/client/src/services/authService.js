@@ -1,78 +1,66 @@
-import axiosInstance from '../config/axiosConfig';
+// File: /services/authService.js (Versione Definitiva)
 
-// Funzione helper per aggiornare i dati utente nel localStorage
-const updateLocalUserData = (userData) => {
-  if (userData) {
-    localStorage.setItem('user', JSON.stringify(userData));
-  }
+import apiClient from './apiService';
+import { authPreferences } from '../utils/preferences';
+
+// NOTA: Ogni funzione accetta un singolo oggetto 'data' per coerenza
+
+/**
+ * Registra un nuovo utente.
+ * @param {object} registrationData - Oggetto con { name, surname, email, password }
+ */
+export const register = async (registrationData) => {
+  // Percorso corretto: /auth/register
+  const response = await apiClient.post('/auth/register', registrationData);
+  await authPreferences.saveToken(response.data.token);
+  await authPreferences.saveUser(response.data.user);
+  return response.data;
 };
 
-// --- Funzioni del Servizio di Autenticazione ---
-
-export const register = async (userData) => {
-  try {
-    const response = await axiosInstance.post('/auth/register', userData);
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
-      updateLocalUserData(response.data.user);
-    }
-    return response.data;
-  } catch (error) {
-    // Rilanciamo l'errore che è già stato formattato dal nostro interceptor
-    throw error;
-  }
+/**
+ * Esegue il login di un utente.
+ * @param {object} credentials - Oggetto con { email, password }
+ */
+export const login = async (credentials) => {
+  // Percorso corretto: /auth/login
+  const response = await apiClient.post('/auth/login', credentials);
+  await authPreferences.saveToken(response.data.token);
+  await authPreferences.saveUser(response.data.user);
+  return response.data;
 };
 
-export const login = async (email, password) => {
-  try {
-    // Niente più controlli di salute o try/catch complessi.
-    // Ci fidiamo del nostro interceptor.
-    const response = await axiosInstance.post('/auth/login', { email, password });
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
-      updateLocalUserData(response.data.user);
-    }
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
+/**
+ * Esegue il logout.
+ */
 export const logout = async () => {
   try {
-    // Notifichiamo il backend, ma la pulizia del frontend avviene sempre
-    await axiosInstance.post('/auth/logout');
+    await apiClient.post('/auth/logout');
   } catch (error) {
     console.error('Logout fallito sul server, ma il logout locale verrà eseguito:', error);
   } finally {
-    // La pulizia avviene qui, nel client, come fonte di verità
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    await authPreferences.clearAuth();
   }
 };
 
+/**
+ * Verifica il token e recupera i dati dell'utente.
+ */
 export const verifyToken = async () => {
-  try {
-    const response = await axiosInstance.get('/profile/me'); // Abbiamo già questa rotta per verificare l'utente
-    if (response.data.data) {
-      updateLocalUserData(response.data.data);
-    }
+    // Il token viene già aggiunto dall'interceptor di apiService,
+    // quindi non dobbiamo passarlo noi.
+    
+    // Percorso corretto: /auth/me
+    const response = await apiClient.get('/auth/me');
+    await authPreferences.saveUser(response.data.data);
     return response.data.data;
-  } catch (error) {
-    // L'interceptor del 401 si occuperà già di pulire il token se non è valido
-    throw error;
-  }
 };
 
-// ... qui potresti aggiungere altre funzioni come requestPasswordReset, etc.
-// sempre con la stessa struttura semplice: un try/catch che chiama axiosInstance.
 
 const authService = {
   register,
   login,
   logout,
   verifyToken,
-  // ...
 };
 
 export default authService;

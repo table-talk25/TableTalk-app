@@ -1,36 +1,105 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const { protect, admin } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const { check } = require('express-validator');
 const { upload, handleUploadError } = require('../middleware/upload');
+// const { updateUserLocationFromCoords } = require('../controllers/userController');
 
 /**
  * @route   GET /api/users
- * @desc    Ottieni tutti gli utenti (solo admin)
+ * @desc    Get all users (admin only)
  * @access  Private/Admin
  */
 router.get('/', [
   protect,
-  admin,
-  check('page', 'Numero pagina non valido').optional().isInt({ min: 1 }),
-  check('limit', 'Limite non valido').optional().isInt({ min: 1, max: 50 }),
-  check('search', 'Termine di ricerca non valido').optional().isString().isLength({ max: 100 }),
-  check('role', 'Ruolo non valido').optional().isIn(['user', 'admin']),
-  check('status', 'Stato non valido').optional().isIn(['active', 'blocked', 'inactive']),
-  check('sortBy', 'Campo di ordinamento non valido').optional().isIn(['name', 'email', 'createdAt', 'lastLogin']),
-  check('sortOrder', 'Ordine non valido').optional().isIn(['asc', 'desc'])
+  authorize('admin'),
+  check('page', 'Page number must be a positive integer').optional().isInt({ min: 1 }),
+  check('limit', 'Limit must be a positive integer').optional().isInt({ min: 1 })
 ], userController.getUsers);
 
 /**
- * @route   GET /api/users/me
- * @desc    Ottieni il profilo dell'utente corrente
+ * @route   GET /api/users/nearby
+ * @desc    Get nearby users
  * @access  Private
  */
-router.get('/me', protect, userController.getMe);
+router.get('/nearby', protect, userController.getNearbyUsers);
+
+/**
+ * @route   GET /api/users/:id
+ * @desc    Get user by ID
+ * @access  Private
+ */
+router.get('/:id', [
+  protect,
+  check('id', 'ID utente non valido').isMongoId()
+], userController.getUserById);
 
 
+/**
+ * @route   PUT /api/users/me/location
+ * @desc    Update current user's location
+ * @access  Private
+ */
+router.put('/me/location', [
+  protect,
+  check('latitude', 'La latitudine è obbligatoria').isFloat(),
+  check('longitude', 'La longitudine è obbligatoria').isFloat()
+], userController.updateUserLocation);
 
+/**
+ * @route   DELETE /api/users/me/location
+ * @desc    Remove current user's location (when app closes)
+ * @access  Private
+ */
+router.delete('/me/location', protect, userController.removeUserLocation);
+
+/**
+ * @route   POST /api/users/:id/block
+ * @desc    Block a user
+ * @access  Private/Admin
+ */
+router.post('/:id/block', [
+  protect,
+  authorize('admin'),
+  check('id', 'ID utente non valido').isMongoId()
+], userController.blockUser);
+
+
+/**
+ * @route   DELETE /api/users/:id/block
+ * @desc    Unblock a user
+ * @access  Private/Admin
+ */
+router.delete('/:id/block', [
+  protect,
+  authorize('admin'),
+  check('id', 'ID utente non valido').isMongoId()
+], userController.unblockUser);
+
+/**
+ * @route   PUT /api/users/:id/role
+ * @desc    Update user role
+ * @access  Private/Admin
+ */
+router.put('/:id/role', [
+  protect,
+  authorize('admin'),
+  check('id', 'ID utente non valido').isMongoId(),
+  check('role', 'Ruolo non valido').isIn(['user', 'admin', 'moderator'])
+], userController.changeUserRole);
+
+/**
+ * @route   PUT /api/users/:id/status
+ * @desc    Update user status
+ * @access  Private/Admin
+ */
+router.put('/:id/status', [
+  protect,
+  authorize('admin'),
+  check('id', 'ID utente non valido').isMongoId(),
+  check('status', 'Stato non valido').isIn(['active', 'suspended', 'banned'])
+], userController.changeUserStatus);
 /**
  * @route   PUT /api/users/me/password
  * @desc    Aggiorna la password dell'utente corrente
@@ -45,16 +114,6 @@ router.put('/me/password', [
     .withMessage('La password deve contenere almeno 8 caratteri, una lettera maiuscola, una minuscola, un numero e un carattere speciale')
 ], userController.changePassword);
 
-/**
- * @route   PUT /api/users/me/avatar
- * @desc    Aggiorna l'avatar dell'utente corrente
- * @access  Private
- */
-router.put('/me/avatar', [
-  protect,
-  upload.single('avatar'),
-  handleUploadError
-], userController.uploadProfileImage);
 
 /**
  * @route   DELETE /api/users/me
@@ -67,59 +126,10 @@ router.delete('/me', [
 ], userController.deleteAccount);
 
 /**
- * @route   GET /api/users/:id
- * @desc    Ottieni il profilo di un utente
+ * @route   PUT /api/users/me/location-from-coords
+ * @desc    Update user's location address from coordinates
  * @access  Private
  */
-router.get('/:id', [
-  protect,
-  check('id', 'ID utente non valido').isMongoId()
-], userController.getUserById);
-
-/**
- * @route   POST /api/users/:id/block
- * @desc    Blocca un utente
- * @access  Private
- */
-router.post('/:id/block', [
-  protect,
-  check('id', 'ID utente non valido').isMongoId(),
-  check('reason', 'Motivo del blocco obbligatorio').not().isEmpty()
-], userController.blockUser);
-
-/**
- * @route   DELETE /api/users/:id/block
- * @desc    Sblocca un utente
- * @access  Private
- */
-router.delete('/:id/block', [
-  protect,
-  check('id', 'ID utente non valido').isMongoId()
-], userController.unblockUser);
-
-/**
- * @route   PUT /api/users/:id/role
- * @desc    Cambia il ruolo di un utente (solo admin)
- * @access  Private/Admin
- */
-router.put('/:id/role', [
-  protect,
-  admin,
-  check('id', 'ID utente non valido').isMongoId(),
-  check('role', 'Ruolo non valido').isIn(['user', 'admin'])
-], userController.changeUserRole);
-
-/**
- * @route   PUT /api/users/:id/status
- * @desc    Cambia lo stato di un utente (solo admin)
- * @access  Private/Admin
- */
-router.put('/:id/status', [
-  protect,
-  admin,
-  check('id', 'ID utente non valido').isMongoId(),
-  check('status', 'Stato non valido').isIn(['active', 'blocked', 'inactive']),
-  check('reason', 'Motivo del cambio stato obbligatorio').not().isEmpty()
-], userController.changeUserStatus);
+// router.put('/me/location-from-coords', protect, updateUserLocationFromCoords);
 
 module.exports = router;

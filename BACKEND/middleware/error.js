@@ -1,39 +1,46 @@
-// File: BACKEND/middleware/error.js (Versione Finale)
+// File: BACKEND/middleware/error.js (Versione Finale e Corretta)
 const ErrorResponse = require('../utils/errorResponse');
 
 const errorHandler = (err, req, res, next) => {
-  let error = {
-    statusCode: err.statusCode || 500,
-    message: err.message || 'Errore Interno del Server',
-    errors: err.details || []
-  };
+  // Iniziamo con una copia dell'errore per poterlo modificare
+  let error = { ...err };
+  error.message = err.message;
 
-  if (process.env.NODE_ENV === 'development') {
-    console.error(err);
-  }
+  // Log per noi sviluppatori per vedere l'errore completo
+  console.log('--- GESTORE ERRORI ATTIVATO ---');
+  console.error(err);
 
+  // === GESTIONE ERRORI SPECIFICI ===
+
+  // Errore di ID non valido (CastError di Mongoose)
   if (err.name === 'CastError') {
-    error.message = `ID risorsa non valido.`;
-    error.statusCode = 404;
+    const message = `La risorsa richiesta non è stata trovata.`;
+    error = new ErrorResponse(message, 404);
   }
-  
+
+  // Errore di campo duplicato (es. email già esistente)
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue)[0];
-    error.message = `Un account con questo ${field} esiste già. Prova ad accedere.`;
-    error.statusCode = 400;
-    error.errors = [];
+    const message = `Un account con questo ${field} esiste già. Per favore, usane un altro.`;
+    error = new ErrorResponse(message, 400);
   }
 
+  // Errore di validazione di Mongoose (es. un campo required dello schema non rispettato)
   if (err.name === 'ValidationError') {
-    error.message = 'Uno o più campi non sono validi.';
-    error.statusCode = 400;
-    error.errors = Object.values(err.errors).map(e => ({ path: e.path, msg: e.message }));
+    const messages = Object.values(err.errors).map(val => val.message);
+    const details = Object.values(err.errors).map(val => ({ path: val.path, msg: val.message }));
+    error = new ErrorResponse(messages.join('. '), 400, details);
   }
 
-  res.status(error.statusCode).json({
+  // === RISPOSTA FINALE AL FRONTEND ===
+
+  // Prepariamo la risposta JSON.
+  // La cosa più importante è che usiamo `err.details` dall'errore ORIGINALE
+  // per assicurarci di non perdere l'array di errori di validazione.
+  res.status(error.statusCode || 500).json({
     success: false,
-    message: error.message,
-    errors: error.errors
+    message: error.message || 'Errore Interno del Server',
+    errors: err.details || [], 
   });
 };
 

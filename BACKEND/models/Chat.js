@@ -60,7 +60,6 @@ const ChatSchema = new mongoose.Schema({
   mealId: {
     type: mongoose.Schema.ObjectId,
     ref: 'Meal',
-    required: [true, 'L\'ID del pasto è obbligatorio']
   },
   participants: [{
     type: mongoose.Schema.ObjectId,
@@ -84,6 +83,10 @@ const ChatSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isClosed: {
+    type: Boolean,
+    default: false
+  },
   settings: {
     notifications: {
       type: Boolean,
@@ -102,18 +105,32 @@ const ChatSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
+// Proprietà virtuale per calcolare la data di scadenza della chat.
+// La chat scade 1 ora dopo la fine del pasto.
+ChatSchema.virtual('expirationDate').get(function() {
+  // Per funzionare, il campo 'mealId' deve essere popolato!
+  if (!this.mealId || !this.mealId.date || !this.mealId.duration) {
+    return null;
+  }
+  // Calcoliamo l'ora di fine del pasto in millisecondi
+  const mealEndTime = new Date(this.mealId.date).getTime() + (this.mealId.duration * 60000);
+  // Aggiungiamo 1 ora (3600000 millisecondi)
+  return new Date(mealEndTime + 3600000);
+});
+
+// Proprietà virtuale che ci dice se la chat è scaduta.
+ChatSchema.virtual('isExpired').get(function() {
+  if (!this.expirationDate) return false;
+  // Ritorna 'true' se l'ora attuale ha superato l'ora di scadenza
+  return new Date() > this.expirationDate;
+});
+
 // Indici per ottimizzare le query
 ChatSchema.index({ mealId: 1 });
 ChatSchema.index({ participants: 1 });
 ChatSchema.index({ updatedAt: -1 });
 ChatSchema.index({ 'messages.timestamp': -1 });
 
-// Virtual per ottenere il numero di messaggi non letti per un utente
-ChatSchema.virtual('unreadCount').get(function() {
-  return this.messages.filter(message => 
-    !message.read.includes(this.participants)
-  ).length;
-});
 
 // Middleware pre-find per popolare i riferimenti
 ChatSchema.pre(/^find/, function(next) {

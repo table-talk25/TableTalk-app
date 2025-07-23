@@ -1,140 +1,182 @@
+// File: BACKEND/models/User.js (Versione Definitiva e Completa)
+
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
-const UserSchema = new mongoose.Schema({
-  // --- Campi di Identità e Profilo ---
-  email: { type: String, required: [true, 'Email obbligatoria'], unique: true, lowercase: true, trim: true, match: [/^\S+@\S+\.\S+$/, 'Email non valida'] },
-  password: { type: String, required: [true, 'Password obbligatoria'], minlength: [8, 'La password deve essere di almeno 8 caratteri'], select: false },
-  name: { type: String, required: [true, 'Nome obbligatorio'], trim: true },
-  surname: { type: String, required: [true, 'Cognome obbligatorio'], trim: true },
-  nickname: { type: String, unique: true, trim: true, minlength: [3, 'Il nickname deve essere di almeno 3 caratteri'], maxlength: [50, 'Il nickname non può essere più lungo di 50 caratteri'] },
-  profileImage: { type: String, default: 'default-avatar.jpg' },
-  bio: { type: String, maxlength: [500, 'La bio non può essere più lunga di 500 caratteri'], trim: true },
-  gender: { type: String, enum: ['uomo', 'donna', 'altro', 'preferisco_non_dirlo'], default: 'preferisco_non_dirlo' },
-  age: { type: Number, min: [18, 'Devi avere almeno 18 anni'], max: [120, 'Età non valida'] },
-  location: { type: String, trim: true, maxlength: [100, 'La posizione non può essere più lunga di 100 caratteri'] },
-  interests: { type: [String], default: [] },
-  languages: { type: [String], default: [] },
-  preferredCuisine: { type: String, trim: true, default: '' },
-  
-  // --- Campi di Stato e Ruoli ---
-  role: { type: String, enum: ['user', 'admin'], default: 'user' },
-  isActive: { type: Boolean, default: true },
-  isVerified: { type: Boolean, default: false },
-  profileCompleted: { type: Boolean, default: false },
+const UserSchema = new mongoose.Schema(
+  {
+    // --- CAMPI DI REGISTRAZIONE E IDENTITÀ ---
+    name: { type: String, required: [true, 'Il nome è obbligatorio'], trim: true },
+    surname: { type: String, required: [true, 'Il cognome è obbligatorio'], trim: true },
+    email: { type: String, required: [true, 'L\'email è obbligatoria'], unique: true, lowercase: true, trim: true, match: [/^\S+@\S+\.\S+$/, 'Email non valida'] },
+    password: { type: String, required: [true, 'La password è obbligatoria'], minlength: 8, select: false },
+    role: { type: String, enum: ['user', 'admin'], default: 'user' },
 
-  // --- Campi per Sicurezza e Token ---
-  verificationToken: String,
-  verificationTokenExpires: Date,
-  resetPasswordToken: String,
-  resetPasswordExpires: Date,
-  lastLogin: { type: Date },
-  loginAttempts: { type: Number, default: 0 },
-  lockUntil: { type: Date },
+    // --- CAMPI DEL PROFILO (Modificabili dall'utente) ---
+    nickname: { type: String, unique: true, sparse: true, trim: true, minlength: 3 },
+    profileImage: { type: String, default: 'uploads/profile-images/default-avatar.jpg'  },
+    bio: { type: String, maxlength: 500, default: '' },
+    gender: { type: String, enum: ['', 'male', 'female', 'non-binary', 'other'], default: '' },
+    dateOfBirth: { type: Date },
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+      },
+      coordinates: {
+        type: [Number], // [longitudine, latitudine]
+      },
+      address: { type: String, maxlength: 255, default: '' } // Per salvare l'indirizzo testuale (es. "Milano, Italia")
+    },
+        residence: { type: String, trim: true, maxlength: 100, default: '' },
+    phone: { type: String, trim: true, maxlength: 20, default: '' },
+    interests: { type: [String], default: [] },
+    languages: { type: [String], default: [] },
+    // CORRETTO: Il default per una String è una stringa vuota ''
+    preferredCuisine: { type: String, default: '' },
 
-  // --- Relazioni con altri Modelli ---
-  createdMeals: [{ type: mongoose.Schema.ObjectId, ref: 'Meal' }],
-  joinedMeals: [{ type: mongoose.Schema.ObjectId, ref: 'Meal' }],
+    // --- CAMPI DI STATO E RELAZIONI ---
+    profileCompleted: { type: Boolean, default: false },
+    isActive: { type: Boolean, default: true },
+    isVerified: { type: Boolean, default: false },
+    createdMeals: [{ type: mongoose.Schema.ObjectId, ref: 'Meal' }],
+    joinedMeals: [{ type: mongoose.Schema.ObjectId, ref: 'Meal' }],
 
-  // --- Impostazioni Utente ---
-  settings: {
-    notifications: { email: { type: Boolean, default: true }, push: { type: Boolean, default: true } },
-    privacy: { showAge: { type: Boolean, default: true }, showEmail: { type: Boolean, default: false } },
-    language: { type: String, default: 'it' }
+    // --- CAMPI DI SICUREZZA ---
+    verificationToken: String,
+    verificationTokenExpires: Date,
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
+    lastLogin: { type: Date },
+    loginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date },
+
+        // NOTIFICHE PUSH ▼▼▼
+        fcmTokens: {
+          type: [String],
+          default: []
+        },
+
+    // --- IMPOSTAZIONI ---
+    settings: {
+      notifications: { email: { type: Boolean, default: true }, push: { type: Boolean, default: true } },
+      privacy: {
+        showLocationOnMap: { type: Boolean, default: false }, // <-- AGGIUNTO (per la mappa)
+        showResidence: { type: Boolean, default: true },
+        showPhone: { type: Boolean, default: false },
+        // CORRETTO: rimossa la parentesi graffa in più
+        showAge: { type: Boolean, default: true }
+      }
+    }
+    // --- FINE DELL'OGGETTO DEI CAMPI ---
   },
-}, {
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  {
+    // --- CORRETTO: le opzioni sono in un oggetto separato ---
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+  }
+);
+
+// Creiamo l'indice 2dsphere sul campo location.coordinates per le query geospaziali
+UserSchema.index({ 'location.coordinates': '2dsphere' });
+
+// --- CAMPI VIRTUALI (calcolati, non salvati nel DB) ---
+UserSchema.virtual('age').get(function() {
+  if (!this.dateOfBirth) {
+    return null; // O 'Non specificata', se preferisci
+  }
+  const today = new Date();
+  let age = today.getFullYear() - this.dateOfBirth.getFullYear();
+  const m = today.getMonth() - this.dateOfBirth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < this.dateOfBirth.getDate())) {
+    age--;
+  }
+  return age;
 });
 
-// --- VIRTUALS ---
 UserSchema.virtual('mealsCount').get(function() {
-  // Se this.createdMeals esiste, restituisci la sua lunghezza, altrimenti restituisci 0.
   return this.createdMeals ? this.createdMeals.length : 0;
 });
-
 UserSchema.virtual('joinedMealsCount').get(function() {
-  // Se this.joinedMeals esiste, restituisci la sua lunghezza, altrimenti restituisci 0.
   return this.joinedMeals ? this.joinedMeals.length : 0;
 });
 
-// --- MIDDLEWARE ---
+
+// --- MIDDLEWARE (eseguito prima di un .save()) ---
 UserSchema.pre('save', async function(next) {
+  // Esegui l'hashing solo se la password è stata modificata
   if (!this.isModified('password')) return next();
+  
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-// --- METODI DELLO SCHEMA ---
 
-// Metodo per confrontare la password durante il login
+// --- METODI (le "abilità" di ogni utente) ---
+
 UserSchema.methods.comparePassword = function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Metodo per generare il token JWT
 UserSchema.methods.generateAuthToken = function() {
-  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign({ id: this._id, role: this.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
-// --- SOLUZIONE: I METODI PER LA GESTIONE DEL LOGIN CHE MANCAVANO ---
-
-// Metodo per verificare se l'account è bloccato
 UserSchema.methods.isLocked = function() {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 };
 
-// Metodo per incrementare i tentativi di login falliti
 UserSchema.methods.incrementLoginAttempts = async function() {
   this.loginAttempts += 1;
   if (this.loginAttempts >= 5) {
     this.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // Blocca per 15 minuti
   }
-  await this.save({ validateBeforeSave: false }); // Salva senza eseguire altre validazioni
+  await this.save({ validateBeforeSave: false });
 };
 
-// Metodo per resettare i tentativi di login dopo un accesso riuscito
 UserSchema.methods.resetLoginAttempts = async function() {
   this.loginAttempts = 0;
   this.lockUntil = undefined;
   this.lastLogin = new Date();
-  await this.save({ validateBeforeSave: false }); // Salva senza eseguire altre validazioni
+  await this.save({ validateBeforeSave: false });
 };
 
-
-// --- Metodo Ufficiale per Aggiornare il Profilo ---
+// Il metodo che useremo per aggiornare il profilo
 UserSchema.methods.updateProfile = async function(updates) {
+  console.log('\n--- ESEGUO User.updateProfile ---');
+  console.log('Dati ricevuti da aggiornare:', JSON.stringify(updates, null, 2));
+
   const allowedUpdates = [
-    'nickname', 'gender', 'age', 'location', 'interests', 
-    'languages', 'bio', 'settings', 'preferredCuisine'
+    'nickname', 'bio', 'gender', 'dateOfBirth', 'location', 'residence', 'phone', 'profileImage',
+    'interests', 'languages', 'preferredCuisine', 'settings'
   ];
   Object.keys(updates).forEach(key => {
     if (allowedUpdates.includes(key)) {
       this[key] = updates[key];
+
+        if (key === 'settings') {
+          this.markModified('settings');
+      }
     }
   });
-  this.profileCompleted = this.checkProfileCompletion();
-  return await this.save();
-};
 
-// Metodo per verificare se il profilo è completo
-UserSchema.methods.checkProfileCompletion = function() {
-  return !!(
-    this.nickname &&
-    this.gender &&
-    this.age &&
-    this.location &&
-    this.languages.length > 0 &&
-    this.interests.length > 0 &&
-    this.bio &&
-    this.preferredCuisine
-  );
-};
+  this.profileCompleted = true;
 
+try {
+    console.log('Sto per eseguire .save() sul documento...');
+    await this.save(); 
+    console.log('✅ .save() eseguito con successo.');
+  } catch (error) {
+    console.error('❌ ERRORE durante .save():', error);
+  }
+
+  console.log('--- Fine User.updateProfile ---\n');
+  return this;
+};
 
 const User = mongoose.model('User', UserSchema);
 module.exports = User;

@@ -9,8 +9,12 @@ const MealSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Per favore inserisci un titolo per il pasto virtuale'],
     trim: true,
-    maxlength: [100, 'Il titolo non può superare i 100 caratteri'],
+    maxlength: [50, 'Il titolo non può superare i 100 caratteri'],
     minlength: [10, 'Il titolo deve essere di almeno 10 caratteri']
+  },
+  coverImage: {
+    type: String,
+    default: 'default-meal.jpg' 
   },
   type: {
     type: String,
@@ -38,23 +42,30 @@ const MealSchema = new mongoose.Schema({
       },
       {
         validator: function(date) {
-          return date > new Date();
+          // Esegui questo controllo solo se il documento è NUOVO.
+          // Se stiamo solo modificando, permettiamo di salvare anche date passate.
+          if (this.isNew) {
+            return date > new Date();
+          }
+          return true; // Per le modifiche, la validazione è sempre superata.
         },
-        message: 'La data del pasto deve essere futura'
+        message: 'La data di un nuovo pasto deve essere futura'
       }
     ]
   },
   duration: {
     type: Number,
-    required: false,
-    default: 120,
-    min: [15, 'La durata minima è di 15 minuti'],
-    max: [180, 'La durata massima è di 3 ore'],
+    // La durata è in minuti. Il frontend la userà per calcolare l'ora di fine.
+    required: [true, 'Per favore specifica la durata del pasto'],
+    default: 60, // Impostiamo un default di 60 minuti (1 ora)
+    min: [30, 'La durata minima è di 30 minuti'], // Aggiornato a 30
+    max: [180, 'La durata massima è di 3 ore (180 minuti)'],
     validate: {
       validator: function(value) {
-        return Number.isInteger(value) && value >= 15 && value <= 180;
+        // Validiamo che sia un numero intero tra 30 e 180
+        return Number.isInteger(value) && value >= 30 && value <= 180;
       },
-      message: 'La durata deve essere un numero intero tra 15 e 180 minuti'
+      message: 'La durata deve essere un numero intero tra 30 e 180 minuti'
     }
   },
   maxParticipants: {
@@ -92,25 +103,23 @@ const MealSchema = new mongoose.Schema({
   },
   topics: {
     type: [String],
-    validate: [
-      {
-        validator: function(topics) {
-          return Array.isArray(topics) && topics.length >= 1 && topics.length <= 5;
-        },
-        message: 'Devi specificare da 1 a 5 argomenti'
-      },
-      {
-        validator: function(topics) {
-          return topics.every(topic => 
-            typeof topic === 'string' && 
-            topic.trim().length >= 2 && 
-            topic.trim().length <= 50
-          );
-        },
-        message: 'Ogni argomento deve essere una stringa tra 2 e 50 caratteri'
+    // Usiamo un unico oggetto di validazione per evitare messaggi confusi
+    validate: {
+      validator: function(topics) {
+        // Regola 1: Non più di 5 argomenti
+        if (topics.length > 5) {
+          this.invalidate('topics', 'Puoi inserire un massimo di 5 argomenti.');
+          return false;
+        }
+        // Regola 2: Ogni argomento deve essere tra 2 e 50 caratteri
+        if (!topics.every(topic => topic.trim().length >= 2 && topic.trim().length <= 50)) {
+          this.invalidate('topics', 'Ogni argomento deve essere lungo tra 2 e 50 caratteri.');
+          return false;
+        }
+        return true;
       }
-    ]
-  },
+    }
+},
   videoCallLink: {
     type: String,
     validate: {
@@ -129,6 +138,11 @@ const MealSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     ref: 'Chat'
   },
+  twilioRoomSid: {
+    type: String,
+    // Lo nascondiamo di default dalle risposte JSON per non esporre dati interni non necessari
+    select: false 
+  },
   status: {
     type: String,
     required: [true, 'Lo stato del pasto è obbligatorio'],
@@ -138,6 +152,14 @@ const MealSchema = new mongoose.Schema({
     },
     default: 'upcoming'
   },
+
+  videoCallStatus: {
+    type: String,
+    enum: ['pending', 'active', 'ended'],
+    default: 'pending',
+    required: true
+  },
+  
   settings: {
     allowLateJoin: {
       type: Boolean,
@@ -226,25 +248,28 @@ MealSchema.virtual('isFull').get(function() {
 
 // Virtual per vedere se il pasto è passato
 MealSchema.virtual('isPast').get(function() {
+  if (!this.date) return false;
   return new Date(this.date) < new Date();
 });
 
 // Virtual per vedere se il pasto è in corso
 MealSchema.virtual('isActive').get(function() {
+  if (!this.date) return false;
   const now = new Date();
-  const endTime = new Date(this.date.getTime() + this.duration * 60000);
+  const endTime = new Date(this.date.getTime() + (this.duration || 0) * 60000);
   return now >= this.date && now <= endTime;
 });
 
 // Virtual per vedere il tempo rimanente
 MealSchema.virtual('timeRemaining').get(function() {
-  if (this.isPast) return 0;
-  return Math.max(0, this.date - new Date());
+  if (!this.date || this.isPast) return 0;
+  return Math.max(0, this.date.getTime() - new Date().getTime());
 });
 
 // Virtual per la media dei rating
 MealSchema.virtual('averageRating').get(function() {
-  if (this.ratings.length === 0) return 0;
+  if (!this.ratings || this.ratings.length === 0) 
+    return 0;
   const sum = this.ratings.reduce((acc, curr) => acc + curr.score, 0);
   return sum / this.ratings.length;
 });

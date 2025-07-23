@@ -1,74 +1,52 @@
-// File: /BACKEND/routes/profile.js (Versione Corretta e Sicura)
+// File: /BACKEND/routes/profile.js (Ordine Corretto)
 
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth'); // Il nostro guardiano
-const { upload, handleUploadError } = require('../middleware/upload'); // Importa il nuovo middleware
+const { protect } = require('../middleware/auth');
+const upload  = require('../middleware/upload');
+
+// PASSO 1: Importiamo TUTTE le funzioni necessarie dal controller.
+// La nuova 'getPublicProfile' è inclusa qui.
 const {
   getProfile,
   updateProfile,
   updatePassword,
-  deleteAccount,
-  uploadProfileImage,
+  updateAvatar,
   deleteProfileImage,
-  updateAvatar
+  deleteAccount,
+  getPublicProfile,
+  addFcmToken
 } = require('../controllers/profileController');
 
-/**
- * @route   GET /api/profile/me
- * @desc    Ottieni il profilo dell'utente corrente
- * @access  Private
- */
-router.get('/me', protect, getProfile); // <-- CORRETTO: Aggiunto 'protect'
 
-/**
- * @route   PUT /api/profile/me
- * @desc    Aggiorna il profilo dell'utente corrente
- * @access  Private
- */
-router.put('/me', protect, updateProfile); // <-- CORRETTO: Aggiunto 'protect'
+// --- ROTTE PRIVATE (devono venire PRIMA delle rotte pubbliche) ---
 
-/**
- * @route   PUT /api/profile/me/password
- * @desc    Aggiorna la password dell'utente corrente
- * @access  Private
- */
-// CORRETTO: Percorso corretto e aggiunto 'protect'
-router.put('/me/password', protect, updatePassword); 
+// Ottiene il profilo dell'utente corrente
+router.get('/me', protect, getProfile);
 
-/**
- * @route   POST /api/profile/me/image
- * @desc    Aggiorna l'immagine del profilo dell'utente corrente
- * @access  Private
- */
-router.post(
-  '/me/image',
-  protect,
-  upload.single('profileImage'),
-  handleUploadError,
-  uploadProfileImage
-);
+// Aggiorna i dati testuali del profilo
+router.put('/me', protect, updateProfile);
 
-router.put(
-  '/me/avatar',
-  protect,
-  upload.single('avatar'),
-  handleUploadError,
-  updateAvatar
-);
+// Aggiorna la password
+router.put('/me/password', protect, updatePassword);
 
-/**
- * @route   DELETE /api/profile/me/image
- * @desc    Elimina l'immagine del profilo dell'utente corrente
- * @access  Private
- */
-router.delete('/me/image', protect, deleteProfileImage);
+// Carica o aggiorna l'avatar
+router.put('/me/avatar', protect, upload.single('avatar'), updateAvatar);
 
-/**
- * @route   DELETE /api/profile/me
- * @desc    Elimina l'account dell'utente corrente
- * @access  Private
- */
+// Elimina l'avatar
+router.delete('/me/avatar', protect, deleteProfileImage);
+
+// Elimina l'intero account dell'utente
 router.delete('/me', protect, deleteAccount);
+
+// Aggiunge un token FCM per le notifiche push
+router.post('/me/fcm-token', protect, addFcmToken);
+
+// --- ROTTE PUBBLICHE (devono venire DOPO le rotte private) ---
+
+// @route   GET /api/profile/public/:userId
+// @desc    Rotta pubblica per visualizzare un profilo utente
+// @access  Public
+router.get('/public/:userId', getPublicProfile);
 
 module.exports = router;

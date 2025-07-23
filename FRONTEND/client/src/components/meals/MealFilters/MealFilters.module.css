@@ -1,0 +1,13 @@
+/* src/components/meals/MealFilters/MealFilters.module.css */
+.filterBar { display: flex; align-items: center; gap: 1rem; overflow-x: auto; padding: 0.5rem 0; }
+.filterBar span { font-weight: 600; color: #555; }
+.filterButton {
+  background: #f0f0f0;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.filterButton:hover { background: #e0e0e0; }

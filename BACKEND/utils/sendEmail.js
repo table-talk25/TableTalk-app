@@ -190,12 +190,93 @@ class EmailService {
   async sendMealNotificationEmail(email, meal) {
     return this.sendEmail({
       to: email,
-      subject: `Nuovo pasto: ${meal.title}`,
+      subject: `Nuovo TableTalk®: ${meal.title}`,
       template: 'meal-notification',
       context: {
         meal,
         mealUrl: `${process.env.FRONTEND_URL}/meals/${meal._id}`,
         supportEmail: process.env.SUPPORT_EMAIL
+      }
+    });
+  }
+
+  /**
+   * Invia email di invito da mappa
+   * @param {string} email - Email del destinatario
+   * @param {string} recipientName - Nickname destinatario
+   * @param {string} senderName - Nickname mittente
+   * @param {string} message - Messaggio invito
+   */
+  async sendInvitationEmail(email, recipientName, senderName, message) {
+    return this.sendEmail({
+      to: email,
+      subject: `${senderName} ti ha invitato su TableTalk!`,
+      template: 'invitation',
+      context: {
+        recipientName,
+        senderName,
+        message
+      }
+    });
+  }
+
+  /**
+   * Invia email di conferma registrazione a un pasto
+   * @param {string} email
+   * @param {string} name - Nickname destinatario
+   * @param {Object} meal - Oggetto pasto (title, date, host)
+   */
+  async sendMealRegistrationEmail(email, name, meal) {
+    return this.sendEmail({
+      to: email,
+      subject: `Registrazione confermata: ${meal.title}`,
+      template: 'meal-registration',
+      context: {
+        name,
+        mealTitle: meal.title,
+        mealDate: meal.date,
+        hostName: meal.hostName
+      }
+    });
+  }
+
+  /**
+   * Invia email promemoria 10 minuti prima del pasto
+   * @param {string} email
+   * @param {string} name - Nickname destinatario
+   * @param {Object} meal - Oggetto pasto (title, date, host)
+   */
+  async sendMealReminderEmail(email, name, meal) {
+    return this.sendEmail({
+      to: email,
+      subject: `Il tuo TableTalk® sta per iniziare!`,
+      template: 'meal-reminder',
+      context: {
+        name,
+        mealTitle: meal.title,
+        mealDate: meal.date,
+        hostName: meal.hostName
+      }
+    });
+  }
+
+  /**
+   * Invia email promemoria all'host 10 minuti prima del pasto
+   * @param {string} email
+   * @param {string} hostName
+   * @param {Object} meal - { title, date, participantCount, participantNicknames }
+   */
+  async sendHostMealReminderEmail(email, hostName, meal) {
+    return this.sendEmail({
+      to: email,
+      subject: `Il tuo TableTalk® sta per iniziare!`,
+      template: 'meal-host-reminder',
+      context: {
+        hostName,
+        mealTitle: meal.title,
+        mealDate: meal.date,
+        participantCount: meal.participantCount,
+        participantNicknames: meal.participantNicknames
       }
     });
   }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "69429715104",
+    "project_id": "tabletalk-2ad69",
+    "storage_bucket": "tabletalk-2ad69.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:69429715104:android:af1cf7b86c44e0272ce9c5",
+        "android_client_info": {
+          "package_name": "com.TableTalkApp.tabletalk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9xlA0cm9J0S2fE46XBemQ-VWSvuPhbUA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

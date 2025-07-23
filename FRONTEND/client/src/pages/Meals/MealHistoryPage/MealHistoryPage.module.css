@@ -1,0 +1,150 @@
+/* File: src/styles/pages/Meals/MealHistoryPage.module.css (Versione Finale Responsiva) */
+
+/* =============================================== */
+/* STILI DI BASE (MOBILE-FIRST)                    */
+/* =============================================== */
+
+.mealHistoryPage {
+    width: 100%; 
+}
+
+.mealHistoryHeader {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.mealHistoryHeader h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0 0 1rem 0;
+}
+
+.mainSection {
+    margin-bottom: 3rem;
+    padding: 1.5rem;
+    background: rgba(255,255,255,0.5);
+    border-radius: 16px;
+}
+
+.mainSectionTitle {
+    font-size: 1.8rem;
+    color: var(--primary-color);
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+/* Modifichiamo leggermente il titolo delle sottosezioni */
+.sectionTitle {
+  font-size: 1.2rem; /* Leggermente più piccolo per creare gerarchia */
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.totalMealsCounter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #e9ecef;
+    color: #495057;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+.totalMealsCounter strong {
+    color: var(--primary-color);
+}
+
+/* Stile per ogni sezione con carosello */
+.carouselSection {
+  width: 100%;
+  margin-bottom: 2.5rem;
+}
+
+.sectionTitle {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Il contenitore del carosello */
+.carousel {
+  display: flex;
+  overflow-x: auto;
+  gap: 1rem;
+  padding: 1rem 0;
+  /* Nasconde la barra di scorrimento */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Ogni card nel carosello (MOBILE) */
+.carouselItem {
+  /* Su mobile, le card sono più piccole per l'effetto scorrimento */
+  flex: 0 0 260px;
+}
+
+/* Messaggio "Nessun pasto" */
+.noMealsMessage {
+    padding: 1.5rem;
+    background: #f1f3f5;
+    border-radius: 12px;
+    color: #6b7280;
+    text-align: center;
+    border: 1px dashed #dee2e6;
+}
+
+/* Pulsante "Carica Altri" */
+.loadMoreContainer {
+    text-align: center;
+    margin-top: 1rem;
+}
+.loadMoreBtn {
+    padding: 0.8rem 2rem;
+    font-weight: 600;
+    color: white;
+    background: var(--primary-color);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+/* =============================================== */
+/* TABLET E DESKTOP (schermi più grandi di 768px)  */
+/* =============================================== */
+
+@media (min-width: 768px) {
+    .mealHistoryPage {
+        padding: 2rem;
+        padding-top: 100px;
+    }
+
+    .mealHistoryHeader h1 {
+        font-size: 2.5rem;
+    }
+
+    /* Su schermi grandi, le card del carosello tornano più grandi */
+    .carouselItem {
+        flex-basis: 320px;
+    }
+}

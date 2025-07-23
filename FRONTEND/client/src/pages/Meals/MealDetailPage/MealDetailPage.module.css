@@ -1,0 +1,62 @@
+/* File: src/pages/Meals/MealDetailPage/MealDetailPage.module.css (Versione Finale) */
+
+.mealDetailPage { padding-bottom: 3rem; }
+
+.header {
+    height: 400px; background-size: cover; background-position: center;
+    position: relative; color: white;
+}
+
+.headerOverlay {
+    background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.7) 100%);
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 2rem; text-align: center;
+}
+
+.header h1 {
+    font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 700;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+    margin-bottom: 2rem;
+}
+
+/* ▼▼▼ Stili per i nuovi pulsanti nell'header ▼▼▼ */
+.headerActions {
+    display: flex; gap: 1.5rem;
+    position: absolute; bottom: 40px;
+}
+.headerActions .btn {
+    font-weight: 600; padding: 1rem 2rem; border-radius: 50px;
+    display: flex; align-items: center; gap: 0.75rem; font-size: 1.1rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); border: none;
+    transition: all 0.2s ease-in-out;
+}
+.headerActions .btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+}
+
+.contentContainer { margin-top: -80px; position: relative; z-index: 10; }
+.mainContent { background: white; padding: 2.5rem; border-radius: 16px; box-shadow: 0 5px 25px rgba(0,0,0,0.1); }
+.mainContent h2 { font-size: 1.6rem; font-weight: 600; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
+.tagsContainer { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.topicTag { font-size: 1rem; padding: 0.5rem 1rem; }
+.participantsContainer { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 1.5rem; }
+.participant { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; text-decoration: none; color: inherit; }
+.participant img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid #eee; }
+.participant span { font-size: 0.9rem; font-weight: 500; text-align: center; }
+
+.sidebar { position: sticky; top: 100px; }
+.detailsCard { border: none; box-shadow: 0 5px 25px rgba(0,0,0,0.1); border-radius: 16px; }
+.detailItem { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; font-size: 1rem; color: #333; }
+.hostInfo a { font-weight: 600; text-decoration: none; color: var(--primary-color); }
+.actionButtons { margin-top: 1.5rem; }
+
+/* Media Query per Responsività */
+@media (max-width: 991px) {
+    .sidebar { position: static; margin-top: 2rem; }
+}
+@media (max-width: 768px) {
+    .headerActions { position: static; flex-direction: column; width: 100%; padding: 0 1rem; margin-top: 1rem; }
+    .headerActions .btn { width: 100%; justify-content: center; }
+}

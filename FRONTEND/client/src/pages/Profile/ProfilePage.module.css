@@ -1,0 +1,136 @@
+/* File: frontend/client/src/pages/Profile/ProfilePage.module.css (Versione Ottimizzata) */
+
+/* ========================================
+   STILI DI BASE (Mobile-First)
+   ======================================== */
+
+.profileContainer {
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 1rem;
+}
+
+/* Messaggio di benvenuto (Alert) */
+.alertInfo {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-radius: 12px;
+    padding: 1.5rem; /* Aumentato un po' per dare più aria */
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    width: 100%;
+}
+
+.welcomeMessage {
+    display: flex; /* Attiviamo flexbox */
+    flex-direction: column; /* Mettiamo gli elementi uno sopra l'altro */
+    align-items: center; /* Li centriamo orizzontalmente */
+    text-align: center; /* Centriamo anche il testo per sicurezza */
+    gap: 0.5rem; /* Aggiungiamo un po' di spazio tra titolo e sottotitolo */
+}
+
+.welcomeMessage strong {
+    font-size: 1.3rem; /* Leggermente più grande */
+    font-weight: 600;
+    color: #0d47a1;
+}
+
+.welcomeMessage p {
+    font-size: 1rem;
+    color: #1565c0;
+    margin: 0; /* Rimuoviamo il margine di default del tag <p> */
+    line-height: 1.5; /* Miglioriamo la leggibilità */
+}
+
+/* La nostra griglia principale: per default è a UNA COLONNA */
+.profileGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+/* Stile base per tutte le card */
+.profileHeaderCard,
+.profilePersonalInfoCard,
+.profileInterestsCard,
+.profileSettingsCard {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-align: left; /* Allineamo il testo a sinistra per coerenza */
+}
+
+.profileHeaderCard:hover,
+.profilePersonalInfoCard:hover,
+.profileInterestsCard:hover,
+.profileSettingsCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.09);
+}
+
+/* ========================================
+   MEDIA QUERIES (Layout per schermi più grandi)
+   ======================================== */
+
+/* --- Tablet (es. iPad in verticale) --- */
+@media (min-width: 768px) {
+    .profileContainer {
+        padding: 0 1.5rem;
+    }
+
+    .profileGrid {
+        /* OTTIMIZZAZIONE: Passiamo a 2 colonne su tablet! */
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+
+    .profileHeaderCard {
+        grid-column: span 2; /* L'header occupa tutta la larghezza */
+        text-align: center;  /* Ma centriamo il suo contenuto */
+    }
+
+    .profilePersonalInfoCard {
+        grid-column: span 2; /* Anche le info personali */
+    }
+
+    .profileInterestsCard,
+    .profileSettingsCard {
+        grid-column: span 1; /* Interessi e Impostazioni stanno sulla stessa riga */
+    }
+    
+    .profileHeaderCard,
+    .profilePersonalInfoCard,
+    .profileInterestsCard,
+    .profileSettingsCard {
+        padding: 2rem;
+    }
+}
+
+/* --- Desktop e Tablet grandi (es. iPad in orizzontale) --- */
+@media (min-width: 992px) {
+    .profileGrid {
+        /* OTTIMIZZAZIONE: Layout a L rovesciata, più dinamico */
+        grid-template-columns: repeat(12, 1fr);
+        gap: 2rem;
+    }
+
+    .profileHeaderCard {
+        grid-column: 1 / 5;   /* Occupa le prime 4 colonne */
+        grid-row: 1 / 3;      /* Si estende su due righe per stare a sinistra */
+        text-align: center;
+    }
+
+    .profilePersonalInfoCard {
+        grid-column: 5 / 13;  /* Occupa le 8 colonne a destra dell'header */
+    }
+
+    .profileInterestsCard {
+        grid-column: 5 / 13;  /* Occupa lo spazio sotto le info personali */
+    }
+    
+    .profileSettingsCard {
+        grid-column: 1 / 5;   /* Occupa lo spazio sotto l'header */
+    }
+}

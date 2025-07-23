@@ -20,6 +20,8 @@ BACKEND/.cache/
 # Build output
 build/
 dist/
+logs/ 
+*.log
 
 # Environment variables
 .env
@@ -39,6 +41,14 @@ dist/
 .DS_Store
 *.pem
 
+# Log e file di sistema
+npm-debug.log
+.DS_Store
+
+# File di cache degli editor
+*.code-search
+.vscode/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -54,3 +64,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Credenziali segrete di Firebase
+firebase-service-account.json

@@ -1,4 +1,4 @@
-// Traduzione del tipo di pasto
+// Traduzione del tipo di TableTalk®
 export const mealTypeTranslation = {
   'colazione': 'Colazione',
   'pranzo': 'Pranzo',

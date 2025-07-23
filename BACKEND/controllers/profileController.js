@@ -1,9 +1,13 @@
-// File: /BACKEND/controllers/profileController.js
+// File: /BACKEND/controllers/profileController.js (Versione Definitiva Completa)
 
 const { validationResult } = require('express-validator');
 const asyncHandler = require('express-async-handler');
 const ErrorResponse = require('../utils/errorResponse');
 const User = require('../models/User');
+const path = require('path');
+const fs = require('fs').promises; 
+const Meal = require('../models/Meal');
+
 
 /**
  * @desc    Ottieni il profilo dell'utente corrente
@@ -24,6 +28,45 @@ exports.getProfile = asyncHandler(async (req, res, next) => {
 });
 
 /**
+ * @desc    Ottenere il profilo pubblico di un utente tramite ID
+ * @route   GET /api/profile/public/:userId
+ * @access  Public
+ */
+exports.getPublicProfile = asyncHandler(async (req, res, next) => {
+  const publicFields = 'nickname profileImage bio gender interests languages preferredCuisine location createdMeals age mealsCount createdAt settings';
+
+  const userDoc = await User.findById(req.params.userId)
+    .select(publicFields)
+    .populate({ path: 'createdMeals', select: 'title date' })
+    .populate({ path: 'joinedMeals', select: 'title date' })
+    .lean();
+
+  if (!userDoc) {
+    console.log('[getPublicProfile] ❌ ERRORE: Utente non trovato nel DB.');
+    return next(new ErrorResponse(`Utente non trovato`, 404));
+  }
+  console.log('[getPublicProfile] ✅ Utente trovato. Inizio a processare i suoi dati...');
+
+  // Pulizia dei pasti "fantasma" (cancellati)
+  if (userDoc.createdMeals) {
+    userDoc.createdMeals = userDoc.createdMeals.filter(meal => meal !== null && meal.date);
+  }
+  if (userDoc.joinedMeals) {
+    userDoc.joinedMeals = userDoc.joinedMeals.filter(meal => meal !== null && meal.date);
+  }
+
+  const user = userDoc;
+
+  // Logica della privacy
+  if (user.settings?.privacy && !user.settings.privacy.showAge) user.age = null;
+  if (user.settings?.privacy && !user.settings.privacy.showLocation) user.location = '';
+  delete user.settings;
+
+  console.log('[getPublicProfile] ✅ Dati pronti per essere inviati al frontend.');
+  res.status(200).json({ success: true, data: user });
+});
+
+/**
  * @desc    Aggiorna il profilo dell'utente corrente
  * @route   PUT /api/profile/me
  * @access  Private
@@ -35,14 +78,12 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Utente non trovato.', 404));
   }
 
-  // Deleghiamo tutta la logica di aggiornamento al metodo del modello User
   const updatedUser = await user.updateProfile(req.body);
 
-  // Il metodo del modello ha già salvato, quindi restituiamo la risposta
   res.status(200).json({
     success: true,
     message: 'Profilo aggiornato con successo',
-    data: updatedUser, // Invia l'utente aggiornato dentro la chiave 'data'
+    data: updatedUser,
   });
 });
 
@@ -52,28 +93,18 @@ exports.updateProfile = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 exports.updatePassword = asyncHandler(async (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return next(new ErrorResponse('Errore di validazione', 400, errors.array()));
-  }
-
-  const { currentPassword, newPassword } = req.body;
-
-  // Dobbiamo selezionare esplicitamente la password perché nello schema è 'select: false'
   const user = await User.findById(req.user.id).select('+password');
 
   if (!user) {
     return next(new ErrorResponse('Utente non trovato', 404));
   }
 
-  // DELEGA il confronto della password al metodo del modello
-  const isMatch = await user.comparePassword(currentPassword);
+  const isMatch = await user.comparePassword(req.body.currentPassword);
   if (!isMatch) {
     return next(new ErrorResponse('La password attuale non è corretta', 401));
   }
 
-  // Assegna la nuova password. Il middleware pre('save') nel modello si occuperà dell'hashing.
-  user.password = newPassword;
+  user.password = req.body.newPassword;
   await user.save();
 
   res.status(200).json({
@@ -92,16 +123,56 @@ exports.updateAvatar = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Per favore, carica un file immagine.', 400));
   }
 
-  const user = await User.findByIdAndUpdate(
-    req.user.id, 
-    { profileImage: req.file.filename },
-    { new: true }
-  );
+ const user = await User.findById(req.user.id);
+ if (!user) {
+   return next(new ErrorResponse('Utente non trovato.', 404));
+ }
 
-  res.status(200).json({
-    success: true,
-    message: 'Immagine del profilo aggiornata con successo.',
-    data: user, // <-- L'utente aggiornato è qui
+ const defaultImagePath = 'uploads/profile-images/default-avatar.jpg';
+ if (user.profileImage && user.profileImage !== defaultImagePath) {
+   try {
+     await fs.unlink(path.resolve(user.profileImage));
+   } catch (err) {
+     console.error(`Errore nell'eliminazione del vecchio file ${user.profileImage}:`, err.message);
+   }
+ }
+
+ user.profileImage = req.file.path;
+ await user.save();
+
+ res.status(200).json({
+   success: true,
+   message: 'Immagine del profilo aggiornata con successo.',
+   data: user, 
+ });
+});
+
+/**
+ * @desc    Elimina l'immagine del profilo
+ * @route   DELETE /api/profile/me/avatar
+ * @access  Private
+ */
+exports.deleteProfileImage = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  if (!user) { 
+    return next(new ErrorResponse('Utente non trovato', 404)); 
+  }
+  
+  if (user.profileImage && user.profileImage !== 'uploads/profile-images/default-avatar.jpg') {
+    try {
+      await fs.unlink(path.resolve(user.profileImage));
+    } catch (err) {
+      console.error("Errore durante l'eliminazione del file fisico, potrebbe non esistere:", err);
+    }
+  }
+
+  user.profileImage = 'uploads/profile-images/default-avatar.jpg';
+  await user.save();
+  
+  res.status(200).json({ 
+    success: true, 
+    message: 'Immagine del profilo eliminata', 
+    data: user 
   });
 });
 
@@ -111,38 +182,19 @@ exports.updateAvatar = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 exports.deleteAccount = asyncHandler(async (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return next(new ErrorResponse('Errore di validazione', 400, errors.array()));
-  }
-  
   const { password } = req.body;
-
   const user = await User.findById(req.user.id).select('+password');
 
   if (!user) {
     return next(new ErrorResponse('Utente non trovato', 404));
   }
 
-  // DELEGA il confronto della password per la conferma
   const isMatch = await user.comparePassword(password);
   if (!isMatch) {
     return next(new ErrorResponse('Password non corretta. Impossibile eliminare l\'account.', 401));
   }
-
-  // Elimina l'immagine del profilo se esiste
-  if (user.profileImage && user.profileImage !== 'default.jpg') {
-    const imagePath = path.join(__dirname, '../uploads', user.profileImage);
-    try {
-      await fs.unlink(imagePath);
-    } catch (err) {
-      console.error('Errore nell\'eliminazione dell\'immagine:', err);
-    }
-  }
-
-  // Qui potresti aggiungere logica aggiuntiva, es. cancellare i pasti creati dall'utente, etc.
   
-  await user.deleteOne(); // Metodo corretto per eliminare un'istanza di documento
+  await user.deleteOne();
 
   res.status(200).json({
     success: true,
@@ -150,75 +202,25 @@ exports.deleteAccount = asyncHandler(async (req, res, next) => {
   });
 });
 
-// @desc    Carica l'immagine del profilo
-// @route   POST /api/profile/me/image
-// @access  Private
-exports.uploadProfileImage = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        error: 'Nessun file caricato'
-      });
-    }
+/**
+ * @desc    Aggiunge un token FCM al profilo dell'utente
+ * @route   POST /api/profile/me/fcm-token
+ * @access  Private
+ */
+exports.addFcmToken = asyncHandler(async (req, res, next) => {
+  const { token } = req.body;
 
-    const user = await User.findById(req.user.id);
-    
-    // Se esiste già un'immagine, eliminala
-    if (user.profileImage && user.profileImage !== 'default.jpg') {
-      const oldImagePath = path.join(__dirname, '../uploads', user.profileImage);
-      try {
-        await fs.unlink(oldImagePath);
-      } catch (err) {
-        console.error('Errore nell\'eliminazione della vecchia immagine:', err);
-      }
-    }
-
-    // Aggiorna il percorso dell'immagine nel database
-    user.profileImage = req.file.filename;
-    await user.save();
-
-    res.json({
-      success: true,
-      data: {
-        profileImage: user.profileImage
-      }
-    });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      error: 'Errore del server'
-    });
+  if (!token) {
+    return next(new ErrorResponse('Token non fornito.', 400));
   }
-};
 
-// @desc    Elimina l'immagine del profilo
-// @route   DELETE /api/profile/me/image
-// @access  Private
-exports.deleteProfileImage = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    
-    if (user.profileImage && user.profileImage !== 'default.jpg') {
-      const imagePath = path.join(__dirname, '../uploads', user.profileImage);
-      try {
-        await fs.unlink(imagePath);
-      } catch (err) {
-        console.error('Errore nell\'eliminazione dell\'immagine:', err);
-      }
-    }
+  // Usiamo $addToSet per evitare di aggiungere token duplicati
+  await User.findByIdAndUpdate(req.user.id, {
+    $addToSet: { fcmTokens: token }
+  });
 
-    user.profileImage = 'default.jpg';
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Immagine del profilo eliminata'
-    });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      error: 'Errore del server'
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    message: 'Token per le notifiche salvato con successo.'
+  });
+});

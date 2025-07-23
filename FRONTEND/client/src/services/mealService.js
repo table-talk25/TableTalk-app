@@ -1,37 +1,74 @@
-// File: frontend/client/src/services/mealService.js (Versione Finale e Semplificata)
+// File: frontend/client/src/services/mealService.js (Corretto)
 
-import axiosInstance from '../config/axiosConfig';
+import apiClient from './apiService'; // <-- USA L'API CLIENT UNIFICATO
 
-/**
- * Ottiene una lista di pasti, con la possibilità di filtrare tramite parametri.
- * Chiamerà l'URL /api/meals?param1=valore1&param2=valore2...
- * @param {object} params - Un oggetto di parametri per la query (es. { user: 'ID_UTENTE' }).
- */
 const getMeals = async (params = {}) => {
-  try {
-    const response = await axiosInstance.get('/meals', { params });
-    return response.data; 
-  } catch (error) {
-    throw error;
-  }
+  const response = await apiClient.get('/meals', { params });
+  return response.data;
 };
 
-/**
- * Ottiene i dettagli di un singolo pasto tramite il suo ID.
- * @param {string} mealId - L'ID del pasto.
- */
-const getMealById = async (mealId) => {
+const getMealById = async (id) => {
+  const response = await apiClient.get(`/meals/${id}`);
+  return response.data;
+};
+
+const createMeal = async (formData) => { // formData qui è un oggetto FormData
   try {
-    const response = await axiosInstance.get(`/meals/${mealId}`);
+    const response = await apiClient.post('/meals', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data.data;
   } catch (error) {
     throw error;
   }
 };
 
+const updateMeal = async (id, formData) => {
+  const response = await apiClient.put(`/meals/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+const deleteMeal = async (id) => {
+  const response = await apiClient.delete(`/meals/${id}`);
+  return response.data;
+};
+
+const joinMeal = async (id) => {
+  const response = await apiClient.post(`/meals/${id}/participants`);
+  return response.data;
+};
+
+const leaveMeal = async (mealId) => {
+  const response = await apiClient.delete(`/meals/${mealId}/participants`);
+  return response.data;
+};
+
+const searchMeals = async (searchTerm) => {
+  const response = await apiClient.get('/meals/search', {
+    params: { q: searchTerm }
+  });
+  return response.data;
+};
+
+const getUserMeals = async (params = {}) => {
+  const response = await apiClient.get('/meals/user/all', { params });
+  return response.data;
+};
+
 const mealService = {
   getMeals,
   getMealById,
+  createMeal,
+  updateMeal,
+  deleteMeal,
+  joinMeal,
+  leaveMeal,
+  searchMeals,
+  getUserMeals
 };
 
 export default mealService;

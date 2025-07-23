@@ -33,6 +33,11 @@ exports.protect = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse('Utente associato a questo token non più esistente.', 401));
     }
 
+    // Verifica se l'utente è attivo
+    if (!req.user.isActive) {
+      return next(new ErrorResponse('Account disattivato', 401));
+    }
+
     console.log(`[PROTECT] ✅ Utente trovato: ${req.user.email}. Passo al controller.`);
     next();
 
@@ -47,8 +52,8 @@ exports.protect = asyncHandler(async (req, res, next) => {
  */
 exports.authorize = (...roles) => {
   return (req, res, next) => {
-    if (!req.user) { // Aggiunto controllo di sicurezza
-        return next(new ErrorResponse('Utente non trovato, impossibile verificare il ruolo.', 401));
+    if (!req.user) {
+      return next(new ErrorResponse('Utente non trovato, impossibile verificare il ruolo.', 401));
     }
     if (!roles.includes(req.user.role)) {
       return next(new ErrorResponse(`Ruolo '${req.user.role}' non autorizzato ad accedere a questa risorsa`, 403));
@@ -58,11 +63,91 @@ exports.authorize = (...roles) => {
 };
 
 /**
- * @desc    Middleware per autorizzare solo gli admin. 
- * È una scorciatoia per authorize('admin').
+ * @desc    Middleware per autorizzare solo gli admin
  */
 exports.admin = exports.authorize('admin');
 
+/**
+ * @desc    Middleware per verificare se l'utente è il proprietario della risorsa
+ */
+exports.isOwner = (model) => async (req, res, next) => {
+  try {
+    const resource = await model.findById(req.params.id);
+    
+    if (!resource) {
+      return next(new ErrorResponse('Risorsa non trovata', 404));
+    }
+    
+    if (resource.user.toString() !== req.user._id.toString()) {
+      return next(new ErrorResponse('Non hai i permessi necessari per questa operazione', 403));
+    }
+    
+    req.resource = resource;
+    next();
+  } catch (error) {
+    console.error('Errore durante la verifica del proprietario:', error);
+    next(new ErrorResponse('Errore durante la verifica dei permessi', 500));
+  }
+};
+
+/**
+ * @desc    Middleware per verificare se il profilo è completo
+ */
+exports.requireCompleteProfile = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  
+  if (!user) {
+    return next(new ErrorResponse('Utente non trovato', 404));
+  }
+
+  if (!user.isProfileComplete) {
+    return next(new ErrorResponse('Profilo incompleto', 403));
+  }
+
+  next();
+});
+
+/**
+ * @desc    Middleware per verificare se l'account è verificato
+ */
+exports.requireVerifiedAccount = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  
+  if (!user) {
+    return next(new ErrorResponse('Utente non trovato', 404));
+  }
+
+  if (!user.isEmailVerified) {
+    return next(new ErrorResponse('Account non verificato', 403));
+  }
+
+  next();
+});
+
+/**
+ * @desc    Middleware per verificare se l'utente è un host
+ */
+exports.requireHost = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  
+  if (!user) {
+    return next(new ErrorResponse('Utente non trovato', 404));
+  }
+
+  if (!user.isHost) {
+    return next(new ErrorResponse('Non sei un host', 403));
+  }
+
+  next();
+});
+
+// Middleware per permettere solo agli admin
+exports.adminOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    return next();
+  }
+  return res.status(403).json({ success: false, message: 'Accesso riservato agli amministratori.' });
+};
 
 // NOTA: Le altre funzioni middleware (requireCompleteProfile, etc.) sono corrette
 // ma assicurati che non siano duplicate e che usino `req.user` in modo sicuro.

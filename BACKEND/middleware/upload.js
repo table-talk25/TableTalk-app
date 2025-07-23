@@ -1,55 +1,49 @@
-// File: /BACKEND/middleware/upload.js
+// File: /BACKEND/middleware/upload.js (Versione Finale e Corretta)
+
 const multer = require('multer');
 const path = require('path');
-const ErrorResponse = require('../utils/errorResponse');
+const fs = require('fs');
 
-// Configurazione dello storage
+// Funzione per assicurarsi che una directory esista
+const ensureExists = (dirPath) => {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+};
+
+// Configurazione dello storage con destinazione dinamica
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/profile-images');
+    // Controlliamo il percorso della rotta per decidere dove salvare!
+    let uploadPath = 'uploads/';
+    if (req.originalUrl.includes('/profile')) {
+      uploadPath += 'profile-images/';
+    } else if (req.originalUrl.includes('/meals')) {
+      uploadPath += 'meal-images/';
+    }
+
+    ensureExists(uploadPath);
+    cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
-    cb(null, `profile-${req.user.id}-${Date.now()}${path.extname(file.originalname)}`);
+    // Nome file pulito: nomecampo-idutente-data.estensione
+    const uniqueSuffix = `${req.user.id}-${Date.now()}`;
+    cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
   }
 });
 
-// Filtro per i file
+// Filtro per accettare solo immagini
 const fileFilter = (req, file, cb) => {
-  // Accetta solo immagini
-  if (file.mimetype.startsWith('image')) {
+  if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
-    cb(new ErrorResponse('Per favore carica solo immagini', 400), false);
+    cb(new Error('Formato file non supportato. Solo immagini permesse.'), false);
   }
 };
 
-// Configurazione di multer
-const upload = multer({
+// Esportiamo direttamente l'istanza di multer configurata
+module.exports = multer({
   storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 1024 * 1024 * 5 // 5MB max
-  }
+  limits: { fileSize: 5 * 1024 * 1024 }, // Limite di 5MB
+  fileFilter: fileFilter
 });
-
-// Middleware per gestire gli errori di upload
-const handleUploadError = (err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({
-        success: false,
-        error: 'Il file è troppo grande. Dimensione massima: 5MB'
-      });
-    }
-    return res.status(400).json({
-      success: false,
-      error: err.message
-    });
-  }
-  next(err);
-};
-
-module.exports = {
-  upload,
-  handleUploadError
-};

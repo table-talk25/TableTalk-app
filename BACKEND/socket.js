@@ -1,195 +1,217 @@
+const admin = require('firebase-admin');
 const socketIO = require('socket.io');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 const Meal = require('./models/Meal');
+const Chat = require('./models/Chat');
+const mongoose = require('mongoose');
 
-/**
- * Servizio Socket.io per gestire le comunicazioni in tempo reale
- * Questo servizio gestisce le connessioni WebSocket per la chat in tempo reale
- * e le notifiche per gli eventi di TableTalk
- */
+// Firebase Admin SDK - configurazione
+// Firebase Admin SDK viene inizializzato in server.js
+// Qui controlliamo solo se è disponibile
+
 
 // Mappa per tenere traccia degli utenti connessi
 // { userId: socketId }
 const connectedUsers = new Map();
 
-// Inizializza il servizio Socket.io
+// Rate limiter personalizzato per socket
+const rateLimitMap = new Map();
+
+const checkRateLimit = (userId, maxRequests, windowMs) => {
+  const now = Date.now();
+  const key = `${userId}`;
+  
+  if (!rateLimitMap.has(key)) {
+    rateLimitMap.set(key, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+  
+  const userLimit = rateLimitMap.get(key);
+  
+  if (now > userLimit.resetTime) {
+    userLimit.count = 1;
+    userLimit.resetTime = now + windowMs;
+    return true;
+  }
+  
+  if (userLimit.count >= maxRequests) {
+    return false;
+  }
+  
+  userLimit.count++;
+  return true;
+};
+
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:5001',
+  'http://localhost:5002',
+  'http://localhost:5003',
+  'http://192.168.1.151:3000', // IP corretto del frontend
+  'http://192.168.1.151:5001', // IP corretto del backend
+  'capacitor://localhost',
+  'http://localhost',
+];
+
+
+let ioInstance;
+
 function initializeSocket(server) {
-  const io = socketIO(server, {
+  ioInstance = socketIO(server, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:3001',
-      methods: ['GET', 'POST'],
-      credentials: true
-    }
+      origin: allowedOrigins,
+      methods: ['GET', 'POST', 'OPTIONS'],
+      credentials: true,
+      allowedHeaders: ['Content-Type', 'Authorization']
+    },
+    // Configurazione ottimizzata per WebSocket
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    transports: ['websocket', 'polling'], // WebSocket come primario, polling come fallback
+    allowUpgrades: true,
+    upgradeTimeout: 10000
   });
 
-  // Middleware per l'autenticazione
-  io.use(async (socket, next) => {
+  // Middleware di autenticazione
+  ioInstance.use(async (socket, next) => {
+    console.log(`[Socket] Tentativo di connessione da: ${socket.handshake.headers.origin}`);
+    console.log(`[Socket] User-Agent: ${socket.handshake.headers['user-agent']}`);
+    
     try {
       const token = socket.handshake.auth.token;
-      
       if (!token) {
+        console.log('[Socket] ❌ Token mancante');
         return next(new Error('Autenticazione richiesta'));
       }
-      
-      // Verifica il token JWT
+
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
-      // Cerca l'utente nel database
-      const user = await User.findById(decoded.id);
-      
+      const user = await User.findById(decoded.id).select('nickname profileImage');
+
       if (!user) {
+        console.log('[Socket] ❌ Utente non trovato');
         return next(new Error('Utente non trovato'));
       }
-      
-      // Salva l'utente nel socket per usi futuri
-      socket.user = {
-        id: user._id,
-        nickname: user.nickname
-      };
-      
+
+      console.log(`[Socket] ✅ Autenticazione riuscita per: ${user.nickname}`);
+      socket.user = user;
       next();
     } catch (error) {
-      console.error('Errore di autenticazione socket:', error);
+      console.error('[Socket Auth] ❌ Errore di autenticazione:', error.message);
       next(new Error('Token non valido'));
-    }
+    } 
   });
-
+  
   // Gestione della connessione
-  io.on('connection', (socket) => {
-    console.log('Nuovo utente connesso:', socket.id);
-    
-    // Aggiungi l'utente alla mappa degli utenti connessi
-    connectedUsers.set(socket.user.id.toString(), socket.id);
-    
-    // Unisci l'utente alla sua stanza personale per le notifiche
-    socket.join(`user:${socket.user.id}`);
-    
-    // Ascolta le richieste di join alle stanze delle chat
-    socket.on('join_meal', async ({ mealId, userId }) => {
+  ioInstance.on('connection', (socket) => {
+    console.log(`✅ Utente connesso via socket: ${socket.user.nickname} (ID: ${socket.id})`);
+    connectedUsers.set(socket.user._id.toString(), socket.id);
+
+    // Gestore per quando un utente si unisce a una stanza di chat
+    socket.on('joinChatRoom', async (chatId) => { 
+      const chat = await Chat.findOne({ _id: chatId, participants: socket.user._id });
+      if (!chat) {
+        console.log(`[Socket Security] L'utente ${socket.user.nickname} ha tentato di unirsi alla chat ${chatId} senza autorizzazione.`);
+        return; // Non fare nulla se non autorizzato
+      }
+      socket.join(chatId);
+      console.log(`L'utente ${socket.user.nickname} si è unito alla stanza della chat: ${chatId}`);
+    });
+
+    socket.on('leaveChatRoom', (chatId) => {
+      socket.leave(chatId);
+      console.log(`L'utente ${socket.user.nickname} ha lasciato la stanza della chat: ${chatId}`);
+    });
+
+    // Gestore per l'evento "sta scrivendo"
+    socket.on('typing', ({ chatId, isTyping }) => {
+      // Controllo rate limit per eventi typing
+      if (!checkRateLimit(socket.user._id.toString(), 20, 5000)) {
+        console.log(`[Rate Limit] Utente ${socket.user.nickname} ha superato il limite per typing`);
+        return;
+      }
+      
+      // Invia l'evento a tutti nella stanza TRANNE al mittente
+      socket.to(chatId).emit('userTyping', { 
+        user: { 
+          _id: socket.user._id,
+          nickname: socket.user.nickname
+        }, 
+        isTyping 
+      });
+    });
+  
+    // Gestore per l'invio di un messaggio
+    socket.on('sendMessage', async ({ chatId, content }, callback) => {
       try {
-        const meal = await Meal.findById(mealId);
-        if (!meal) {
-          socket.emit('error', { message: 'Pasto non trovato' });
+        // Controllo rate limit per messaggi
+        if (!checkRateLimit(socket.user._id.toString(), 5, 10000)) {
+          if (callback) callback({ success: false, error: "Troppi messaggi inviati. Riprova tra qualche secondo." });
           return;
         }
-
-        const user = await User.findById(userId);
-        if (!user) {
-          socket.emit('error', { message: 'Utente non trovato' });
+        
+        const chat = await Chat.findById(chatId);
+        if (!chat || !chat.participants.some(p => p.equals(socket.user._id))) {
+          if (callback) callback({ success: false, error: "Chat non trovata o non autorizzato." });
           return;
         }
+        
+        await chat.addMessage(socket.user._id, content.trim());
 
-        socket.join(mealId);
-        io.to(mealId).emit('user_joined', {
-          userId: user._id,
-          nickname: user.nickname
-        });
+        // Popoliamo il messaggio prima di inviarlo
+        const newMessage = chat.messages[chat.messages.length - 1];
+        const populatedMessage = {
+          ...newMessage.toObject(), // Convertiamo il sotto-documento in un oggetto semplice
+          sender: { // Aggiungiamo manualmente i dati del sender già disponibili
+            _id: socket.user._id,
+            nickname: socket.user.nickname,
+            profileImage: socket.user.profileImage
+          }
+        };
+
+        // Ora inviamo il messaggio completo a tutti
+        ioInstance.to(chatId).emit('receiveMessage', populatedMessage);
+
+        // --- LOGICA PUSH NOTIFICATION ---
+        if (admin.apps.length > 0) {
+          const recipients = await User.find({ _id: { $in: chat.participants, $ne: socket.user._id } });
+
+          // ▼▼▼ FILTRIAMO SOLO GLI UTENTI VERAMENTE OFFLINE ▼▼▼
+          const offlineRecipients = recipients.filter(user => !connectedUsers.has(user._id.toString()));
+
+          if(offlineRecipients.length > 0) {
+            console.log(`Invio notifiche push a ${offlineRecipients.length} utenti offline.`);
+            offlineRecipients.forEach(user => {
+              if (user.fcmTokens && user.fcmTokens.length > 0) {
+                const payload = {
+                  notification: { title: `Nuovo messaggio da ${socket.user.nickname}`, body: content },
+                  data: { chatId: chatId }
+                };
+                admin.messaging().sendToDevice(user.fcmTokens, payload)
+                  .catch(error => console.error(`❌ Errore invio notifica a ${user.nickname}:`, error));
+              }
+            });
+          }
+        }
+  
+        if (callback) callback({ success: true, message: populatedMessage });
+
       } catch (error) {
-        socket.emit('error', { message: 'Errore durante l\'unione al pasto' });
+        console.error('[Socket] Errore durante l\'invio/salvataggio del messaggio:', error);
+        if (callback) callback({ success: false, error: "Errore del server." });
       }
     });
-    
-    // Ascolta le richieste di abbandono delle stanze delle chat
-    socket.on('leave_meal', ({ mealId, userId }) => {
-      socket.leave(mealId);
-      io.to(mealId).emit('user_left', { userId });
-    });
-    
-    // Ascolta l'invio di nuovi messaggi
-    socket.on('chatMessage', async ({ mealId, message }) => {
-      // Il messaggio è già stato salvato nel database dal controller
-      // Qui facciamo solo broadcast agli altri membri della chat
-      
-      // Emetti il messaggio a tutti i membri della stanza
-      io.to(`chat:${mealId}`).emit('newMessage', {
-        mealId,
-        message
-      });
-    });
-    
-    // Ascolta le richieste di stato digitazione
-    socket.on('typing', ({ mealId, isTyping }) => {
-      // Emetti lo stato di digitazione agli altri membri della stanza
-      socket.to(`chat:${mealId}`).emit('userTyping', {
-        userId: socket.user.id,
-        nickname: socket.user.nickname,
-        isTyping
-      });
-    });
-    
-    // Gestione disconnessione
-    socket.on('disconnect', () => {
-      console.log('Utente disconnesso:', socket.id);
-      
+
+    socket.on('disconnect', (reason) => {
+      console.log(`❌ Utente disconnesso: ${socket.user.nickname} (ID: ${socket.id}) - Motivo: ${reason}`);
       // Rimuovi l'utente dalla mappa degli utenti connessi
-      connectedUsers.delete(socket.user.id.toString());
+      connectedUsers.delete(socket.user._id.toString());
     });
   });
-
-  // Esponi l'oggetto io per inviare notifiche da altri parti dell'applicazione
-  this.io = io;
-  
-  console.log('📡 Servizio Socket.io inizializzato');
-  
-  return io;
 }
 
-module.exports = initializeSocket;
 
-/**
- * Invia una notifica a un utente specifico
- * @param {string} userId - ID dell'utente destinatario
- * @param {string} type - Tipo di notifica (es. 'newMealJoin', 'newMessage')
- * @param {object} data - Dati della notifica
- */
-exports.sendNotification = (userId, type, data) => {
-  if (!this.io) {
-    console.error('Socket.io non inizializzato');
-    return;
-  }
-  
-  // Invia la notifica alla stanza personale dell'utente
-  this.io.to(`user:${userId}`).emit('notification', {
-    type,
-    data,
-    timestamp: new Date()
-  });
-};
+const getIO = () => ioInstance;
 
-/**
- * Invia una notifica a tutti i partecipanti di un pasto
- * @param {string} mealId - ID del pasto
- * @param {string} type - Tipo di notifica
- * @param {object} data - Dati della notifica
- */
-exports.notifyMealParticipants = (mealId, type, data) => {
-  if (!this.io) {
-    console.error('Socket.io non inizializzato');
-    return;
-  }
-  
-  // Invia la notifica a tutti i membri della stanza del pasto
-  this.io.to(`chat:${mealId}`).emit('notification', {
-    type,
-    data,
-    timestamp: new Date()
-  });
-};
-
-/**
- * Verifica se un utente è online
- * @param {string} userId - ID dell'utente da verificare
- * @returns {boolean} - true se l'utente è online, false altrimenti
- */
-exports.isUserOnline = (userId) => {
-  return connectedUsers.has(userId.toString());
-};
-
-/**
- * Ottiene l'elenco degli utenti online
- * @returns {Array} - Array di ID degli utenti online
- */
-exports.getOnlineUsers = () => {
-  return Array.from(connectedUsers.keys());
-};
+module.exports = { initializeSocket, getIO };

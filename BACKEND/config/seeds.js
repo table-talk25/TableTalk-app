@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const dotenv = require('dotenv');
+const path = require('path');
 
 // Carica le variabili d'ambiente
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '../..', '.env') });
 
 // Connessione al database
 mongoose.connect(process.env.MONGO_URI)

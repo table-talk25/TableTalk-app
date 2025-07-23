@@ -17,7 +17,7 @@ const PrivateRoute = ({ children }) => {
   // invece di reindirizzare l'utente prematuramente.
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+      <div className="d-flex justify-content-center align-items-center">
         <Spinner animation="border" />
       </div>
     );

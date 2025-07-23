@@ -1,0 +1,41 @@
+/* File: src/pages/Meals/EditMealPage/EditMealPage.module.css (Versione Ottimizzata) */
+
+.editPage {
+  /* --- REGOLE RIMOSSE --- */
+  /* padding: 4rem 1rem; (ora gestito dal Layout) */
+  /* padding-top: 100px; (ora gestito dal Layout) */
+  /* background-color: #f8f9fa; (ora gestito dal Layout) */
+  /* min-height: 100vh; (ora gestito dal Layout) */
+
+  /* --- REGOLE MANTENUTE E MIGLIORATE --- */
+  /* Usiamo flexbox per centrare la card del form orizzontalmente */
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  /* Aggiungiamo un po' di padding verticale per distanziare la card dall'header e dal fondo pagina */
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.card {
+  width: 100%;
+  max-width: 700px; /* Larghezza massima del form */
+  background: white;
+  border: none;
+  border-radius: 16px; /* Leggermente più arrotondato per un look moderno */
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.title {
+  font-weight: 700; /* Più deciso per il titolo */
+  color: #2d3748;
+}
+
+/* Stili per i contenitori di loading ed errore, che vanno benissimo */
+.loadingContainer, .errorContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  text-align: center;
+}

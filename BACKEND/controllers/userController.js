@@ -5,6 +5,9 @@ const multer = require('multer');
 const User = require('../models/User');
 const asyncHandler = require('express-async-handler');
 const ErrorResponse = require('../utils/errorResponse');
+const mongoose = require('mongoose');
+const axios = require('axios');
+
 
 // Configurazione di multer per il caricamento delle immagini
 const storage = multer.diskStorage({
@@ -322,3 +325,174 @@ exports.getBlockedUsers = asyncHandler(async (req, res, next) => {
 exports.deleteAccount = asyncHandler(async (req, res, next) => {
   res.status(200).json({ success: true, message: 'Eliminazione account non ancora implementata.' });
 });
+
+/**
+ * @desc    Aggiorna la posizione geografica dell'utente
+ * @route   PUT /api/users/me/location
+ * @access  Private
+ */
+exports.updateUserLocation = asyncHandler(async (req, res, next) => {
+  const { longitude, latitude, address } = req.body;
+
+  if (!longitude || !latitude) {
+    return next(new ErrorResponse('Latitudine e Longitudine sono obbligatorie', 400));
+  }
+
+  // Verifica che le coordinate siano numeri validi
+  const lon = parseFloat(longitude);
+  const lat = parseFloat(latitude);
+  
+  if (isNaN(lon) || isNaN(lat)) {
+    return next(new ErrorResponse('Coordinate non valide', 400));
+  }
+
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return next(new ErrorResponse('Utente non trovato', 404));
+  }
+
+  // Aggiorna il campo location con il formato GeoJSON
+  user.location = {
+    type: 'Point',
+    coordinates: [lon, lat],
+    address: address || user.location.address || ''
+  };
+
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    data: user.location
+  });
+});
+
+/**
+* @desc    Aggiorna l'indirizzo dell'utente partendo dalle coordinate (Reverse Geocoding)
+* @route   PUT /api/users/me/location-from-coords
+* @access  Private
+*/
+exports.updateUserLocationFromCoords = asyncHandler(async (req, res, next) => {
+ const { latitude, longitude } = req.body;
+
+ if (!latitude || !longitude) {
+   return next(new ErrorResponse('Latitudine e Longitudine sono obbligatorie', 400));
+ }
+
+ const GOOGLE_API_KEY = process.env.Maps_API_KEY; // Usa la tua chiave dal file .env
+ const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_API_KEY}&language=it`;
+
+ const response = await axios.get(url);
+
+ if (response.data.status !== 'OK' || !response.data.results[0]) {
+   return next(new ErrorResponse('Impossibile trovare un indirizzo per queste coordinate', 404));
+ }
+ 
+ // Estraiamo la città e la nazione
+ const addressComponents = response.data.results[0].address_components;
+ const city = addressComponents.find(c => c.types.includes('locality'))?.long_name;
+ const country = addressComponents.find(c => c.types.includes('country'))?.long_name;
+
+ let formattedAddress = 'Posizione sconosciuta';
+ if (city && country) {
+   formattedAddress = `${city}, ${country}`;
+ } else if (country) {
+   formattedAddress = country;
+ }
+
+ // Aggiorniamo l'utente
+ const user = await User.findById(req.user.id);
+ 
+ // Manteniamo le coordinate esistenti e aggiorniamo solo l'indirizzo testuale
+ user.location.address = formattedAddress;
+ 
+ await user.save();
+
+ res.status(200).json({
+   success: true,
+   data: {
+     address: user.location.address
+   }
+ });
+});
+
+/**
+ * @desc    Rimuove la posizione geografica dell'utente (quando l'app si chiude)
+ * @route   DELETE /api/users/me/location
+ * @access  Private
+ */
+exports.removeUserLocation = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return next(new ErrorResponse('Utente non trovato', 404));
+  }
+
+  // Rimuove la posizione impostando i campi a null/vuoto
+  user.location = {
+    type: 'Point',
+    coordinates: [],
+    address: ''
+  };
+
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Posizione rimossa con successo',
+    data: user.location
+  });
+});
+
+/**
+ * @desc    Trova utenti vicini che condividono la posizione
+ * @route   GET /api/users/nearby
+ * @access  Private
+ */
+exports.getNearbyUsers = asyncHandler(async (req, res, next) => {
+  const { longitude, latitude, distance } = req.query;
+
+  if (!longitude || !latitude) {
+    return next(new ErrorResponse('Longitudine e Latitudine sono necessarie per la ricerca', 400));
+  }
+
+  // Distanza massima in metri (default 10km se non specificata)
+  const maxDistance = distance ? parseInt(distance, 10) : 20000;
+  const lon = parseFloat(longitude);
+  const lat = parseFloat(latitude);
+
+  const users = await User.aggregate([
+    {
+      $geoNear: {
+        near: {
+          type: 'Point',
+          coordinates: [lon, lat]
+        },
+        distanceField: "dist.calculated", // Aggiunge un campo 'dist.calculated' con la distanza in metri
+        maxDistance: maxDistance,
+        query: { 
+          'settings.privacy.showLocationOnMap': true,
+          _id: { $ne: req.user._id }        },
+        spherical: true // Obbligatorio per calcoli su un globo terrestre
+      }
+    },
+    { 
+      $project: {
+        _id: 1,
+        name: 1,
+        surname: 1,
+        nickname: 1,
+        profileImage: 1,
+        location: 1,
+        dist: 1 
+      }
+    }
+  ]); 
+
+  res.status(200).json({
+    success: true,
+    count: users.length,
+    data: users
+  });
+});
+

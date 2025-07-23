@@ -2,87 +2,21 @@
 <html lang="it">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="webmanifest" href="/site.webmanifest" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#FF6B6B" />
+    <meta name="theme-color" content="#000000" />
     <meta
       name="description"
-      content="TableTalk - Connetti persone attraverso il cibo. Trova compagni per pranzi e cene, condividi esperienze culinarie e fai nuove amicizie."
+      content="TableTalk - Trova compagni per pasti virtuali"
     />
-    <meta name="keywords" content="cibo, social, pranzo, cena, amicizie, cucina, ristoranti" />
-    <meta name="author" content="TableTalk Team" />
-    <meta property="og:title" content="TableTalk - Connetti persone attraverso il cibo" />
-    <meta property="og:description" content="Trova compagni per pranzi e cene, condividi esperienze culinarie e fai nuove amicizie." />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://tabletalk.com" />
-    <meta property="og:image" content="%PUBLIC_URL%/og-image.jpg" />
-    
-    <!-- Font Google -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Stili di base -->
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-          sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        background-color: #f8f9fa;
-        color: #333;
-      }
-
-      #root {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-      }
-
-      /* Loading spinner */
-      .loading {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 50px;
-        height: 50px;
-        border: 5px solid #f3f3f3;
-        border-top: 5px solid #FF6B6B;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-
-      @keyframes spin {
-        0% { transform: translate(-50%, -50%) rotate(0deg); }
-        100% { transform: translate(-50%, -50%) rotate(360deg); }
-      }
-    </style>
-    
-    <title>TableTalk - Connetti persone attraverso il cibo</title>
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <title>TableTalk</title>
+    <!-- Configurazione per accesso remoto -->
+    <script src="%PUBLIC_URL%/config.js"></script>
   </head>
   <body>
-    <noscript>
-      <div style="text-align: center; padding: 20px;">
-        <h1>TableTalk</h1>
-        <p>Per utilizzare TableTalk, devi abilitare JavaScript nel tuo browser.</p>
-        <p>Per favore, abilita JavaScript e ricarica la pagina.</p>
-      </div>
-    </noscript>
-    <div id="root">
-      <div class="loading"></div>
-    </div>
+    <noscript>Devi abilitare JavaScript per usare questa applicazione.</noscript>
+    <div id="root"></div>
   </body>
-</html> 
+</html>

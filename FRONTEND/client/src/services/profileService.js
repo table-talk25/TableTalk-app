@@ -1,52 +1,84 @@
-// File: frontend/client/src/services/profileService.js (Versione Definitiva)
+// File: frontend/client/src/services/profileService.js (Versione Corretta)
 
-import axiosInstance from '../config/axiosConfig';
+import apiClient from './apiService';
 
 const getProfile = async () => {
-  try {
-    const response = await axiosInstance.get('/profile/me');
-    return response.data.data;
-  } catch (error) {
-    throw error;
-  }
+  // CORRETTO: Rimosso /api dall'inizio
+  const response = await apiClient.get('/profile/me');
+  return response.data.data;
+};
+
+const getPublicProfileById = async (userId) => {
+  // CORRETTO: Rimosso /api dall'inizio
+  const response = await apiClient.get(`/profile/public/${userId}`);
+  return response.data.data;
 };
 
 const updateProfile = async (profileData) => {
-  try {
-    // Chiama l'UNICA rotta corretta
-    const response = await axiosInstance.put('/profile/me', profileData);
-    // Legge la risposta dall'UNICO formato corretto
-    return response.data.data;
-  } catch (error) {
-    throw error;
-  }
+  // CORRETTO: Rimosso /api dall'inizio
+  const response = await apiClient.put('/profile/me', profileData);
+  return response.data.data;
 };
 
-const updateAvatar = async (formData) => {
-  try {
-    const response = await axiosInstance.put('/profile/me/avatar', formData);
-    return response.data.data;
-  } catch (error) {
-    throw error;
-  }
+const updateProfileImage = async (formData) => {
+  // CORRETTO: Rimosso /api dall'inizio
+  const response = await apiClient.put('/profile/me/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data.data;
 };
 
 const deleteAccount = async (password) => {
-    try {
-      const response = await axiosInstance.delete('/profile/me', {
-        data: { password }
-      });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  };
+  // CORRETTO: Rimosso /api dall'inizio
+  const response = await apiClient.delete('/profile/me', {
+    data: { password }
+  });
+  return response.data;
+};
+
+const getFullImageUrl = (imageName) => {
+  if (!imageName || imageName.includes('default-avatar.jpg')) {
+    return '/default-avatar.jpg';
+  }
+  const baseUrl = (apiClient.defaults.baseURL || '').replace('/api', '');
+  return `${baseUrl}/${imageName}`;
+};
+
+const updateUserLocation = async (locationData) => {
+  // CORRETTO: Rimosso /api dall'inizio
+  const response = await apiClient.put('/users/me/location', locationData);
+  return response.data;
+};
+
+const getNearbyUsers = async (params) => {
+  // CORRETTO: Rimosso /api dall'inizio
+  const response = await apiClient.get('/users/nearby', { params });
+  return response.data.data;
+};
+
+const updateLocationFromCoords = async (locationData) => {
+  // locationData sarà un oggetto { latitude, longitude }
+  const response = await apiClient.put('/users/me/location-from-coords', locationData);
+  return response.data.data;
+};
+
+const removeUserLocation = async () => {
+  // Rimuove la posizione dell'utente quando l'app si chiude
+  const response = await apiClient.delete('/users/me/location');
+  return response.data;
+};
 
 const profileService = {
   getProfile,
+  getPublicProfileById,
   updateProfile,
-  updateAvatar,
+  updateProfileImage,
   deleteAccount,
+  getFullImageUrl,
+  updateUserLocation,
+  getNearbyUsers,
+  updateLocationFromCoords,
+  removeUserLocation,
 };
 
 export default profileService;
