@@ -1,9 +1,10 @@
 // File: src/constants/mealConstants.js (Versione Finale con Traduttore Universale)
 
-import { format } from 'date-fns';
-import { it } from 'date-fns/locale';
+import dayjs from 'dayjs';
+import 'dayjs/locale/it';
+import { isNative, DEV_SERVER_URL, SERVER_URL } from '../config/capacitorConfig';
 
-// --- TIPI DI PASTO ---
+// --- TIPI DI TABLETALK® ---
 
 // 1. Definiamo le CHIAVI INGLESI che il backend si aspetta
 export const MEAL_TYPES = {
@@ -27,8 +28,42 @@ export const mealTypeOptions = Object.values(MEAL_TYPES).map(typeKey => ({
   label: MEAL_TYPE_LABELS[typeKey] // L'etichetta mostrata all'utente (es. 'Pranzo')
 }));
 
+// --- TIPI DI MEAL (VIRTUALE/FISICO) ---
+export const MEAL_MODES = {
+  VIRTUAL: 'virtual',
+  PHYSICAL: 'physical'
+};
 
-// --- STATI DEI PASTI ---
+export const MEAL_MODE_LABELS = {
+  [MEAL_MODES.VIRTUAL]: 'Virtuale',
+  [MEAL_MODES.PHYSICAL]: 'Fisico'
+};
+
+export const MEAL_MODE_DESCRIPTIONS = {
+  [MEAL_MODES.VIRTUAL]: 'I partecipanti si incontreranno tramite videochiamata',
+  [MEAL_MODES.PHYSICAL]: 'I partecipanti si incontreranno di persona in un luogo specifico'
+};
+
+export const MEAL_MODE_ICONS = {
+  [MEAL_MODES.VIRTUAL]: '🎥',
+  [MEAL_MODES.PHYSICAL]: '📍'
+};
+
+export const getMealModeText = (modeKey) => MEAL_MODE_LABELS[modeKey] || modeKey;
+
+export const getMealModeDescription = (modeKey) => MEAL_MODE_DESCRIPTIONS[modeKey] || '';
+
+export const getMealModeIcon = (modeKey) => MEAL_MODE_ICONS[modeKey] || '🍽️';
+
+export const getMealModeColor = (modeKey) => {
+  const colors = {
+    [MEAL_MODES.VIRTUAL]: '#007bff', // Blu per virtuale
+    [MEAL_MODES.PHYSICAL]: '#28a745'  // Verde per fisico
+  };
+  return colors[modeKey] || '#6c757d';
+};
+
+// --- STATI DEI TABLETALK® ---
 export const MEAL_STATUS = { UPCOMING: 'upcoming', ONGOING: 'ongoing', COMPLETED: 'completed', CANCELLED: 'cancelled' };
 export const MEAL_STATUS_LABELS = {
   [MEAL_STATUS.UPCOMING]: 'In Programma',
@@ -55,10 +90,10 @@ export const getMealTypeColor = (typeKey) => {
   return colors[typeKey] || '#007bff';
 };
 
-export const formatDate = (dateString, formatString = "d MMM yy 'alle' HH:mm") => {
+export const formatDate = (dateString, formatString = "DD MMM, HH:mm") => {
     if (!dateString) return 'Data non disponibile';
     try {
-        return format(new Date(dateString), formatString, { locale: it });
+        return dayjs(dateString).locale('it').format(formatString);
     } catch (error) {
         console.error("Errore nella formattazione della data:", error);
         return 'Data non valida';
@@ -67,9 +102,6 @@ export const formatDate = (dateString, formatString = "d MMM yy 'alle' HH:mm") =
 
 // @param {string} imageName - Il nome del file dell'immagine.
 // @returns {string} L'URL completo o un'immagine di fallback.
-
-// File: src/constants/mealConstants.js
-
 export const getMealCoverImageUrl = (imageName) => {
   if (!imageName || imageName.includes('default-meal')) {
     return '/images/default-meal-background.jpg';
@@ -82,9 +114,8 @@ export const getMealCoverImageUrl = (imageName) => {
   if (imageName.startsWith('http')) {
     return imageName;
   }
-  // Caso path relativo dal backend
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-  const baseUrl = apiUrl.replace('/api', '');
+  // Caso path relativo dal backend - usa la configurazione corretta
+  const baseUrl = isNative ? DEV_SERVER_URL : SERVER_URL;
   if (imageName.includes('uploads/')) {
     return `${baseUrl}/${imageName}`;
   } else {
@@ -101,16 +132,17 @@ export const getMealCoverImageUrl = (imageName) => {
 export const getHostAvatarUrl = (profileImage) => {
   // Se non c'è un'immagine o è quella di default, usa il placeholder locale
   if (!profileImage || profileImage.includes('default')) {
-    return '/default-avatar.jpg';
+    return '/images/default-avatar.jpg';
   }
-
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-  
-  // Otteniamo l'indirizzo base del server rimuovendo '/api'
-  const baseUrl = apiUrl.replace('/api', ''); // Risultato: http://localhost:5001
-
-  // Il percorso 'profileImage' dal database (es. "uploads/profile-images/avatar.jpg") è già corretto.
-  // Dobbiamo solo anteporre l'indirizzo base del server.
+  // Caso Capacitor (foto locale su device)
+  if (profileImage.startsWith('capacitor://')) {
+    return profileImage;
+  }
+  // Caso URL assoluto (già pronto)
+  if (profileImage.startsWith('http')) {
+    return profileImage;
+  }
+  // Caso path relativo dal backend - usa la configurazione corretta
+  const baseUrl = isNative ? DEV_SERVER_URL : SERVER_URL;
   return `${baseUrl}/${profileImage}`;
-
 };

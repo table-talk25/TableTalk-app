@@ -19,7 +19,7 @@ const LeaveReportModal = ({ show, onClose, onConfirm, type }) => {
       <Modal.Body>
         <Form>
           <Form.Group>
-            <Form.Label>Perché vuoi lasciare {type === 'meal' ? 'il pasto' : 'la chat'}?</Form.Label>
+            <Form.Label>Perché vuoi lasciare {type === 'meal' ? 'il TableTalk®' : 'la chat'}?</Form.Label>
             <Form.Control as="select" value={reason} onChange={e => setReason(e.target.value)}>
               <option value="">Seleziona un motivo</option>
               <option>Motivi personali</option>

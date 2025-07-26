@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { FaEdit, FaSave, FaTimes, FaPlus } from 'react-icons/fa';
-import { availableCuisines } from '../../../constants/profileConstants';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaEdit, FaSave, FaTimes, FaPlus, FaChevronDown } from 'react-icons/fa';
+import { availableCuisines, availableInterests, availableLanguages } from '../../../constants/profileConstants';
 import styles from './InterestsSection.module.css';
 
 const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
@@ -10,6 +10,11 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
   const [preferredCuisine, setPreferredCuisine] = useState(profileData?.preferredCuisine || '');
   const [newInterest, setNewInterest] = useState('');
   const [newLanguage, setNewLanguage] = useState('');
+  const [showInterestSuggestions, setShowInterestSuggestions] = useState(false);
+  const [showLanguageSuggestions, setShowLanguageSuggestions] = useState(false);
+  
+  const interestInputRef = useRef(null);
+  const languageInputRef = useRef(null);
 
   useEffect(() => {
     if (profileData) {
@@ -19,14 +24,51 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
     }
   }, [profileData]);
 
+  // Gestisce la chiusura dei suggerimenti quando si clicca fuori
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (interestInputRef.current && !interestInputRef.current.contains(event.target)) {
+        setShowInterestSuggestions(false);
+      }
+      if (languageInputRef.current && !languageInputRef.current.contains(event.target)) {
+        setShowLanguageSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   if (!profileData) {
     return null;
   }
-  
-  const handleAddInterest = () => {
-    if (newInterest.trim() && !interests.includes(newInterest.trim())) {
-      setInterests([...interests, newInterest.trim()]);
+
+  // Filtra gli interessi disponibili escludendo quelli già selezionati
+  const availableInterestsFiltered = availableInterests.filter(
+    interest => !interests.includes(interest)
+  );
+
+  // Filtra le lingue disponibili escludendo quelle già selezionate
+  const availableLanguagesFiltered = availableLanguages.filter(
+    lang => !languages.includes(lang.name)
+  );
+
+  // Filtra i suggerimenti in base al testo digitato
+  const filteredInterestSuggestions = availableInterestsFiltered.filter(
+    interest => interest.toLowerCase().includes(newInterest.toLowerCase())
+  ).slice(0, 8); // Mostra massimo 8 suggerimenti
+
+  const filteredLanguageSuggestions = availableLanguagesFiltered.filter(
+    lang => lang.name.toLowerCase().includes(newLanguage.toLowerCase())
+  ).slice(0, 8);
+
+  const handleAddInterest = (interest) => {
+    if (interest && !interests.includes(interest)) {
+      setInterests([...interests, interest]);
       setNewInterest('');
+      setShowInterestSuggestions(false);
     }
   };
 
@@ -34,10 +76,11 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
     setInterests(interests.filter(interest => interest !== interestToRemove));
   };
 
-  const handleAddLanguage = () => {
-    if (newLanguage.trim() && !languages.includes(newLanguage.trim())) {
-      setLanguages([...languages, newLanguage.trim()]);
+  const handleAddLanguage = (language) => {
+    if (language && !languages.includes(language)) {
+      setLanguages([...languages, language]);
       setNewLanguage('');
+      setShowLanguageSuggestions(false);
     }
   };
 
@@ -83,8 +126,35 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
         <h3>I tuoi interessi</h3>
         {isEditing && (
           <div className={styles.inputGroup}>
-            <input type="text" value={newInterest} onChange={(e) => setNewInterest(e.target.value)} placeholder="Aggiungi interesse..." />
-            <button onClick={handleAddInterest}><FaPlus /></button>
+            <div className={styles.autocompleteContainer} ref={interestInputRef}>
+              <input 
+                type="text" 
+                value={newInterest} 
+                onChange={(e) => {
+                  setNewInterest(e.target.value);
+                  setShowInterestSuggestions(true);
+                }}
+                onFocus={() => setShowInterestSuggestions(true)}
+                placeholder="Cerca interesse..." 
+                className={styles.autocompleteInput}
+              />
+              {showInterestSuggestions && filteredInterestSuggestions.length > 0 && (
+                <div className={styles.suggestionsList}>
+                  {filteredInterestSuggestions.map((interest, index) => (
+                    <div 
+                      key={index} 
+                      className={styles.suggestionItem}
+                      onClick={() => handleAddInterest(interest)}
+                    >
+                      {interest}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button onClick={() => handleAddInterest(newInterest)} disabled={!newInterest.trim() || interests.includes(newInterest.trim())}>
+              <FaPlus />
+            </button>
           </div>
         )}
         <div className={styles.tagsList}>
@@ -101,8 +171,35 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
         <h3>Lingue parlate</h3>
         {isEditing && (
           <div className={styles.inputGroup}>
-            <input type="text" value={newLanguage} onChange={(e) => setNewLanguage(e.target.value)} placeholder="Aggiungi lingua..." />
-            <button onClick={handleAddLanguage}><FaPlus /></button>
+            <div className={styles.autocompleteContainer} ref={languageInputRef}>
+              <input 
+                type="text" 
+                value={newLanguage} 
+                onChange={(e) => {
+                  setNewLanguage(e.target.value);
+                  setShowLanguageSuggestions(true);
+                }}
+                onFocus={() => setShowLanguageSuggestions(true)}
+                placeholder="Cerca lingua..." 
+                className={styles.autocompleteInput}
+              />
+              {showLanguageSuggestions && filteredLanguageSuggestions.length > 0 && (
+                <div className={styles.suggestionsList}>
+                  {filteredLanguageSuggestions.map((lang, index) => (
+                    <div 
+                      key={index} 
+                      className={styles.suggestionItem}
+                      onClick={() => handleAddLanguage(lang.name)}
+                    >
+                      {lang.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button onClick={() => handleAddLanguage(newLanguage)} disabled={!newLanguage.trim() || languages.includes(newLanguage.trim())}>
+              <FaPlus />
+            </button>
           </div>
         )}
         <div className={styles.tagsList}>

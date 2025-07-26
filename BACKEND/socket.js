@@ -203,6 +203,24 @@ function initializeSocket(server) {
       }
     });
 
+    socket.on('joinRoom', async ({ mealId }) => {
+      try {
+        // --- CONTROLLO DI AUTORIZZAZIONE ---
+        const meal = await Meal.findById(mealId);
+        if (!meal || !meal.participants.map(id => id.toString()).includes(socket.user._id.toString())) {
+          socket.emit('error', 'Non autorizzato a partecipare a questa chat.');
+          return;
+        }
+        // -----------------------------------
+        socket.join(mealId);
+        console.log(`✅ L'utente ${socket.user._id} si è unito alla stanza: ${mealId}`);
+        // (Opzionale) ioInstance.to(mealId).emit('userJoined', { userId: socket.user._id });
+      } catch (error) {
+        console.error('Errore durante joinRoom:', error);
+        socket.emit('error', 'Errore del server durante la connessione alla stanza.');
+      }
+    });
+
     socket.on('disconnect', (reason) => {
       console.log(`❌ Utente disconnesso: ${socket.user.nickname} (ID: ${socket.id}) - Motivo: ${reason}`);
       // Rimuovi l'utente dalla mappa degli utenti connessi

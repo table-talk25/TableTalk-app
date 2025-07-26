@@ -52,6 +52,62 @@
 .inputGroup input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
 .inputGroup button { background: #4CAF50; color: white; border: none; border-radius: 6px; padding: 8px 12px; cursor: pointer; transition: background 0.2s ease; }
 .inputGroup button:hover { background: #45a049; }
+.inputGroup button:disabled { background: #ccc; cursor: not-allowed; }
+
+/* Autocomplete Styles */
+.autocompleteContainer {
+    position: relative;
+    flex: 1;
+}
+
+.autocompleteInput {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background-color: white;
+}
+
+.autocompleteInput:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.suggestionsList {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.suggestionItem {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.suggestionItem:last-child {
+    border-bottom: none;
+}
+
+.suggestionItem:hover {
+    background-color: #f5f5f5;
+}
+
+.suggestionItem:active {
+    background-color: #e0e0e0;
+}
 
 /* Tags List */
 .tagsList { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -86,5 +142,6 @@
     .interestsContainer { padding: 16px; }
     .sectionHeader h2 { font-size: 1.3rem; }
     .interestTag, .languageTag, .cuisineTag { font-size: 0.8rem; padding: 3px 8px; }
-
+    .suggestionsList { max-height: 150px; }
+    .suggestionItem { padding: 6px 10px; font-size: 0.85rem; }
 }

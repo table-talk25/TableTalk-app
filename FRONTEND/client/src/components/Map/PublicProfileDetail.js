@@ -4,7 +4,7 @@ import { Accordion, Badge } from 'react-bootstrap';
 const PublicProfileDetail = ({ user, onInvite, onBack }) => {
   if (!user) return null;
 
-  // Filtra le partecipazioni recenti (esclude pasti organizzati)
+          // Filtra le partecipazioni recenti (esclude TableTalk® organizzati)
   const participatedMeals = (user.joinedMeals || []).filter(
     joinedMeal => !(user.createdMeals || []).some(createdMeal => createdMeal._id === joinedMeal._id)
   );
@@ -32,7 +32,7 @@ const PublicProfileDetail = ({ user, onInvite, onBack }) => {
           <div>Interessi: {user.interests.map(interest => <Badge key={interest} pill bg="info" style={{ marginRight: 4 }}>{interest}</Badge>)}</div>
         )}
       </div>
-      {/* Accordion per pasti organizzati e partecipazioni */}
+              {/* Accordion per TableTalk® organizzati e partecipazioni */}
       <Accordion>
         <Accordion.Item eventKey="0">
           <Accordion.Header>TableTalk Organizzati ({user.createdMeals?.length || 0})</Accordion.Header>

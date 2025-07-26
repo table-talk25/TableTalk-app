@@ -36,16 +36,16 @@
   ],
   "shortcuts": [
     {
-      "name": "Cerca Pasti",
+      "name": "Cerca TableTalk®",
       "short_name": "Cerca",
-      "description": "Cerca nuovi pasti disponibili",
+      "description": "Cerca nuovi TableTalk® disponibili",
       "url": "/search",
       "icons": [{ "src": "search-icon.png", "sizes": "192x192" }]
     },
     {
-      "name": "I Miei Pasti",
-      "short_name": "Miei Pasti",
-      "description": "Visualizza i tuoi pasti",
+      "name": "I Miei TableTalk®",
+      "short_name": "Miei TableTalk®",
+      "description": "Visualizza i tuoi TableTalk®",
       "url": "/my-meals",
       "icons": [{ "src": "my-meals-icon.png", "sizes": "192x192" }]
     }

@@ -32,6 +32,8 @@ import usePushPermission from './hooks/usePushPermission';
 
 import { MealsProvider } from './contexts/MealsContext'; // Questo è essenziale
 import { AuthProvider } from './contexts/AuthContext'; 
+import Spinner from './components/common/Spinner';
+import { Suspense } from 'react';
 
 const App = () => {
   console.log('--- L\'APP SI STA CARICANDO ---'); // <-- AGGIUNGI QUESTA RIGA
@@ -63,6 +65,7 @@ const App = () => {
       <AuthProvider>
       <MealsProvider>
       <NotificationProvider> {/* <-- 2. AVVOLGI L'APP */}
+        <Suspense fallback={<Spinner />}>
         <Routes>
           <Route path="/" element={<Layout />}>
             {/* --- Rotte Pubbliche --- */}
@@ -115,6 +118,7 @@ const App = () => {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      </Suspense>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       </NotificationProvider>
       </MealsProvider>

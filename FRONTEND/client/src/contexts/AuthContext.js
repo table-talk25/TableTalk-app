@@ -11,6 +11,7 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(null); 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null); // Stato per errori di login/register
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -38,17 +39,33 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (credentials) => {
-      const data = await authService.login(credentials);
-      setUser(data.user);
-      setToken(data.token); 
-      setIsAuthenticated(true);
-    };
-    
-    const register = async (registrationData) => {
-        const data = await authService.register(registrationData);
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await authService.login(credentials);
         setUser(data.user);
         setToken(data.token); 
         setIsAuthenticated(true);
+      } catch (err) {
+        setError(err.response?.data?.message || err.message || 'Errore di login');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    const register = async (registrationData) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await authService.register(registrationData);
+            setUser(data.user);
+            setToken(data.token); 
+            setIsAuthenticated(true);
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || 'Errore di registrazione');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const logout = async () => {
@@ -59,7 +76,7 @@ export const AuthProvider = ({ children }) => {
     };
     
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, register, isAuthenticated, loading }}>
+        <AuthContext.Provider value={{ user, token, login, logout, register, isAuthenticated, loading, error }}>
             {!loading && children}
         </AuthContext.Provider>
     );

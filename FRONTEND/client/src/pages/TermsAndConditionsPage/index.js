@@ -8,7 +8,7 @@ const TermsAndConditionsPage = () => {
   return (
     <Container className="my-5" style={{ maxWidth: '800px' }}>
       <h1 className="mb-4">Termini e Condizioni di TableTalk</h1>
-      <p><strong>Ultimo aggiornamento:</strong> 16 Luglio 2025</p>
+      <p><strong>Ultimo aggiornamento:</strong> 26 Luglio 2025</p>
       
       <p className="lead">
         Benvenuto in TableTalk. Ti preghiamo di leggere attentamente questi Termini e Condizioni prima di utilizzare il nostro servizio.
@@ -21,7 +21,7 @@ const TermsAndConditionsPage = () => {
 
       <h3 className="mt-4">2. Descrizione del Servizio</h3>
       <p>
-        TableTalk è una piattaforma che facilita l'incontro virtuale tra persone per condividere pasti e conversazioni tramite videochiamata. Gli utenti possono creare eventi ("Pasti") o partecipare a quelli creati da altri.
+        TableTalk è una piattaforma che facilita l'incontro virtuale tra persone per condividere TableTalk® e conversazioni tramite videochiamata. Gli utenti possono creare eventi ("TableTalk®") o partecipare a quelli creati da altri.
       </p>
 
       <h3 className="mt-4">3. Condotta dell'Utente</h3>
@@ -31,7 +31,7 @@ const TermsAndConditionsPage = () => {
 
       <h3 className="mt-4">4. Limitazione di Responsabilità</h3>
       <p>
-        TableTalk fornisce unicamente la piattaforma tecnologica per connettere gli utenti e non è responsabile della condotta degli utenti o del contenuto delle conversazioni durante i Pasti. L'utilizzo del Servizio è a proprio rischio.
+        TableTalk fornisce unicamente la piattaforma tecnologica per connettere gli utenti e non è responsabile della condotta degli utenti o del contenuto delle conversazioni durante i TableTalk®. L'utilizzo del Servizio è a proprio rischio.
       </p>
 
       <h3 className="mt-4">5. Modifiche al Servizio e ai Termini</h3>

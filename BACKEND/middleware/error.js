@@ -1,5 +1,6 @@
 // File: BACKEND/middleware/error.js (Versione Finale e Corretta)
 const ErrorResponse = require('../utils/errorResponse');
+const { MulterError } = require('multer');
 
 const errorHandler = (err, req, res, next) => {
   // Iniziamo con una copia dell'errore per poterlo modificare
@@ -9,6 +10,15 @@ const errorHandler = (err, req, res, next) => {
   // Log per noi sviluppatori per vedere l'errore completo
   console.log('--- GESTORE ERRORI ATTIVATO ---');
   console.error(err);
+
+  // === GESTIONE ERRORI MULTER ===
+  if (err instanceof MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      error = new ErrorResponse('Il file è troppo grande. La dimensione massima è 2MB.', 400);
+    } else {
+      error = new ErrorResponse(`Errore upload file: ${err.message}`, 400);
+    }
+  }
 
   // === GESTIONE ERRORI SPECIFICI ===
 

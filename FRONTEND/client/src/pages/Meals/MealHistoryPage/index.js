@@ -22,7 +22,7 @@ const MealHistoryPage = () => {
         if (!user) return;
         setLoading(true);
         try {
-            // Chiediamo tutti i pasti dove l'utente è host o partecipante
+            // Chiediamo tutti i TableTalk® dove l'utente è host o partecipante
             const response = await mealService.getUserMeals({ status: 'upcoming,ongoing,completed,cancelled' });
             setAllMeals(response.data);
         } catch (err) {
@@ -49,7 +49,7 @@ const MealHistoryPage = () => {
     useEffect(() => {
         if (!allMeals) return;
         const archivedMeals = allMeals.filter(m => m.status === 'completed' || m.status === 'cancelled');
-        console.log('DEBUG - Tutti i pasti archiviati (completed/cancelled):', archivedMeals);
+        console.log('DEBUG - Tutti i TableTalk® archiviati (completed/cancelled):', archivedMeals);
     }, [allMeals]);
 
     useEffect(() => {
@@ -62,7 +62,7 @@ const MealHistoryPage = () => {
         console.log('DEBUG - In programma a cui parteciperai:', inProgramParticipated);
     }, [allMeals, user]);
 
-    // Funzione per aggiornare la UI quando l'utente lascia un pasto
+            // Funzione per aggiornare la UI quando l'utente lascia un TableTalk®
     const handleLeaveSuccess = (mealId) => {
         setAllMeals(prevMeals => prevMeals.filter(meal => meal._id !== mealId));
     };
@@ -79,11 +79,11 @@ const MealHistoryPage = () => {
         const isPast = m => m.status === 'completed' || m.status === 'cancelled';
 
         return {
-            // Pasti creati dall'utente
+            // TableTalk® creati dall'utente
             upcomingCreated: allMeals.filter(m => isUpcomingOrOngoing(m) && m.host?._id === user?.id),
             pastCreated: allMeals.filter(m => isPast(m) && m.host?._id === user?.id),
 
-            // Pasti a cui l'utente partecipa (ma che non ha creato)
+            // TableTalk® a cui l'utente partecipa (ma che non ha creato)
             upcomingParticipated: allMeals.filter(m =>
                 isUpcomingOrOngoing(m) &&
                 m.host?._id !== user?.id &&
@@ -108,14 +108,14 @@ const MealHistoryPage = () => {
     return (
         <div className={styles.mealHistoryPage}>
             <div className={styles.mealHistoryHeader}>
-                <h1>I Miei Pasti</h1>
+                <h1>I Miei TableTalk®</h1>
                 <div className={styles.totalMealsCounter}>
                     <FaClipboardList />
                     <span>Hai <strong>{allMeals.length}</strong> TableTalk® totali nella tua cronologia</span>
                 </div>
             </div>
 
-            {/* Sezione Pasti in Programma */}
+            {/* Sezione TableTalk® in Programma */}
             <div className={styles.mainSection}>
                 <h2 className={styles.mainSectionTitle}>In Programma</h2>
                 <section className={styles.carouselSection}>

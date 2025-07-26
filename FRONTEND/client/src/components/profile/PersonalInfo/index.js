@@ -6,6 +6,7 @@ import styles from './PersonalInfo.module.css';
 
 const PersonalInfo = ({ profileData, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     nickname: '', bio: '', dateOfBirth: '', location: '', // <-- 'location' ora conterrà solo la stringa dell'indirizzo
     gender: '', phone: '',
@@ -48,24 +49,30 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
     }));
   };
 
-  const handleSave = () => {
-    // --- MODIFICA 2 ---
-    // Quando salviamo, ricostruiamo l'oggetto location nel formato corretto per il backend.
-    const dataToUpdate = {
-      nickname: formData.nickname,
-      bio: formData.bio,
-      dateOfBirth: formData.dateOfBirth,
-      // Invia l'indirizzo dentro l'oggetto location
-      location: { address: formData.location },
-      gender: formData.gender,
-      phone: formData.phone,
-      settings: { ...profileData.settings, privacy: { ...formData.privacy, showPhone: false } }
-    };
-    onUpdate(dataToUpdate);
-    setIsEditing(false);
+  const handleSave = async () => {
+    setError(''); // Pulisci eventuali errori precedenti
+    try {
+      // --- MODIFICA 2 ---
+      // Quando salviamo, ricostruiamo l'oggetto location nel formato corretto per il backend.
+      const dataToUpdate = {
+        nickname: formData.nickname,
+        bio: formData.bio,
+        dateOfBirth: formData.dateOfBirth,
+        // Invia l'indirizzo dentro l'oggetto location
+        location: { address: formData.location },
+        gender: formData.gender,
+        phone: formData.phone,
+        settings: { ...profileData.settings, privacy: { ...formData.privacy, showPhone: false } }
+      };
+      await onUpdate(dataToUpdate);
+      setIsEditing(false);
+    } catch (err) {
+      setError(err.message || 'Errore nell\'aggiornamento del profilo');
+    }
   };
 
   const handleCancel = () => {
+    setError(''); // Pulisci errori quando si annulla
     if (profileData) {
         setFormData({
             nickname: profileData.nickname || '',
@@ -122,6 +129,18 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
         </div>
       ) : (
         <div className={styles.form}>
+          {error && (
+            <div className={styles.errorMessage} style={{ 
+              color: 'red', 
+              backgroundColor: '#ffe6e6', 
+              padding: '10px', 
+              borderRadius: '5px', 
+              marginBottom: '20px',
+              border: '1px solid #ff9999'
+            }}>
+              {error}
+            </div>
+          )}
           {/* --- NESSUNA MODIFICA QUI ---
               Anche questa parte ora funziona perché formData.location è una stringa */}
           <input name="nickname" value={formData.nickname} onChange={handleChange} placeholder="Nickname" className={styles.input} />

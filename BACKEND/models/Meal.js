@@ -16,6 +16,15 @@ const MealSchema = new mongoose.Schema({
     type: String,
     default: 'default-meal.jpg' 
   },
+  mealType: {
+    type: String,
+    required: [true, 'Il tipo di TableTalk è obbligatorio'],
+    enum: {
+      values: ['virtual', 'physical'],
+      message: 'Il tipo di TableTalk deve essere "virtual" o "physical"'
+    },
+    default: 'virtual'
+  },
   type: {
     type: String,
     required: [true, 'Il tipo di pasto è obbligatorio'],
@@ -119,7 +128,33 @@ const MealSchema = new mongoose.Schema({
         return true;
       }
     }
-},
+  },
+  // Campo per la posizione - obbligatorio solo per pasti fisici
+  location: {
+    type: String,
+    validate: {
+      validator: function(value) {
+        // Se è un pasto fisico, la location è obbligatoria
+        if (this.mealType === 'physical' && (!value || value.trim().length === 0)) {
+          this.invalidate('location', 'La posizione è obbligatoria per un pasto fisico');
+          return false;
+        }
+        // Se è un pasto virtuale, la location non è necessaria
+        if (this.mealType === 'virtual') {
+          return true;
+        }
+        // Per pasti fisici, la location deve essere valida
+        return value && value.trim().length >= 5 && value.trim().length <= 200;
+      },
+      message: 'La posizione deve essere tra 5 e 200 caratteri per pasti fisici'
+    }
+  },
+  // Campo per distinguere pasti pubblici e privati
+  isPublic: {
+    type: Boolean,
+    default: true, // Di default i pasti sono pubblici
+    required: true
+  },
   videoCallLink: {
     type: String,
     validate: {
@@ -238,6 +273,7 @@ MealSchema.index({ host: 1 });
 MealSchema.index({ participants: 1 });
 MealSchema.index({ language: 1 });
 MealSchema.index({ topics: 1 });
+MealSchema.index({ mealType: 1 }); // Nuovo indice per mealType
 MealSchema.index({ 'notifications.recipient': 1, 'notifications.read': 1 });
 MealSchema.index({ 'ratings.user': 1 });
 
@@ -298,7 +334,17 @@ MealSchema.statics.findUserMeals = function(userId) {
       { host: userId },
       { participants: userId }
     ]
-  }).sort({ date: -1 });
+  });
+};
+
+// Metodo per ottenere pasti virtuali
+MealSchema.statics.findVirtualMeals = function() {
+  return this.find({ mealType: 'virtual' });
+};
+
+// Metodo per ottenere pasti fisici
+MealSchema.statics.findPhysicalMeals = function() {
+  return this.find({ mealType: 'physical' });
 };
 
 // Unico pre-save hook combinato e corretto

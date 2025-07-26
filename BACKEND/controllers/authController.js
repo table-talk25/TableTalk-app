@@ -37,13 +37,28 @@ exports.register = asyncHandler(async (req, res, next) => {
     
     // Genera il token e invia la risposta
     const token = user.generateAuthToken();
+    // Genera il token di verifica email
+    const verificationToken = user.generateVerificationToken();
+    user.isVerified = false;
+    await user.save({ validateBeforeSave: false });
+
+    // Invia l'email di verifica
     try {
-      await sendEmail.sendWelcomeEmail(user.email, user.name);
+      await sendEmail.sendVerificationEmail(user.email, verificationToken);
     } catch (err) {
-      console.error('Errore invio email di benvenuto:', err.message);
+      console.error('Errore invio email di verifica:', err.message);
     }
     console.timeEnd('Tempo Registrazione');
-    res.status(201).json({ success: true, token, user, message: 'Registrazione effettuata con successo' });
+    // Creo un oggetto con solo i dati essenziali per il frontend
+    const userInfo = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      profileCompleted: user.profileCompleted,
+      isVerified: user.isVerified
+    };
+    res.status(201).json({ success: true, token, user: userInfo, message: 'Registrazione effettuata con successo. Controlla la tua email per verificare il tuo account.' });
 });
 
 /**
@@ -157,8 +172,19 @@ exports.resetPassword = asyncHandler(async (req, res, next) => {
  * @route   POST /api/auth/verify-email/:token
  */
 exports.verifyEmail = asyncHandler(async (req, res, next) => {
-    // La logica per questa funzione dipende dal metodo generateVerificationToken nel modello User
-    res.status(501).json({ success: false, message: 'Funzionalità non ancora implementata.' });
+    const verificationToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+    const user = await User.findOne({
+        verificationToken,
+        verificationTokenExpires: { $gt: Date.now() }
+    });
+    if (!user) {
+        return next(new ErrorResponse('Token di verifica non valido o scaduto', 400));
+    }
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+    res.status(200).json({ success: true, message: 'Email verificata con successo. Ora puoi accedere a tutte le funzionalità.' });
 });
 
 /**
@@ -166,6 +192,21 @@ exports.verifyEmail = asyncHandler(async (req, res, next) => {
  * @route   POST /api/auth/resend-verification
  */
 exports.resendVerification = asyncHandler(async (req, res, next) => {
-    // La logica per questa funzione
-    res.status(501).json({ success: false, message: 'Funzionalità non ancora implementata.' });
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+        return next(new ErrorResponse('Utente non trovato', 404));
+    }
+    if (user.isVerified) {
+        return res.status(200).json({ success: true, message: 'Account già verificato.' });
+    }
+    const verificationToken = user.generateVerificationToken();
+    await user.save({ validateBeforeSave: false });
+    try {
+        await sendEmail.sendVerificationEmail(user.email, verificationToken);
+    } catch (err) {
+        console.error('Errore invio email di verifica:', err.message);
+        return next(new ErrorResponse('Errore nell\'invio dell\'email di verifica', 500));
+    }
+    res.status(200).json({ success: true, message: 'Nuova email di verifica inviata. Controlla la tua casella di posta.' });
 });

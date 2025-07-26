@@ -7,11 +7,25 @@ const pushNotificationService = require('../services/pushNotificationService');
 const sendEmail = require('../utils/sendEmail');
 
 exports.sendInvitation = asyncHandler(async (req, res, next) => {
-  const { toUser, message } = req.body;
+  const { toUser, message, mealId } = req.body;
   const fromUser = req.user;
 
   if (fromUser.id === toUser) {
     return next(new ErrorResponse('Non puoi inviare un invito a te stesso.', 400));
+  }
+
+  // Controllo che l'invito sia solo per pasti dal vivo
+  const meal = await require('../models/Meal').findById(mealId);
+  if (!meal) {
+    return next(new ErrorResponse('Pasto non trovato.', 404));
+  }
+  if (meal.mealType !== 'physical') {
+    return next(new ErrorResponse('Gli inviti possono essere inviati solo per i pasti dal vivo.', 400));
+  }
+
+  // Controlla se chi invita è l'host del pasto
+  if (meal.host.toString() !== req.user.id) {
+    return next(new ErrorResponse('Solo l\'host del pasto può inviare inviti.', 403));
   }
 
   const recipient = await User.findById(toUser);

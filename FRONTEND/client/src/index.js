@@ -5,6 +5,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { MealsProvider } from './contexts/MealsContext';
+import './i18n';
 
 // Ora importiamo solo il nostro file CSS principale e quello della libreria di notifiche
 import './styles/common/index.css'; 

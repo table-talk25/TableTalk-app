@@ -28,7 +28,7 @@ export const MealsProvider = ({ children }) => {
             const response = await mealService.createMeal(formData);
             return response;
         } catch (error) {
-            console.error("Errore durante la creazione del pasto nel context:", error);
+            console.error("Errore durante la creazione del TableTalk® nel context:", error);
             throw error;
         } finally {
             setLoading(false);
@@ -42,7 +42,7 @@ export const MealsProvider = ({ children }) => {
             setMeals(response.data);
             setError('');
         } catch (err) {
-            setError('Errore nel caricamento dei pasti. Riprova più tardi.');
+            setError('Errore nel caricamento dei TableTalk®. Riprova più tardi.');
             setMeals([]);
         } finally {
             setLoading(false);

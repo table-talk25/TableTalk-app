@@ -10,9 +10,9 @@ const LeaveMealButton = ({ mealId, onSuccess }) => {
   const handleLeave = async () => {
           if (window.confirm('Sei sicuro di voler abbandonare questo TableTalk®?')) {
       try {
-        const updatedMeal = await leaveMeal(mealId); // Questa funzione ora restituisce il pasto aggiornato
+        const updatedMeal = await leaveMeal(mealId); // Questa funzione ora restituisce il TableTalk® aggiornato
         if (onSuccess) {
-          onSuccess(updatedMeal); // Passiamo l'INTERO pasto aggiornato al genitore
+          onSuccess(updatedMeal); // Passiamo l'INTERO TableTalk® aggiornato al genitore
         }
       } catch (error) {
         // Il toast di errore è già gestito dal context

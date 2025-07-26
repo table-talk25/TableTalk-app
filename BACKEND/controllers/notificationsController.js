@@ -8,13 +8,17 @@ const Meal = require('../models/Meal');
  * @route   GET /api/notifications
  */
 exports.getMyNotifications = asyncHandler(async (req, res, next) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 15;
+  const skip = (page - 1) * limit;
+
   // Troviamo tutti i pasti dove l'utente loggato è il destinatario di una notifica
   const mealsWithNotifications = await Meal.find({ 
     'notifications.recipient': req.user.id 
   }).select('notifications title _id');
 
   // Estraiamo e filtriamo solo le notifiche per l'utente corrente
-  const userNotifications = mealsWithNotifications.flatMap(meal => 
+  let userNotifications = mealsWithNotifications.flatMap(meal => 
     meal.notifications
       .filter(notif => notif.recipient.toString() === req.user.id)
       .map(notif => ({
@@ -24,9 +28,15 @@ exports.getMyNotifications = asyncHandler(async (req, res, next) => {
       }))
   ).sort((a, b) => b.createdAt - a.createdAt); // Ordiniamo dalla più recente
 
+  const total = userNotifications.length;
+  userNotifications = userNotifications.slice(skip, skip + limit);
+
   res.status(200).json({
     success: true,
     count: userNotifications.length,
+    total,
+    page,
+    pages: Math.ceil(total / limit),
     data: userNotifications,
   });
 });

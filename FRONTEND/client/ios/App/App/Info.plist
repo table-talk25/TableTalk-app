@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>TableTalk usa la tua posizione per mostrarti altri utenti nelle vicinanze sulla mappa e per aiutarti a trovare compagni per i pasti.</string>
+	<string>TableTalk usa la tua posizione per mostrarti sulla mappa i TableTalk® organizzati vicino a te.</string>
 	<key>CapacitorCameraRemoveBackground</key>
 	<false/>
 	<key>NSPhotoLibraryUsageDescription</key>

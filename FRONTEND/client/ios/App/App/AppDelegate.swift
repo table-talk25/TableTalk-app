@@ -8,8 +8,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Assicurati di usare la tua NUOVA chiave API qui
-        GMSServices.provideAPIKey("AIzaSyBffwVOLM6qWg0Nphy9uEMR8AeqJ8hzizQ")
+        // Questa riga è perfetta e carica la chiave in modo sicuro
+        GMSServices.provideAPIKey(ProcessInfo.processInfo.environment["MAPS_API_KEY"] ?? "") 
         return true
     }
 

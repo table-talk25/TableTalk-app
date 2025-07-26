@@ -117,7 +117,7 @@ exports.requireVerifiedAccount = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Utente non trovato', 404));
   }
 
-  if (!user.isEmailVerified) {
+  if (!user.isVerified) { // Corretto qui
     return next(new ErrorResponse('Account non verificato', 403));
   }
 

@@ -1,0 +1,86 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "pleaseCorrectErrors": "Please correct the errors in the form."
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "resetPassword": "Reset Password",
+    "loginSuccess": "Login successful",
+    "registerSuccess": "Registration completed successfully",
+    "logoutSuccess": "Logout successful",
+    "dateOfBirthRequired": "Date of birth is required",
+    "minAgeRequired": "You must be at least 18 years old to register",
+    "welcomeCompleteProfile": "Welcome! Complete your profile.",
+    "registerError": "Error during registration",
+    "createAccount": "Create your Account",
+    "name": "Name",
+    "surname": "Surname",
+    "dateOfBirth": "Date of Birth",
+    "passwordRequirements": "At least 8 characters, with uppercase, lowercase, number and symbol.",
+    "termsText": "I declare that I have read and accept the",
+    "termsOfService": "Terms of Service",
+    "and": "and the",
+    "privacyPolicy": "Privacy Policy",
+    "registering": "Registering...",
+    "alreadyHaveAccount": "Already have an account?"
+  },
+  "meals": {
+    "createMeal": "Create TableTalk®",
+    "editMeal": "Edit TableTalk®",
+    "joinMeal": "Join TableTalk®",
+    "leaveMeal": "Leave TableTalk®",
+    "mealDetails": "TableTalk® Details",
+    "myMeals": "My TableTalk®",
+    "noMeals": "No TableTalk® found",
+    "mealType": {
+      "virtual": "Virtual",
+      "physical": "Physical"
+    },
+    "visibility": {
+      "public": "Public",
+      "private": "Private"
+    }
+  },
+  "home": {
+    "heroTitle": "Share a TableTalk®.<br />Create a connection.",
+    "heroSubtitle": "TableTalk is the global community for those who love sharing stories and flavors. Organize a virtual TableTalk® on your favorite topics or join a conversation already scheduled."
+  },
+  "navigation": {
+    "home": "Home",
+    "meals": "TableTalk®",
+    "map": "Map",
+    "profile": "Profile",
+    "chat": "Chat",
+    "notifications": "Notifications"
+  },
+  "profile": {
+    "personalInfo": "Personal Information",
+    "interests": "Interests",
+    "languages": "Languages",
+    "mealHistory": "TableTalk® History",
+    "settings": "Settings"
+  },
+  "map": {
+    "title": "Users and Physical TableTalk® Near You",
+    "subtitle": "Explore who's available for a TableTalk® nearby and discover physical TableTalk® in the program!"
+  }
+}

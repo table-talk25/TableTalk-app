@@ -4,6 +4,9 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const Meal = require('./Meal');
+const Chat = require('./Chat');
+const Invitation = require('./Invitation');
 
 const UserSchema = new mongoose.Schema(
   {
@@ -19,7 +22,27 @@ const UserSchema = new mongoose.Schema(
     profileImage: { type: String, default: 'uploads/profile-images/default-avatar.jpg'  },
     bio: { type: String, maxlength: 500, default: '' },
     gender: { type: String, enum: ['', 'male', 'female', 'non-binary', 'other'], default: '' },
-    dateOfBirth: { type: Date },
+    dateOfBirth: { 
+      type: Date, 
+      required: [true, 'La data di nascita è obbligatoria'],
+      validate: {
+        validator: function(dateOfBirth) {
+          if (!dateOfBirth) return false;
+          
+          const today = new Date();
+          const birthDate = new Date(dateOfBirth);
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+          
+          return age >= 18;
+        },
+        message: 'Devi avere almeno 18 anni per registrarti'
+      }
+    },
     location: {
       type: {
         type: String,
@@ -115,6 +138,28 @@ UserSchema.pre('save', async function(next) {
   next();
 });
 
+// Middleware per la pulizia dati prima della cancellazione di un utente
+UserSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
+  console.log(`--- Pulizia dati per l'utente ${this._id} ---`);
+  try {
+    // 1. Cancella tutti i pasti creati da questo utente
+    await mongoose.model('Meal').deleteMany({ host: this._id });
+    // 2. Rimuovi questo utente da tutti i pasti a cui partecipava
+    await mongoose.model('Meal').updateMany(
+      { participants: this._id },
+      { $pull: { participants: this._id }, $inc: { participantsCount: -1 } }
+    );
+    // 3. Cancella le chat associate e gli inviti
+    await mongoose.model('Chat').deleteMany({ participants: this._id });
+    await mongoose.model('Invitation').deleteMany({ $or: [{ sender: this._id }, { receiver: this._id }] });
+    console.log(`--- Pulizia completata per l'utente ${this._id} ---`);
+    next();
+  } catch (error) {
+    console.error(`Errore durante la pulizia dei dati per l'utente ${this._id}:`, error);
+    next(error);
+  }
+});
+
 
 // --- METODI (le "abilità" di ogni utente) ---
 
@@ -143,6 +188,14 @@ UserSchema.methods.resetLoginAttempts = async function() {
   this.lockUntil = undefined;
   this.lastLogin = new Date();
   await this.save({ validateBeforeSave: false });
+};
+
+// Metodo per generare il token di verifica email
+UserSchema.methods.generateVerificationToken = function() {
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  this.verificationToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+  this.verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 ore
+  return verificationToken;
 };
 
 // Il metodo che useremo per aggiornare il profilo

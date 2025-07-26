@@ -47,6 +47,32 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
+/* Badge per il tipo di TableTalk® (virtuale/fisico) */
+.mealModeBadge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.mealModeIcon {
+  font-size: 0.9rem;
+}
+
+.mealModeText {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .cardTitleWrapper {
     padding: 1.25rem 1.25rem 0.5rem 1.25rem;
 }
@@ -82,6 +108,21 @@
   object-fit: cover;
 }
 
+/* Stili per la posizione */
+.locationIcon {
+  font-size: 1rem;
+}
+
+.locationText {
+  font-size: 0.85rem;
+  color: #4a5568;
+  font-weight: 500;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .cardDescription {
   font-size: 0.9rem;
   color: #5a677a;
@@ -98,49 +139,65 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .actionButtons {
-    display: flex;
-    gap: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
 }
 
 .hostLink {
   text-decoration: none;
   color: inherit;
-  display: inline-block;
-  padding: 0.25rem 0; /* Aggiunto un po' di padding per un'area cliccabile migliore */
+  transition: opacity 0.2s ease;
 }
 
 .hostLink:hover .cardDetail {
-  background-color: #f8f9fa;
-  border-radius: 8px;
+  opacity: 0.8;
 }
 
-/* =======================================
-   MEDIA QUERIES (TUA STRUTTURA RISPETTATA)
-   ======================================= */
-
+/* Responsive Design */
 @media (max-width: 768px) {
   .cardImageWrapper {
     height: 160px;
   }
+  
   .cardTitleWrapper {
     padding: 1rem 1rem 0.5rem 1rem;
   }
+  
   .cardTitle {
     font-size: 1.1rem;
   }
+  
   .cardContent {
     padding: 0.5rem 1rem 1rem 1rem;
-    gap: 0.6rem;
+    gap: 0.5rem;
   }
+  
   .cardDetail {
     font-size: 0.85rem;
   }
+  
   .cardActions {
     padding: 0.75rem 1rem;
+  }
+  
+  /* Responsive per i badge */
+  .mealModeBadge {
+    top: 0.75rem;
+    right: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.7rem;
+  }
+  
+  .mealModeText {
+    font-size: 0.65rem;
+  }
+  
+  .locationText {
+    max-width: 150px;
   }
 }
 
@@ -148,13 +205,47 @@
   .cardImageWrapper {
     height: 140px;
   }
+  
+  .cardTitle {
+    font-size: 1rem;
+  }
+  
+  .cardContent {
+    padding: 0.5rem 0.75rem 0.75rem 0.75rem;
+  }
+  
+  .cardActions {
+    padding: 0.5rem 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .actionButtons {
+    justify-content: center;
+  }
+  
+  /* Responsive per i badge su schermi molto piccoli */
+  .mealModeBadge {
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.65rem;
+  }
+  
+  .mealModeText {
+    display: none; /* Nascondi il testo su schermi molto piccoli */
+  }
+  
+  .locationText {
+    max-width: 120px;
+  }
 }
 
-/* Miglioramenti per touch e accessibilità (TUA STRUTTURA RISPETTATA) */
 @media (hover: none) and (pointer: coarse) {
   .card:hover {
     transform: none;
   }
+  
   .card:active {
     transform: scale(0.98);
   }
@@ -164,6 +255,7 @@
   .card {
     transition: none;
   }
+  
   .card:hover {
     transform: none;
   }

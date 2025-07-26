@@ -43,11 +43,12 @@ exports.getChat = asyncHandler(async (req, res, next) => {
  */
 exports.sendMessage = asyncHandler(async (req, res, next) => {
   const { chatId } = req.params;
-  const { text } = req.body;
+  const { content } = req.body;
   const senderId = req.user._id;
 
-  if (!text || text.trim() === '') {
-    return next(new ErrorResponse('Il messaggio non può essere vuoto', 400));
+  // Controllo per messaggi vuoti
+  if (!content || content.trim() === '') {
+    return next(new ErrorResponse('Il contenuto del messaggio non può essere vuoto', 400));
   }
 
   const chat = await Chat.findById(chatId);
@@ -61,7 +62,7 @@ exports.sendMessage = asyncHandler(async (req, res, next) => {
 
   const message = {
     sender: senderId,
-    text: text,
+    text: content,
     read: [senderId] // Il mittente ha già "letto" il messaggio
   };
 
@@ -226,5 +227,42 @@ exports.leaveChat = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: 'Hai lasciato la chat con successo.'
+  });
+});
+
+// GET /api/chats/:chatId/messages?page=1&limit=20
+exports.getChatMessages = asyncHandler(async (req, res, next) => {
+  const { chatId } = req.params;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 20;
+  const skip = (page - 1) * limit;
+
+  // Trova la chat e verifica che l'utente sia un partecipante
+  const chat = await Chat.findById(chatId)
+    .populate({ path: 'participants', select: 'nickname profileImage' });
+
+  if (!chat) {
+    return next(new ErrorResponse('Chat non trovata', 404));
+  }
+  if (!chat.participants.some(p => p._id.equals(req.user._id))) {
+    return next(new ErrorResponse('Non sei autorizzato ad accedere a questa chat', 403));
+  }
+
+  // Paginazione dei messaggi (dal più recente al più vecchio)
+  const totalMessages = chat.messages.length;
+  const messages = chat.messages
+    .slice()
+    .reverse()
+    .slice(skip, skip + limit)
+    .reverse(); // Riordina dal più vecchio al più recente
+
+  res.status(200).json({
+    success: true,
+    data: messages,
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(totalMessages / limit),
+      totalMessages
+    }
   });
 });

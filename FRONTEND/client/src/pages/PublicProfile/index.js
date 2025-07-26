@@ -42,7 +42,7 @@ const PublicProfilePage = () => {
 
     const capitalize = (s) => s && s.charAt(0).toUpperCase() + s.slice(1);
 
-        // Filtriamo i pasti a cui l'utente ha partecipato escludendo quelli che ha organizzato lui stesso
+        // Filtriamo i TableTalk® a cui l'utente ha partecipato escludendo quelli che ha organizzato lui stesso
         const participatedMeals = profile.joinedMeals?.filter(
             joinedMeal => !profile.createdMeals?.some(createdMeal => createdMeal._id === joinedMeal._id)
           ) || [];
@@ -97,7 +97,7 @@ const PublicProfilePage = () => {
                             </Card>
                         </Col>
 
-                        {/* Colonna Destra: Bio e Pasti con Accordion */}
+                        {/* Colonna Destra: Bio e TableTalk® con Accordion */}
                         <Col lg={8} className={styles.rightColumn}>
                              <Card className={styles.infoCard}>
                                 <Card.Body>
@@ -106,7 +106,7 @@ const PublicProfilePage = () => {
                                 </Card.Body>
                             </Card>
                             
-                            {/* 2. NUOVA SEZIONE PASTI CON ACCORDION */}
+                            {/* 2. NUOVA SEZIONE TABLETALK® CON ACCORDION */}
                             <div className={styles.accordionSection}>
                                 <Accordion>
                                     <Accordion.Item eventKey="0">

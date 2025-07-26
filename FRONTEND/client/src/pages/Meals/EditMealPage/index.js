@@ -19,7 +19,7 @@ const EditMealPage = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
 
-  // Carichiamo i dati del pasto da modificare
+          // Carichiamo i dati del TableTalk® da modificare
   const fetchMealData = useCallback(async () => {
     setLoading(true);
     try {

@@ -67,7 +67,7 @@ const MealDetailPage = () => {
         }
     };
 
-       // Funzione per lasciare la CHAT, non il pasto
+               // Funzione per lasciare la CHAT, non il TableTalk®
        const handleLeaveChat = async () => {
         if (!meal.chatId) return toast.error("ID della chat non trovato.");
         if (window.confirm('Sei sicuro di voler lasciare questa chat? Potrai rientrare in seguito.')) {
@@ -132,7 +132,7 @@ const MealDetailPage = () => {
         if (isParticipant && !isHost && (isUpcoming || meal.status === 'ongoing')) {
             return <Button variant="outline-danger" className="w-100" onClick={() => setShowLeaveModal(true)}>Lascia il TableTalk®</Button>;
         }
-        // Permetti di unirsi anche se il pasto è ongoing
+        // Permetti di unirsi anche se il TableTalk® è ongoing
         if (!isParticipant && (isUpcoming || meal.status === 'ongoing') && !isFull) {
             return <Button variant="success" className="w-100" onClick={handleJoinMeal}>Unisciti al TableTalk®</Button>;
         }
@@ -177,13 +177,34 @@ const MealDetailPage = () => {
 
                         <h2>Partecipanti ({meal.participants.length})</h2>
                         <div className={styles.participantsContainer}>
-                            {meal.participants.map(p => (
-                                <Link to={`/profilo/${p._id}`} key={p._id} className={styles.participant}>
-                                    {/* ▼▼▼ 3. USIAMO LA FUNZIONE HELPER `getHostAvatarUrl` ▼▼▼ */}
-                                    <img src={getHostAvatarUrl(p.profileImage)} alt={p.nickname} title={p.nickname} />
-                                    <span>{p.nickname}</span>
-                                </Link>
-                            ))}
+                            {isMember ? (
+                                // Se l'utente è host o partecipante, mostra tutti i dettagli
+                                meal.participants.map(p => (
+                                    <Link to={`/profilo/${p._id}`} key={p._id} className={styles.participant}>
+                                        <img src={getHostAvatarUrl(p.profileImage)} alt={p.nickname} title={p.nickname} />
+                                        <span>{p.nickname}</span>
+                                    </Link>
+                                ))
+                            ) : (
+                                // Se NON è membro, mostra solo l'host e avatar generici per gli altri
+                                <>
+                                    {/* Mostra l'host con nome e foto */}
+                                    <Link to={`/profilo/${meal.host._id}`} key={meal.host._id} className={styles.participant}>
+                                        <img src={getHostAvatarUrl(meal.host.profileImage)} alt={meal.host.nickname} title={meal.host.nickname} />
+                                        <span>{meal.host.nickname} (Host)</span>
+                                    </Link>
+                                    {/* Mostra avatar generici per gli altri partecipanti */}
+                                    {meal.participants.filter(p => p._id !== meal.host._id).map((p, idx) => (
+                                        <div key={p._id} className={styles.participant} style={{ opacity: 0.5 }}>
+                                            {/* Avatar generico o iniziali */}
+                                            <div className={styles.genericAvatar}>
+                                                {p.nickname && p.nickname.length > 0 ? p.nickname[0].toUpperCase() : '?'}
+                                            </div>
+                                            <span>Partecipante #{idx + 1}</span>
+                                        </div>
+                                    ))}
+                                </>
+                            )}
                         </div>
                     </Col>
                     

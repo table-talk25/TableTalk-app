@@ -1,24 +1,39 @@
 // File: src/components/layout/Navbar/index.js (Versione Definitiva)
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { FaBars, FaTimes, FaHome, FaUserCircle, FaUser, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaBars, FaTimes, FaHome, FaUserCircle, FaUser, FaMapMarkerAlt, FaEllipsisV } from 'react-icons/fa';
 import { useAuth } from '../../../contexts/AuthContext';
 import Logo from '../../common/Logo';
 import styles from './Navbar.module.css';
 import Notifications from '../../../components/notifications/Notifications'; 
 import { getHostAvatarUrl } from '../../../constants/mealConstants';
+import LanguageSwitcher from '../../common/LanguageSwitcher.js';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isKebabMenuOpen, setIsKebabMenuOpen] = useState(false);
+  const kebabMenuRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Chiudi il menu kebab quando si clicca fuori
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (kebabMenuRef.current && !kebabMenuRef.current.contains(event.target)) {
+        setIsKebabMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
@@ -58,7 +73,26 @@ const Navbar = () => {
                         <Link to={`/impostazioni/profilo`}> {/* Corretto il link al profilo */}
                             <img src={getHostAvatarUrl(user?.profileImage)} alt="Mio Profilo" className={styles.profileAvatar} />
                         </Link>
-                        <button className={styles.logoutButton} onClick={handleLogout}>Logout</button>
+                        <div className={styles.kebabMenuContainer} ref={kebabMenuRef}>
+                            <button 
+                                className={styles.kebabButton}
+                                onClick={() => setIsKebabMenuOpen(!isKebabMenuOpen)}
+                            >
+                                <FaEllipsisV />
+                            </button>
+                            {isKebabMenuOpen && (
+                                <div className={styles.kebabDropdown}>
+                                    <div className={styles.kebabItem}>
+                                        <LanguageSwitcher />
+                                    </div>
+                                    <div className={styles.kebabItem}>
+                                        <button className={styles.logoutButtonKebab} onClick={handleLogout}>
+                                            Logout
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <div className={styles.mobileActions}>
                         <Notifications />
@@ -85,7 +119,28 @@ const Navbar = () => {
                         {/* --- LINK MAPPA PER MOBILE --- */}
                         <li className={styles.navItem}><NavLink to="/map" className={({ isActive }) => (isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink)} onClick={closeMobileMenu}><FaMapMarkerAlt /> Mappa</NavLink></li>
                         <li className={styles.navItem}><NavLink to="/impostazioni/profilo" className={({ isActive }) => (isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink)} onClick={closeMobileMenu}>Il Mio Profilo</NavLink></li>
-                        <li className={styles.navItem}><button className={styles.logoutButtonMobile} onClick={handleLogout}>Logout</button></li>
+                        <li className={styles.navItem}>
+                            <div className={styles.kebabMenuContainer} ref={kebabMenuRef}>
+                                <button 
+                                    className={styles.kebabButtonMobile}
+                                    onClick={() => setIsKebabMenuOpen(!isKebabMenuOpen)}
+                                >
+                                    <FaEllipsisV /> Opzioni
+                                </button>
+                                {isKebabMenuOpen && (
+                                    <div className={styles.kebabDropdownMobile}>
+                                        <div className={styles.kebabItem}>
+                                            <LanguageSwitcher />
+                                        </div>
+                                        <div className={styles.kebabItem}>
+                                            <button className={styles.logoutButtonKebab} onClick={handleLogout}>
+                                                Logout
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </li>
                     </>
                 )}
             </ul>

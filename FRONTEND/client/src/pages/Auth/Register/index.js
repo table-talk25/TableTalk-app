@@ -1,6 +1,7 @@
 // File: frontend/client/src/pages/Auth/RegisterPage.js (Versione Finale)
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Form, Button, Alert, InputGroup, FormCheck } from 'react-bootstrap';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -10,15 +11,52 @@ import styles from './RegisterPage.module.css';
 const RegisterPage = () => {
     const navigate = useNavigate();
     const { register } = useAuth();
-    const [formData, setFormData] = useState({ name: '', surname: '', email: '', password: '', confirmPassword: '', terms: false });
+    const { t } = useTranslation();
+    const [formData, setFormData] = useState({ 
+        name: '', 
+        surname: '', 
+        email: '', 
+        password: '', 
+        confirmPassword: '', 
+        dateOfBirth: '',
+        terms: false 
+    });
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    const validateAge = (dateOfBirth) => {
+        if (!dateOfBirth) return t('auth.dateOfBirthRequired');
+        
+        const today = new Date();
+        const birthDate = new Date(dateOfBirth);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        
+        if (age < 18) {
+            return t('auth.minAgeRequired');
+        }
+        
+        return '';
+    };
+
     const handleChange = (e) => {
         const { name, value, type, checked  } = e.target;
         setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
-        if (errors[name]) {
+        
+        // Validazione specifica per la data di nascita
+        if (name === 'dateOfBirth') {
+            const ageError = validateAge(value);
+            if (ageError) {
+                setErrors(prev => ({ ...prev, [name]: ageError }));
+            } else {
+                setErrors(prev => ({ ...prev, [name]: null }));
+            }
+        } else if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
     };
@@ -28,11 +66,19 @@ const RegisterPage = () => {
         setIsLoading(true);
         setErrors({});
 
+        // Validazione frontend per l'età
+        const ageError = validateAge(formData.dateOfBirth);
+        if (ageError) {
+            setErrors(prev => ({ ...prev, dateOfBirth: ageError }));
+            setIsLoading(false);
+            toast.error(t('common.pleaseCorrectErrors'));
+            return;
+        }
 
         try {
             await register({ ...formData });
-            toast.success('Registrazione avvenuta con successo!');
-            navigate('/impostazioni/profilo', { state: { message: 'Benvenuto/a! Completa il tuo profilo.' } });
+            toast.success(t('auth.registerSuccess'));
+            navigate('/impostazioni/profilo', { state: { message: t('auth.welcomeCompleteProfile') } });
         } catch (err) {
             if (err.errors && err.errors.length > 0) {
                 const backendErrors = {};
@@ -40,9 +86,9 @@ const RegisterPage = () => {
                     if(error.path) { backendErrors[error.path] = error.msg; }
                 });
                 setErrors(backendErrors);
-                toast.error('Per favore, correggi gli errori nel modulo.');
+                toast.error(t('common.pleaseCorrectErrors'));
             } else {
-                toast.error(err.message || 'Errore durante la registrazione.');
+                toast.error(err.message || t('auth.registerError'));
             }
         } finally {
             setIsLoading(false);
@@ -52,26 +98,41 @@ const RegisterPage = () => {
     return (
         <div className={styles.page}>
             <div className={styles.card}>
-                <h2 className={styles.title}>Crea il tuo Account</h2>
+                <h2 className={styles.title}>{t('auth.createAccount')}</h2>
                 <Form onSubmit={handleSubmit} noValidate>
                     <Form.Group className="mb-3">
-                        <Form.Label className={styles.formLabel}>Nome</Form.Label>
+                        <Form.Label className={styles.formLabel}>{t('auth.name')}</Form.Label>
                         <Form.Control className={styles.formInput} type="text" name="name" value={formData.name} onChange={handleChange} isInvalid={!!errors.name} required />
                         <Form.Control.Feedback type="invalid">{errors.name}</Form.Control.Feedback>
                     </Form.Group>
-                          <Form.Group className="mb-3">
-                        <Form.Label className={styles.formLabel}>Cognome</Form.Label>
+                    <Form.Group className="mb-3">
+                        <Form.Label className={styles.formLabel}>{t('auth.surname')}</Form.Label>
                         <Form.Control className={styles.formInput} type="text" name="surname" value={formData.surname} onChange={handleChange} isInvalid={!!errors.surname} required />
                         <Form.Control.Feedback type="invalid">{errors.surname}</Form.Control.Feedback>
                     </Form.Group>
-                     <Form.Group className="mb-3">
+                    <Form.Group className="mb-3">
                         <Form.Label className={styles.formLabel}>Email</Form.Label>
                         <Form.Control className={styles.formInput} type="email" name="email" value={formData.email} onChange={handleChange} isInvalid={!!errors.email} required />
                         <Form.Control.Feedback type="invalid">{errors.email}</Form.Control.Feedback>
                     </Form.Group>
+                    
+                    <Form.Group className="mb-3">
+                        <Form.Label className={styles.formLabel}>{t('auth.dateOfBirth')}</Form.Label>
+                        <Form.Control 
+                            className={styles.formInput} 
+                            type="date" 
+                            name="dateOfBirth" 
+                            value={formData.dateOfBirth} 
+                            onChange={handleChange} 
+                            isInvalid={!!errors.dateOfBirth} 
+                            required 
+                        />
+                        <Form.Control.Feedback type="invalid">{errors.dateOfBirth}</Form.Control.Feedback>
+                        <Form.Text className="text-muted">{t('auth.minAgeRequired')}</Form.Text>
+                    </Form.Group>
     
                     <Form.Group className="mb-3">
-                        <Form.Label className={styles.formLabel}>Password</Form.Label>
+                        <Form.Label className={styles.formLabel}>{t('auth.password')}</Form.Label>
                         <InputGroup hasValidation>
                             <Form.Control className={styles.formInput} type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} isInvalid={!!errors.password} required />
                             <InputGroup.Text onClick={() => setShowPassword(!showPassword)} className={styles.passwordToggle}>{showPassword ? <FaEyeSlash /> : <FaEye />}</InputGroup.Text>
@@ -80,11 +141,11 @@ const RegisterPage = () => {
                     </Form.Group>
                     
                     <div className={styles.passwordRequirements}>
-                        <ul><li>Almeno 8 caratteri, con maiuscola, minuscola, numero e simbolo.</li></ul>
+                        <ul><li>{t('auth.passwordRequirements')}</li></ul>
                     </div>
                     
                     <Form.Group>
-                        <Form.Label className={styles.formLabel}>Conferma Password</Form.Label>
+                        <Form.Label className={styles.formLabel}>{t('auth.confirmPassword')}</Form.Label>
                         <Form.Control className={styles.formInput} type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} isInvalid={!!errors.confirmPassword} required />
                         <Form.Control.Feedback type="invalid">{errors.confirmPassword}</Form.Control.Feedback>
                     </Form.Group>
@@ -100,18 +161,18 @@ const RegisterPage = () => {
                             feedbackType="invalid"
                         />
                         <div className={styles.termsLabel}>
-                        Dichiaro di aver letto e di accettare i 
-                            <Link to="/termini-e-condizioni" target="_blank" rel="noopener noreferrer"> Termini di Servizio</Link> e la 
-                            <Link to="/privacy" target="_blank" rel="noopener noreferrer"> Privacy Policy</Link>.
+                        {t('auth.termsText')} 
+                            <Link to="/termini-e-condizioni"> {t('auth.termsOfService')}</Link> {t('auth.and')} 
+                            <Link to="/privacy"> {t('auth.privacyPolicy')}</Link>.
                             </div>
                             </Form.Group>
 
                     <Button type="submit" className={styles.submitButton} disabled={isLoading || !formData.terms}>
-                        {isLoading ? 'Registrazione...' : 'Registrati'}
+                        {isLoading ? t('auth.registering') : t('auth.register')}
                     </Button>
     
                     <div className={styles.bottomLink}>
-                        Hai già un account? <Link to="/login">Accedi</Link>
+                        {t('auth.alreadyHaveAccount')} <Link to="/login">{t('auth.login')}</Link>
                     </div>
                 </Form>
             </div>

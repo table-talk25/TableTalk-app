@@ -11,6 +11,7 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/error');
+const auth = require('./middleware/auth'); 
 const cron = require('node-cron');
 const Meal = require('./models/Meal');
 const notificationService = require('./services/notificationService');
@@ -90,6 +91,7 @@ app.use('/api/chats', require('./routes/chat'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/invitations', require('./routes/invitations'));
+app.use('/api/join-requests', require('./routes/joinRequests'));
 app.use('/api/video', require('./routes/videoCall'));
 
 // Importa Twilio per la generazione del token video
@@ -97,8 +99,8 @@ const AccessToken = twilio.jwt.AccessToken;
 const VideoGrant = AccessToken.VideoGrant;
 
 // Endpoint per ottenere il token Twilio Video
-app.get('/api/video/token', (req, res) => {
-  const { room } = req.query;
+app.get('/api/video/token', auth.protect, (req, res) => { 
+    const { room } = req.query;
   // Puoi usare l'utente loggato, oppure un nome generico
   const identity = req.user ? req.user.nickname : 'ospite';
 
@@ -160,11 +162,6 @@ cron.schedule('* * * * *', async () => {
             }
           }
         }
-
-    await Meal.updateMany(
-      { date: { $lte: tenMinutesFromNow }, status: 'upcoming', videoCallStatus: 'pending' },
-      { $set: { videoCallStatus: 'active' } }
-    );
 
     // Regola 2: Concludi pasti "vuoti" dopo 4 ore dall'inizio
     const fourHoursAgoHourAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000);

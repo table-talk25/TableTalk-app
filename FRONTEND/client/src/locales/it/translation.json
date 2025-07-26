@@ -1,0 +1,86 @@
+{
+  "common": {
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "success": "Successo",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "back": "Indietro",
+    "next": "Avanti",
+    "submit": "Invia",
+    "close": "Chiudi",
+    "yes": "Sì",
+    "no": "No",
+    "pleaseCorrectErrors": "Per favore, correggi gli errori nel modulo."
+  },
+  "auth": {
+    "login": "Accedi",
+    "register": "Registrati",
+    "logout": "Esci",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Conferma Password",
+    "forgotPassword": "Password dimenticata?",
+    "resetPassword": "Reimposta Password",
+    "loginSuccess": "Accesso effettuato con successo",
+    "registerSuccess": "Registrazione completata con successo",
+    "logoutSuccess": "Disconnessione effettuata",
+    "dateOfBirthRequired": "La data di nascita è obbligatoria",
+    "minAgeRequired": "Devi avere almeno 18 anni per registrarti",
+    "welcomeCompleteProfile": "Benvenuto/a! Completa il tuo profilo.",
+    "registerError": "Errore durante la registrazione",
+    "createAccount": "Crea il tuo Account",
+    "name": "Nome",
+    "surname": "Cognome",
+    "dateOfBirth": "Data di Nascita",
+    "passwordRequirements": "Almeno 8 caratteri, con maiuscola, minuscola, numero e simbolo.",
+    "termsText": "Dichiaro di aver letto e di accettare i",
+    "termsOfService": "Termini di Servizio",
+    "and": "e la",
+    "privacyPolicy": "Privacy Policy",
+    "registering": "Registrazione...",
+    "alreadyHaveAccount": "Hai già un account?"
+  },
+  "meals": {
+    "createMeal": "Crea TableTalk®",
+    "editMeal": "Modifica TableTalk®",
+    "joinMeal": "Unisciti al TableTalk®",
+    "leaveMeal": "Abbandona TableTalk®",
+    "mealDetails": "Dettagli TableTalk®",
+    "myMeals": "I Miei TableTalk®",
+    "noMeals": "Nessun TableTalk® trovato",
+    "mealType": {
+      "virtual": "Virtuale",
+      "physical": "Fisico"
+    },
+    "visibility": {
+      "public": "Pubblico",
+      "private": "Privato"
+    }
+  },
+  "home": {
+    "heroTitle": "Condividi un TableTalk®.<br />Crea una connessione.",
+    "heroSubtitle": "TableTalk è la community globale per chi ama condividere storie e sapori. Organizza un TableTalk® virtuale sui tuoi argomenti preferiti o unisciti a una conversazione già in programma."
+  },
+  "navigation": {
+    "home": "Home",
+    "meals": "TableTalk®",
+    "map": "Mappa",
+    "profile": "Profilo",
+    "chat": "Chat",
+    "notifications": "Notifiche"
+  },
+  "profile": {
+    "personalInfo": "Informazioni Personali",
+    "interests": "Interessi",
+    "languages": "Lingue",
+    "mealHistory": "Storico TableTalk®",
+    "settings": "Impostazioni"
+  },
+  "map": {
+    "title": "Utenti e TableTalk® Fisici Vicino a Te",
+    "subtitle": "Esplora chi è disponibile per un TableTalk® nei dintorni e scopri i TableTalk® fisici in programma!"
+  }
+}

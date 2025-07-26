@@ -3,7 +3,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FaCalendarAlt, FaUsers, FaUserCircle, FaLanguage, FaClock } from 'react-icons/fa'; 
-import { formatDate, getMealTypeText, getMealCoverImageUrl, getMealTypeColor, getHostAvatarUrl } from '../../../constants/mealConstants';
+import { 
+  formatDate, 
+  getMealTypeText, 
+  getMealCoverImageUrl, 
+  getMealTypeColor, 
+  getHostAvatarUrl,
+  getMealModeText,
+  getMealModeIcon,
+  getMealModeColor
+} from '../../../constants/mealConstants';
 import { useAuth } from '../../../contexts/AuthContext';
 import EditMealButton from '../EditMealButton';
 import LeaveMealButton from '../LeaveMealButton';
@@ -27,6 +36,10 @@ const MealCard = ({ meal, onLeaveSuccess }) => {
     ? meal.description.substring(0, 80) + '...'
     : meal.description;
 
+          // Calcolo se il TableTalk® è terminato
+  const mealEndTime = new Date(new Date(meal.date).getTime() + (meal.duration || 0) * 60000);
+  const isPast = meal.status === 'completed' || meal.status === 'cancelled' || new Date() > mealEndTime;
+
   return (
     <div className={styles.card}>
       <Link to={`/meals/${meal._id}`} className={styles.cardLink}>
@@ -34,6 +47,14 @@ const MealCard = ({ meal, onLeaveSuccess }) => {
           <img src={imageUrl} alt={meal.title} className={styles.cardImage} />
           <div className={styles.cardImageType} style={{ backgroundColor: getMealTypeColor(meal.type) }}>
             {getMealTypeText(meal.type)}
+          </div>
+          {/* Badge per il tipo di TableTalk® (virtuale/fisico) */}
+          <div 
+            className={styles.mealModeBadge} 
+            style={{ backgroundColor: getMealModeColor(meal.mealType) }}
+          >
+            <span className={styles.mealModeIcon}>{getMealModeIcon(meal.mealType)}</span>
+            <span className={styles.mealModeText}>{getMealModeText(meal.mealType)}</span>
           </div>
         </div>
         <div className={styles.cardContent}>
@@ -65,6 +86,14 @@ const MealCard = ({ meal, onLeaveSuccess }) => {
             <span>Fine: {formatDate(new Date(new Date(meal.date).getTime() + meal.duration * 60000), 'HH:mm')}</span>
           </div>
           
+          {/* Mostra la posizione solo per TableTalk® fisici */}
+          {meal.mealType === 'physical' && meal.location && (
+            <div className={styles.cardDetail}>
+              <span className={styles.locationIcon}>📍</span>
+              <span className={styles.locationText}>{meal.location}</span>
+            </div>
+          )}
+          
           <p className={styles.cardDescription}>{truncatedDescription}</p>
         </div>
       </Link>
@@ -75,8 +104,8 @@ const MealCard = ({ meal, onLeaveSuccess }) => {
             <span>{meal.participants?.length || 0} / {meal.maxParticipants} partecipanti</span>
         </div>
         <div className={styles.actionButtons}>
-            {isHost && <EditMealButton mealId={meal._id} />}
-            {isParticipant && !isHost && <LeaveMealButton mealId={meal._id} onSuccess={onLeaveSuccess} />}
+            {isHost && !isPast && <EditMealButton mealId={meal._id} />}
+            {isParticipant && !isHost && !isPast && <LeaveMealButton mealId={meal._id} onSuccess={onLeaveSuccess} />}
         </div>
       </div>
     </div>

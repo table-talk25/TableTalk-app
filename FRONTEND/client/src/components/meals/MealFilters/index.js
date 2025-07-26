@@ -3,10 +3,10 @@
 import React, { useState } from 'react';
 import { Form, Row, Col } from 'react-bootstrap';
 import styles from './MealFilters.module.css'; // Assicurati di avere il file di stile
-import { mealTypeOptions } from '../../../constants/mealConstants';
+import { mealTypeOptions, MEAL_MODE_LABELS, MEAL_MODES } from '../../../constants/mealConstants';
 
 // Il componente ora riceve i filtri e la funzione onFilterChange come props
-const MealFilters = ({ onFilterChange }) => {
+const MealFilters = ({ filters, onFilterChange }) => {
 
     // Funzione interna per gestire il cambiamento e notificare il genitore
     const handleChange = (e) => {
@@ -15,6 +15,16 @@ const MealFilters = ({ onFilterChange }) => {
       onFilterChange(prevFilters => ({
         ...prevFilters,
         [name]: value
+      }));
+    };
+
+    // Funzione per resettare tutti i filtri ai valori di default
+    const handleReset = () => {
+      onFilterChange(() => ({
+        type: '',
+        mealType: '', // Reset anche il tipo di TableTalk®
+        status: '',
+        sortBy: 'date',
       }));
     };
 
@@ -27,6 +37,15 @@ const MealFilters = ({ onFilterChange }) => {
             <Form.Select name="type" value={filters.type} onChange={handleChange}>
               <option value="">Tutti i Tipi</option>
               {mealTypeOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </Form.Select>
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>Modalità</Form.Label>
+            <Form.Select name="mealType" value={filters.mealType} onChange={handleChange}>
+              <option value="">Tutte le Modalità</option>
+              <option value={MEAL_MODES.VIRTUAL}>{MEAL_MODE_LABELS[MEAL_MODES.VIRTUAL]} 🎥</option>
+              <option value={MEAL_MODES.PHYSICAL}>{MEAL_MODE_LABELS[MEAL_MODES.PHYSICAL]} 📍</option>
             </Form.Select>
           </Form.Group>
   
@@ -47,6 +66,7 @@ const MealFilters = ({ onFilterChange }) => {
             </Form.Select>
           </Form.Group>
         </Form>
+        <button type="button" className={styles.resetButton} onClick={handleReset} style={{marginTop: '1rem'}}>Resetta Filtri</button>
       </div>
     );
   };
