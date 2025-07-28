@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Spinner, Alert, Image, Dropdown } from 'react-bootstrap'; // Dropdown è nuovo
+import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
 import { useAuth } from '../../contexts/AuthContext';
 import chatService from '../../services/chatService';
@@ -16,6 +17,7 @@ import LeaveReportModal from '../../components/meals/LeaveReportModal';
 import { sendLeaveReport } from '../../services/apiService';
 
 const ChatPage = () => {
+  const { t } = useTranslation();
   const { chatId } = useParams();
   const { user, token } = useAuth();
   const navigate = useNavigate();
@@ -55,8 +57,8 @@ const ChatPage = () => {
         }
       } catch (err) {
         if (mounted) {
-            setError('Impossibile caricare la cronologia della chat.');
-            toast.error(err.response?.data?.error || 'Errore di caricamento.');
+            setError(t('chat.loadError'));
+            toast.error(err.response?.data?.error || t('chat.loadError'));
         }
       } finally {
         if (mounted) setLoading(false);
@@ -71,7 +73,7 @@ const ChatPage = () => {
     // Se non c'è il token, non tentare di connettere il socket
     if (!token) {
       setConnectionStatus('error');
-      setError('Autenticazione richiesta per la chat.');
+      setError(t('chat.authRequired'));
       console.error('[DEBUG] ERRORE: Token non trovato. Impossibile connettere il socket.');
 
       return;
@@ -79,7 +81,7 @@ const ChatPage = () => {
 
 
     // Usa esattamente lo stesso indirizzo IP delle API HTTP
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://192.168.1.151:5001/api';
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://192.168.1.45:5001/api';
     const socketUrl = apiUrl.replace('/api', '');
     console.log(`[DEBUG] API URL: ${apiUrl}`);
     console.log(`[DEBUG] Socket URL: ${socketUrl}`);
@@ -98,229 +100,213 @@ const ChatPage = () => {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('✅ [DEBUG] Evento "connect" ricevuto! Socket CONNESSO!');
-      console.log(`[DEBUG] Trasporto utilizzato: ${socket.io.engine.transport.name}`);
-      console.log(`[DEBUG] WebSocket attivo: ${socket.io.engine.transport.name === 'websocket'}`);
-
-      if (mounted) {
-        setConnectionStatus('connected');
-        socket.emit('joinChatRoom', chatId);
-        console.log(`[Socket] Connesso e unito alla stanza ${chatId}`);
-      }
+      console.log('[DEBUG] Socket connesso!');
+      setConnectionStatus('connected');
     });
 
-    socket.on('userTyping', ({ user, isTyping }) => {
-      if (isTyping) {
-        // Aggiungi l'utente alla lista se non c'è già
-        setTypingUsers(prev => [...prev.filter(u => u._id !== user._id), user]);
-      } else {
-        // Rimuovi l'utente dalla lista
-        setTypingUsers(prev => prev.filter(u => u._id !== user._id));
-      }
+    socket.on('disconnect', () => {
+      console.log('[DEBUG] Socket disconnesso!');
+      setConnectionStatus('disconnected');
     });
 
-    socket.on('disconnect', (reason) => { 
-      if(mounted) {
-        setConnectionStatus('disconnected');
-        console.log(`[DEBUG] Socket DISCONNESSO! Motivo: ${reason}`);
-        
-        // Se la disconnessione è dovuta a un errore del server, mostra un messaggio
-        if (reason === 'io server disconnect') {
-          toast.error('Connessione persa. Tentativo di riconnessione...');
-        }
-      }
+    socket.on('connect_error', (error) => {
+      console.error('[DEBUG] Errore di connessione socket:', error);
+      setConnectionStatus('error');
+      setError(t('chat.connectionError'));
     });
 
-    socket.on('reconnect', (attemptNumber) => {
-      console.log(`[DEBUG] Socket RICONNESSO dopo ${attemptNumber} tentativi!`);
-      if (mounted) {
-        setConnectionStatus('connected');
-        socket.emit('joinChatRoom', chatId);
-        toast.success('Connessione ripristinata!');
-      }
+    socket.on('message', (message) => {
+      console.log('[DEBUG] Nuovo messaggio ricevuto:', message);
+      setMessages(prev => [...prev, message]);
     });
 
-    socket.on('reconnect_attempt', (attemptNumber) => {
-      console.log(`[DEBUG] Tentativo di riconnessione #${attemptNumber}`);
+    socket.on('typing', (data) => {
+      console.log('[DEBUG] Utente sta scrivendo:', data);
+      setTypingUsers(prev => {
+        const filtered = prev.filter(u => u.userId !== data.userId);
+        return [...filtered, { userId: data.userId, username: data.username }];
+      });
     });
 
-    socket.on('reconnect_error', (error) => {
-      console.error(`[DEBUG] Errore durante la riconnessione:`, error);
+    socket.on('stop_typing', (data) => {
+      console.log('[DEBUG] Utente ha smesso di scrivere:', data);
+      setTypingUsers(prev => prev.filter(u => u.userId !== data.userId));
     });
 
-    socket.on('reconnect_failed', () => {
-      console.error('[DEBUG] Tutti i tentativi di riconnessione falliti!');
-      if (mounted) {
-        setConnectionStatus('error');
-        toast.error('Impossibile riconnettersi. Ricarica la pagina.');
-      }
-    });
-
-    socket.on('connect_error', (err) => {
-      console.error(`❌ [DEBUG] Evento "connect_error". Causa: ${err.message}`);
-
-      if (mounted) {
-        setConnectionStatus('error');
-        console.error('[Socket] Errore di connessione:', err.message);
-        
-        // Se è un errore WebSocket, prova a forzare il polling
-        if (err.message.includes('websocket')) {
-          console.log('[DEBUG] Tentativo di riconnessione con polling...');
-          socket.io.opts.transports = ['polling'];
-          socket.connect();
-        }
-      }
-    });
-
-    socket.on('receiveMessage', (receivedMessage) => {
-      if (mounted) {
-        setMessages(prevMessages => {
-            if (prevMessages.some(msg => msg._id === receivedMessage._id)) {
-                return prevMessages;
-            }
-            return [...prevMessages, receivedMessage];
-        });
-      }
-    });
-
-    socket.on('chatError', (err) => {
-      if (mounted) toast.error(err.message);
-    });
+    // Join della chat room
+    socket.emit('join_chat', { chatId });
 
     return () => {
       mounted = false;
-      socket.disconnect();
-      console.log('[Socket] Disconnesso.');
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
     };
-  }, [chatId, token]);
+  }, [chatId, token, t]);
 
-    // 3. Crea una funzione per gestire l'evento di scrittura
-    const handleTyping = () => {
-      // Invia "sta scrivendo" subito
-      socketRef.current.emit('typing', { chatId, isTyping: true });
-  
-      // Cancella il timeout precedente
+  const handleTyping = () => {
+    if (socketRef.current && socketRef.current.connected) {
+      socketRef.current.emit('typing', { chatId });
+      
+      // Clear existing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
-  
-      // Imposta un nuovo timeout per inviare "ha smesso di scrivere"
+      
+      // Set new timeout
       typingTimeoutRef.current = setTimeout(() => {
-        socketRef.current.emit('typing', { chatId, isTyping: false });
-      }, 2000); // 2 secondi di inattività
-    };
+        if (socketRef.current && socketRef.current.connected) {
+          socketRef.current.emit('stop_typing', { chatId });
+        }
+      }, 1000);
+    }
+  };
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || connectionStatus !== 'connected' || !socketRef.current) return;
+    if (!newMessage.trim() || !socketRef.current?.connected) return;
 
-    const messageData = { chatId, content: newMessage.trim() };
+    const messageData = {
+      chatId,
+      content: newMessage.trim(),
+      timestamp: new Date().toISOString()
+    };
 
-    socketRef.current.emit('sendMessage', messageData, (response) => {
-      if (response && response.success) {
-        setNewMessage('');
-        toast.success('Messaggio inviato!');
-      } else {
-        toast.error(response?.error || "Impossibile inviare il messaggio.");
-      }
-    });
+    socketRef.current.emit('send_message', messageData);
+    setNewMessage('');
+    
+    // Stop typing indicator
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('stop_typing', { chatId });
+    }
   };
-  
+
   const handleLeaveChatWithReason = async ({ reason, customReason }) => {
     try {
       await sendLeaveReport({ type: 'chat', id: chatId, reason, customReason });
       await chatService.leaveChat(chatId);
-      toast.info('Hai lasciato la chat. Grazie per il feedback!');
-      navigate(`/meals/${chat.mealId._id}`);
+      toast.success(t('chat.leaveSuccess'));
+      navigate('/meals');
     } catch (err) {
-      toast.error('Impossibile lasciare la chat.');
+      toast.error(t('chat.leaveError'));
     } finally {
       setShowLeaveModal(false);
     }
   };
 
-  // --- JSX CON NUOVO LAYOUT MODERNO ---
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
+        <Spinner animation="border" />
+      </div>
+    );
+  }
 
-  if (loading) return <div className="d-flex justify-content-center align-items-center vh-100"><Spinner animation="border" /></div>;
-  if (error) return <div className="p-5 text-center"><Alert variant="danger">{error}</Alert></div>;
+  if (error) {
+    return (
+      <div className="text-center py-5">
+        <Alert variant="danger">
+          <h4>{t('chat.errorTitle')}</h4>
+          <p>{error}</p>
+          <BackButton />
+        </Alert>
+      </div>
+    );
+  }
 
-  const isInputDisabled = connectionStatus !== 'connected';
-  console.log(`[DEBUG] L'input è disabilitato? ${isInputDisabled} (Stato: ${connectionStatus})`);
+  if (!chat) {
+    return (
+      <div className="text-center py-5">
+        <Alert variant="warning">
+          <h4>{t('chat.notFoundTitle')}</h4>
+          <p>{t('chat.notFoundMessage')}</p>
+          <BackButton />
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.chatPage}>
-      <header className={styles.chatHeader}>
-        <h1 className={styles.chatTitle}>{chat?.name}</h1>
+      <div className={styles.chatHeader}>
+        <BackButton />
+        <div className={styles.chatInfo}>
+          <h2>{t('chat.title')}</h2>
+          <p>{t('chat.subtitle')}</p>
+        </div>
         <Dropdown>
-  <Dropdown.Toggle as="button" className={styles.menuButton}>
-    <BsThreeDotsVertical />
-  </Dropdown.Toggle>
-  <Dropdown.Menu align="end" className={styles.dropdownMenu}>
-  <Dropdown.Item onClick={() => navigate(`/meals/${chat?.mealId?._id}`)} className={styles.dropdownItem}>
-    <IoRestaurantOutline size={18} />
-                      <span>Vedi Dettagli TableTalk®</span>
-    </Dropdown.Item>
-    <Dropdown.Divider />
-    <Dropdown.Item onClick={() => setShowLeaveModal(true)} className={`${styles.dropdownItem} ${styles.dangerItem}`}>
-      <IoLogOutOutline size={18} />
-      <span>Lascia la Chat</span>
-    </Dropdown.Item>
-  </Dropdown.Menu>
-</Dropdown>
-</header>
-      <div className={styles.messagesList}>
-        {messages.map(msg => (
-          <div key={msg._id} className={`${styles.messageItem} ${msg.sender._id === user.id ? styles.myMessage : styles.otherMessage}`}>
-            <Image src={getHostAvatarUrl(msg.sender.profileImage)} className={styles.avatar} />
-            <div className={styles.messageBubble}>
-              {msg.sender._id !== user.id && <div className={styles.senderName}>{msg.sender.nickname}</div>}
-              <p className={styles.messageText}>{msg.content}</p>
-              <span className={styles.timestamp}>
-                {new Date(msg.timestamp).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
-              </span>
+          <Dropdown.Toggle variant="light" id="chat-menu">
+            <BsThreeDotsVertical />
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            <Dropdown.Item onClick={() => navigate(`/meals/${chat.mealId}`)}>
+              <IoRestaurantOutline /> {t('chat.viewMeal')}
+            </Dropdown.Item>
+            <Dropdown.Item onClick={() => setShowLeaveModal(true)}>
+              <IoLogOutOutline /> {t('chat.leaveChat')}
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
+      </div>
+
+      <div className={styles.messagesContainer}>
+        {messages.map((message, index) => (
+          <div 
+            key={message._id || index} 
+            className={`${styles.message} ${message.userId === user?.id ? styles.ownMessage : styles.otherMessage}`}
+          >
+            <div className={styles.messageContent}>
+              <div className={styles.messageHeader}>
+                <img 
+                  src={getHostAvatarUrl(message.user)} 
+                  alt={t('chat.userAvatarAlt')}
+                  className={styles.messageAvatar}
+                />
+                <span className={styles.messageAuthor}>{message.username}</span>
+                <span className={styles.messageTime}>
+                  {new Date(message.timestamp).toLocaleTimeString()}
+                </span>
+              </div>
+              <div className={styles.messageText}>{message.content}</div>
             </div>
           </div>
         ))}
+        
         {typingUsers.length > 0 && (
           <div className={styles.typingIndicator}>
-            {typingUsers.map(u => u.nickname).join(', ')} sta scrivendo...
+            {typingUsers.map(user => user.username).join(', ')} {t('chat.isTyping')}
           </div>
         )}
+        
         <div ref={messagesEndRef} />
       </div>
+
       <form onSubmit={handleSendMessage} className={styles.messageForm}>
         <input
           type="text"
-          className={styles.chatInput}
-          placeholder="Scrivi un messaggio..."
           value={newMessage}
           onChange={(e) => {
-            console.log(`[DEBUG] onChange chiamato. Nuovo valore: ${e.target.value}`);
-
             setNewMessage(e.target.value);
             handleTyping();
           }}
-          autoComplete="off"
+          placeholder={t('chat.messagePlaceholder')}
+          className={styles.messageInput}
           disabled={connectionStatus !== 'connected'}
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck="false"
         />
-        <button
-          type="submit"
+        <button 
+          type="submit" 
           className={styles.sendButton}
-          disabled={connectionStatus !== 'connected' || !newMessage.trim()}
-          aria-label="Invia messaggio"
+          disabled={!newMessage.trim() || connectionStatus !== 'connected'}
         >
           <IoSend />
         </button>
       </form>
-      <BackButton className="mb-4" /> 
+
       <LeaveReportModal
         show={showLeaveModal}
-        onClose={() => setShowLeaveModal(false)}
-        onConfirm={handleLeaveChatWithReason}
-        type="chat"
+        onHide={() => setShowLeaveModal(false)}
+        onSubmit={handleLeaveChatWithReason}
+        title={t('chat.leaveReportTitle')}
       />
     </div>
   );

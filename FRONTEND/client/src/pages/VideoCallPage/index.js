@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Video from 'twilio-video';
 import { useAuth } from '../../contexts/AuthContext';
 import videoService from '../../services/videoService';
@@ -13,6 +14,7 @@ import { MediaStream } from '@capacitor/core';
 import BackButton from '../../components/common/BackButton';
 
 const VideoCallPage = () => {
+    const { t } = useTranslation();
     const { id: roomName } = useParams(); // L'ID del TableTalk® è il nome della nostra stanza
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -32,27 +34,27 @@ const VideoCallPage = () => {
     const getErrorMessage = (error) => {
         // Messaggi di errore specifici per diversi tipi di problemi
         if (error.message?.includes('permission')) {
-            return 'Permessi negati. Per partecipare alla videochiamata, devi concedere l\'accesso alla fotocamera e al microfono. Ricarica la pagina e riprova.';
+            return t('videoCall.permissionDenied');
         }
         
         if (error.message?.includes('network') || error.message?.includes('connection')) {
-            return 'Problema di connessione. Verifica la tua connessione internet e riprova.';
+            return t('videoCall.networkError');
         }
         
         if (error.message?.includes('token') || error.message?.includes('unauthorized')) {
-            return 'Errore di autenticazione. La sessione potrebbe essere scaduta. Torna alla pagina del TableTalk® e riprova.';
+            return t('videoCall.authError');
         }
         
         if (error.message?.includes('room') || error.message?.includes('not found')) {
-            return 'Stanza non trovata. La videochiamata potrebbe essere terminata o non esistere più.';
+            return t('videoCall.roomNotFound');
         }
         
         if (error.message?.includes('media') || error.message?.includes('camera') || error.message?.includes('microphone')) {
-            return 'Impossibile accedere alla fotocamera o al microfono. Verifica che i dispositivi siano collegati e che i permessi siano concessi.';
+            return t('videoCall.mediaError');
         }
         
         // Errore generico ma informativo
-        return 'Impossibile connettersi alla videochiamata. Verifica la tua connessione internet, i permessi del browser e riprova.';
+        return t('videoCall.genericError');
     };
 
     const connectToRoom = async () => {
@@ -66,7 +68,7 @@ const VideoCallPage = () => {
             const permissions = await Camera.requestPermissions();
 
             if (permissions.camera !== 'granted' || permissions.photos !== 'granted') {
-                const errorMsg = 'Per partecipare alla videochiamata, devi concedere i permessi per la fotocamera e il microfono.';
+                const errorMsg = t('videoCall.permissionRequired');
                 console.error('[VideoCall] Permessi non concessi dall\'utente.');
                 setError(errorMsg);
                 setLoading(false);
@@ -79,7 +81,7 @@ const VideoCallPage = () => {
             const response = await videoService.getTwilioToken(roomName); 
             const token = response.token;                 
             if (!token) {
-                throw new Error('Token non valido ricevuto dal server.');
+                throw new Error(t('videoCall.invalidToken'));
             }
             console.log('[VideoCall] Token Twilio ottenuto.');
 
@@ -196,12 +198,12 @@ const handleLeaveCall = () => {
 };
 
 const handleEndCallForEveryone = async () => {
-    if (window.confirm('Sei sicuro di voler terminare la chiamata per tutti i partecipanti?')) {
+    if (window.confirm(t('videoCall.confirmEndCall'))) {
         try {
             await videoService.endCall(roomName); // Chiamiamo il nostro nuovo endpoint
             // la disconnessione di Twilio ci reindirizzerà automaticamente
         } catch (err) {
-            setError(err.message || 'Errore nel terminare la chiamata.');
+            setError(err.message || t('videoCall.endCallError'));
         }
     }
 };
@@ -211,7 +213,7 @@ const handleEndCallForEveryone = async () => {
             <Container className={styles.centerContainer}>
                 <Spinner animation="border" /> 
                 <p className="ms-3">
-                    {retrying ? 'Riconnessione in corso...' : 'Connessione in corso...'}
+                    {retrying ? t('videoCall.reconnecting') : t('videoCall.connecting')}
                 </p>
             </Container>
         );
@@ -221,7 +223,7 @@ const handleEndCallForEveryone = async () => {
         return (
             <Container className={styles.centerContainer}>
                 <Alert variant="danger" className="text-center">
-                    <Alert.Heading>Errore di Connessione</Alert.Heading>
+                    <Alert.Heading>{t('videoCall.connectionError')}</Alert.Heading>
                     <p>{error}</p>
                     <hr />
                     <div className="d-flex justify-content-center gap-2">
@@ -233,17 +235,17 @@ const handleEndCallForEveryone = async () => {
                             {retrying ? (
                                 <>
                                     <Spinner as="span" animation="border" size="sm" className="me-2" />
-                                    Riprovo...
+                                    {t('videoCall.retrying')}
                                 </>
                             ) : (
-                                'Riprova'
+                                t('videoCall.retry')
                             )}
                         </Button>
                         <Button 
                             variant="secondary" 
                             onClick={() => navigate(`/meals/${roomName}`)}
                         >
-                            Torna al TableTalk®
+                            {t('videoCall.backToMeal')}
                         </Button>
                     </div>
                 </Alert>
@@ -264,11 +266,11 @@ const handleEndCallForEveryone = async () => {
             </div>
             <div className={styles.controls}>
                 <Button variant="secondary" onClick={handleLeaveCall}>
-                    Abbandona Chiamata
+                    {t('videoCall.leaveCall')}
                 </Button> 
                 {isHost && (
                     <Button variant="danger" onClick={handleEndCallForEveryone}>
-                        Termina Per Tutti
+                        {t('videoCall.endCallForEveryone')}
                     </Button>
                 )}
             </div>

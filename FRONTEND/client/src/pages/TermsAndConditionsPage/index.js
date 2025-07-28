@@ -1,42 +1,45 @@
 // File: frontend/client/src/pages/TermsAndConditionsPage/index.js
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Container } from 'react-bootstrap';
 import BackButton from '../../components/common/BackButton';
 
 const TermsAndConditionsPage = () => {
+  const { t } = useTranslation();
+
   return (
     <Container className="my-5" style={{ maxWidth: '800px' }}>
-      <h1 className="mb-4">Termini e Condizioni di TableTalk</h1>
-      <p><strong>Ultimo aggiornamento:</strong> 26 Luglio 2025</p>
+      <h1 className="mb-4">{t('terms.title')}</h1>
+      <p><strong>{t('terms.lastUpdated')}</strong></p>
       
       <p className="lead">
-        Benvenuto in TableTalk. Ti preghiamo di leggere attentamente questi Termini e Condizioni prima di utilizzare il nostro servizio.
+        {t('terms.welcome')}
       </p>
 
-      <h3 className="mt-4">1. Accettazione dei Termini</h3>
+      <h3 className="mt-4">{t('terms.acceptance.title')}</h3>
       <p>
-        Accedendo e utilizzando la piattaforma TableTalk (il "Servizio"), accetti di essere vincolato da questi Termini. Se non sei d'accordo con una qualsiasi parte dei termini, non puoi accedere al Servizio.
+        {t('terms.acceptance.description')}
       </p>
 
-      <h3 className="mt-4">2. Descrizione del Servizio</h3>
+      <h3 className="mt-4">{t('terms.service.title')}</h3>
       <p>
-        TableTalk è una piattaforma che facilita l'incontro virtuale tra persone per condividere TableTalk® e conversazioni tramite videochiamata. Gli utenti possono creare eventi ("TableTalk®") o partecipare a quelli creati da altri.
+        {t('terms.service.description')}
       </p>
 
-      <h3 className="mt-4">3. Condotta dell'Utente</h3>
+      <h3 className="mt-4">{t('terms.conduct.title')}</h3>
       <p>
-        L'utente si impegna a mantenere un comportamento rispettoso, inclusivo e non offensivo. È severamente vietato qualsiasi comportamento molesto, discriminatorio o illegale. È vietato registrare le videochiamate senza il consenso esplicito di tutti i partecipanti.
+        {t('terms.conduct.description')}
       </p>
 
-      <h3 className="mt-4">4. Limitazione di Responsabilità</h3>
+      <h3 className="mt-4">{t('terms.liability.title')}</h3>
       <p>
-        TableTalk fornisce unicamente la piattaforma tecnologica per connettere gli utenti e non è responsabile della condotta degli utenti o del contenuto delle conversazioni durante i TableTalk®. L'utilizzo del Servizio è a proprio rischio.
+        {t('terms.liability.description')}
       </p>
 
-      <h3 className="mt-4">5. Modifiche al Servizio e ai Termini</h3>
+      <h3 className="mt-4">{t('terms.modifications.title')}</h3>
       <p>
-        Ci riserviamo il diritto di modificare o interrompere il Servizio in qualsiasi momento. Potremmo anche revisionare questi Termini di volta in volta. L'uso continuato del Servizio dopo tali modifiche costituisce l'accettazione dei nuovi Termini.
+        {t('terms.modifications.description')}
       </p>
 
       <BackButton className="mb-4" /> 

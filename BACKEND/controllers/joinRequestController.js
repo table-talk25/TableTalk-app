@@ -217,7 +217,16 @@ exports.getJoinRequests = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Solo l\'host può vedere le richieste', 403));
   }
 
-  const requests = await JoinRequest.find({ meal: mealId })
+  // Ottieni gli ID degli utenti da escludere (blocchi bidirezionali)
+  const currentUser = await require('../models/User').findById(hostId);
+  const usersWhoBlockedMe = await require('../models/User').find({ blockedUsers: hostId }).select('_id');
+  const usersWhoBlockedMeIds = usersWhoBlockedMe.map(user => user._id);
+  const excludedIds = [...currentUser.blockedUsers, ...usersWhoBlockedMeIds];
+
+  const requests = await JoinRequest.find({ 
+    meal: mealId,
+    requester: { $nin: excludedIds } // Escludi richieste da utenti bloccati
+  })
     .populate('requester', 'nickname profileImage')
     .sort({ createdAt: -1 });
 
@@ -230,14 +239,25 @@ exports.getJoinRequests = asyncHandler(async (req, res, next) => {
 
 // Ottieni le richieste inviate dall'utente corrente
 exports.getMyRequests = asyncHandler(async (req, res, next) => {
+  // Ottieni gli ID degli utenti da escludere (blocchi bidirezionali)
+  const currentUser = await require('../models/User').findById(req.user.id);
+  const usersWhoBlockedMe = await require('../models/User').find({ blockedUsers: req.user.id }).select('_id');
+  const usersWhoBlockedMeIds = usersWhoBlockedMe.map(user => user._id);
+  const excludedIds = [...currentUser.blockedUsers, ...usersWhoBlockedMeIds];
+
   const requests = await JoinRequest.find({ requester: req.user.id })
     .populate('meal', 'title date location host')
     .populate('meal.host', 'nickname')
     .sort({ createdAt: -1 });
 
+  // Filtra le richieste per escludere i pasti di utenti bloccati
+  const filteredRequests = requests.filter(request => 
+    !excludedIds.some(id => id.toString() === request.meal.host._id.toString())
+  );
+
   res.status(200).json({
     success: true,
-    count: requests.length,
-    data: requests
+    count: filteredRequests.length,
+    data: filteredRequests
   });
 }); 

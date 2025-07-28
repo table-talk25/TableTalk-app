@@ -1,12 +1,19 @@
 // File: frontend/client/src/components/profile/ProfileSettings.js (Versione Finale e Sicura)
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaBell, FaKey, FaSignOutAlt, FaTrash, FaLock, FaInfoCircle } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import DeleteAccountModal from '../../common/DeleteAccountModal';
+import ChangePasswordModal from '../../common/ChangePasswordModal';
+import authService from '../../../services/authService';
 import styles from './ProfileSettings.module.css';
 
 const ProfileSettings = ({ profileData, onUpdate, onLogout, onDeleteAccount }) => {
+  const { t } = useTranslation();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
   // --- 1. HOOKS CHIAMATI ALL'INIZIO ---
   // Inizializziamo lo stato in modo sicuro usando l'optional chaining '?'
@@ -42,7 +49,7 @@ const ProfileSettings = ({ profileData, onUpdate, onLogout, onDeleteAccount }) =
     setNotificationSettings(newSettings);
     
     onUpdate({ settings: { ...profileData.settings, notifications: newSettings } });
-    toast.info('Impostazione di notifica aggiornata.');
+    toast.info(t('profile.settings.notificationUpdated'));
   };
 
   // --- 3. GESTORE CLICK AGGIORNATO ---
@@ -62,33 +69,48 @@ const ProfileSettings = ({ profileData, onUpdate, onLogout, onDeleteAccount }) =
         }
     });
 
-    toast.info('Impostazione della posizione aggiornata.');
+    toast.info(t('profile.settings.locationUpdated'));
   };
 
   const handleLogoutClick = () => {
-    if (window.confirm('Sei sicuro di voler uscire?')) {
+    if (window.confirm(t('profile.settings.logoutConfirm'))) {
       onLogout();
     }
   };
 
   const handleDeleteClick = () => {
-    const password = prompt("Per confermare, inserisci la tua password. ATTENZIONE: l'azione è irreversibile.");
-    if (password) {
-      onDeleteAccount(password);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteAccount = async (password) => {
+    try {
+      await onDeleteAccount(password);
+      toast.success(t('profile.settings.accountDeleted'));
+    } catch (error) {
+      toast.error(error.response?.data?.message || t('profile.settings.deleteError'));
+      throw error; // Rilancia l'errore per gestirlo nel modale
     }
   };
 
+  const handleChangePassword = async (currentPassword, newPassword) => {
+    try {
+      await authService.changePassword({ currentPassword, newPassword });
+      toast.success(t('changePasswordModal.changeSuccess'));
+    } catch (error) {
+      throw error; // Rilancia l'errore per gestirlo nel modale
+    }
+  };
 
   // --- 4. RENDER ---
   return (
     <div className={styles.container}>
-      <h2>Impostazioni Avanzate</h2>
+      <h2>{t('profile.settings.title')}</h2>
 
       {/* Sezione Notifiche */}
       <div className={styles.section}>
-        <h3 className={styles.sectionTitle}><FaBell /> Notifiche</h3>
+        <h3 className={styles.sectionTitle}><FaBell /> {t('profile.settings.notifications')}</h3>
         <div className={styles.settingItem}>
-            <p>Ricevi notifiche importanti via email</p>
+            <p>{t('profile.settings.emailNotifications')}</p>
             <label className={styles.switch}>
                 <input type="checkbox" name="email" checked={notificationSettings.email} onChange={handleNotificationChange} />
                 <span className={styles.slider}></span>
@@ -98,9 +120,9 @@ const ProfileSettings = ({ profileData, onUpdate, onLogout, onDeleteAccount }) =
 
       {/* Sezione Sicurezza e Privacy */}
       <div className={styles.section}>
-        <h3 className={styles.sectionTitle}><FaLock /> Privacy e Sicurezza</h3>
+        <h3 className={styles.sectionTitle}><FaLock /> {t('profile.settings.privacySecurity')}</h3>
         <div className={styles.settingItem}>
-            <p>Abilita posizione per match in tempo reale</p>
+            <p>{t('profile.settings.enableLocation')}</p>
             <label className={styles.switch}>
                 {/* Usiamo l'optional chaining anche qui per sicurezza */}
                 <input
@@ -111,21 +133,34 @@ const ProfileSettings = ({ profileData, onUpdate, onLogout, onDeleteAccount }) =
                 <span className={styles.slider}></span>
             </label>
         </div>
-        <button className={styles.actionButton} onClick={() => alert('Modale per il cambio password da implementare')}>
-            <FaKey /> Cambia Password
+        <button className={styles.actionButton} onClick={() => setShowChangePasswordModal(true)}>
+            <FaKey /> {t('profile.settings.changePassword')}
         </button>
         <p className={styles.infoLink}>
-        <FaInfoCircle /> Per maggiori dettagli, consulta la nostra             <Link to="/privacy" className={styles.footerLink}>Privacy Policy</Link>
+        <FaInfoCircle /> {t('profile.settings.privacyPolicyInfo')}             <Link to="/privacy" className={styles.footerLink}>Privacy Policy</Link>
  
         </p>
       </div>
 
       {/* Sezione Account */}
       <div className={styles.section}>
-        <h3 className={styles.sectionTitle}><FaSignOutAlt /> Account</h3>
-        <button className={`${styles.actionButton} ${styles.logoutBtn}`} onClick={handleLogoutClick}>Esci dall'account</button>
-        <button className={`${styles.actionButton} ${styles.deleteBtn}`} onClick={handleDeleteClick}><FaTrash /> Elimina Account</button>
+        <h3 className={styles.sectionTitle}><FaSignOutAlt /> {t('profile.settings.account')}</h3>
+        <button className={`${styles.actionButton} ${styles.logoutBtn}`} onClick={handleLogoutClick}>{t('profile.settings.logout')}</button>
+        <button className={`${styles.actionButton} ${styles.deleteBtn}`} onClick={handleDeleteClick}><FaTrash /> {t('profile.settings.deleteAccount')}</button>
       </div>
+
+      <DeleteAccountModal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        onDeleteAccount={handleDeleteAccount}
+        user={profileData}
+      />
+
+      <ChangePasswordModal
+        show={showChangePasswordModal}
+        onHide={() => setShowChangePasswordModal(false)}
+        onChangePassword={handleChangePassword}
+      />
     </div>
   );
 };

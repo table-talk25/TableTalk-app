@@ -1,15 +1,18 @@
 // File: src/components/meals/MealsList/index.js (Versione Carosello)
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import MealCard from '../MealCard'; // Importiamo la nostra card
 import styles from './MealsList.module.css'; // Useremo il suo stile dedicato
 
 const MealsList = ({ meals }) => {
+  const { t } = useTranslation();
+  
   if (!meals || meals.length === 0) {
     return (
       <div className={styles.emptyState}>
-        <h3>Nessun TableTalk® trovato</h3>
-        <p>Non ci sono TableTalk® che corrispondono ai filtri attuali. Prova a cambiarli o creane uno tu!</p>
+        <h3>{t('meals.emptyState.title')}</h3>
+        <p>{t('meals.emptyState.description')}</p>
       </div>
     );
   }

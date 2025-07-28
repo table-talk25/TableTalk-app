@@ -2,24 +2,26 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FaCalendarAlt, FaUsers, FaUserCircle, FaLanguage, FaClock } from 'react-icons/fa'; 
 import { 
   formatDate, 
-  getMealTypeText, 
   getMealCoverImageUrl, 
   getMealTypeColor, 
   getHostAvatarUrl,
-  getMealModeText,
   getMealModeIcon,
   getMealModeColor
 } from '../../../constants/mealConstants';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useMealTranslations } from '../../../hooks/useMealTranslations';
 import EditMealButton from '../EditMealButton';
 import LeaveMealButton from '../LeaveMealButton';
 import styles from './MealCard.module.css';
 
 const MealCard = ({ meal, onLeaveSuccess }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
+  const { getMealTypeText, getMealModeText } = useMealTranslations();
 
   if (!meal || !meal.host) {
     console.error("MealCard ha ricevuto dati incompleti: ", meal);
@@ -68,7 +70,7 @@ const MealCard = ({ meal, onLeaveSuccess }) => {
           <Link to={`/profilo/${meal.host._id}`} className={styles.hostLink}>
             <div className={styles.cardDetail}>
               <img src={hostAvatarUrl} alt={meal.host.nickname} className={styles.hostAvatar} />
-              <span>Organizzato da <strong>{meal.host.nickname}</strong></span>
+              <span>{t('meals.card.organizedBy')} <strong>{meal.host.nickname}</strong></span>
             </div>
           </Link>
           
@@ -79,11 +81,11 @@ const MealCard = ({ meal, onLeaveSuccess }) => {
           {/* Durata e orario di fine */}
           <div className={styles.cardDetail}>
             <FaClock />
-            <span>Durata: {meal.duration} minuti</span>
+            <span>{t('meals.card.duration')}: {meal.duration} {t('meals.card.minutes')}</span>
           </div>
           <div className={styles.cardDetail}>
             <FaClock />
-            <span>Fine: {formatDate(new Date(new Date(meal.date).getTime() + meal.duration * 60000), 'HH:mm')}</span>
+            <span>{t('meals.card.end')}: {formatDate(new Date(new Date(meal.date).getTime() + meal.duration * 60000), 'HH:mm')}</span>
           </div>
           
           {/* Mostra la posizione solo per TableTalk® fisici */}
@@ -101,7 +103,7 @@ const MealCard = ({ meal, onLeaveSuccess }) => {
       <div className={styles.cardActions}>
         <div className={styles.cardDetail}>
             <FaUsers />
-            <span>{meal.participants?.length || 0} / {meal.maxParticipants} partecipanti</span>
+            <span>{meal.participants?.length || 0} / {meal.maxParticipants} {t('meals.card.participants')}</span>
         </div>
         <div className={styles.actionButtons}>
             {isHost && !isPast && <EditMealButton mealId={meal._id} />}

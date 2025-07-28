@@ -58,6 +58,15 @@ exports.getMeals = asyncHandler(async (req, res) => {
     }
   }
 
+  // Ottieni gli ID degli utenti da escludere (blocchi bidirezionali)
+  const currentUser = await require('../models/User').findById(req.user.id);
+  const usersWhoBlockedMe = await require('../models/User').find({ blockedUsers: req.user.id }).select('_id');
+  const usersWhoBlockedMeIds = usersWhoBlockedMe.map(user => user._id);
+  const excludedIds = [...currentUser.blockedUsers, ...usersWhoBlockedMeIds, req.user.id];
+
+  // Aggiungi filtro per escludere pasti di utenti bloccati
+  query.host = { $nin: excludedIds };
+
   const mealsQuery = Meal.find(query)
     .sort({ date: 1 })
     .skip(skip)
@@ -112,9 +121,16 @@ exports.getMeals = asyncHandler(async (req, res) => {
 
 // GET /api/meals/history
 exports.getMealHistory = asyncHandler(async (req, res) => {
+  // Ottieni gli ID degli utenti da escludere (blocchi bidirezionali)
+  const currentUser = await require('../models/User').findById(req.user.id);
+  const usersWhoBlockedMe = await require('../models/User').find({ blockedUsers: req.user.id }).select('_id');
+  const usersWhoBlockedMeIds = usersWhoBlockedMe.map(user => user._id);
+  const excludedIds = [...currentUser.blockedUsers, ...usersWhoBlockedMeIds];
+
   const meals = await Meal.find({ 
       participants: req.user.id,
-      status: { $in: ['completed', 'cancelled'] }
+      status: { $in: ['completed', 'cancelled'] },
+      host: { $nin: excludedIds } // Escludi pasti di utenti bloccati
   })
   .sort({ date: -1 })
   .populate('host', 'nickname profileImage');

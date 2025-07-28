@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Row, Col, Spinner } from 'react-bootstrap';
+import { useTranslation } from 'react-i18next';
 import { mealTypeOptions } from '../../../constants/mealConstants';
 import styles from './MealForm.module.css'; 
 import dayjs from 'dayjs';
@@ -11,16 +12,20 @@ import LocationPicker from '../../Map/LocationPicker';
 
         // Opzioni per la durata del TableTalk®
 const languageOptions = ['Italiano', 'English', 'Español', 'Français', 'Deutsch', '中文', 'العربية'];
-const durationOptions = [
-  { value: 30, label: '30 minuti' },
-  { value: 60, label: '1 ora' },
-  { value: 90, label: '1 ora e 30' },
-  { value: 120, label: '2 ore' },
-  { value: 150, label: '2 ore e 30' },
-  { value: 180, label: '3 ore' },
-];
 
-const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButtonText = 'Salva' }) => {
+const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButtonText }) => {
+  const { t } = useTranslation();
+  
+  // Opzioni di durata tradotte
+  const durationOptions = [
+    { value: 30, label: t('meals.form.durationOptions.30min') },
+    { value: 60, label: t('meals.form.durationOptions.1hour') },
+    { value: 90, label: t('meals.form.durationOptions.1hour30') },
+    { value: 120, label: t('meals.form.durationOptions.2hours') },
+    { value: 150, label: t('meals.form.durationOptions.2hours30') },
+    { value: 180, label: t('meals.form.durationOptions.3hours') },
+  ];
+
   // Definiamo uno stato di default pulito
   const getInitialState = () => ({
     title: '',
@@ -45,28 +50,28 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
   const validateField = (name, value) => {
     switch (name) {
       case 'title':
-        if (!value.trim()) return 'Il titolo è obbligatorio';
-        if (value.trim().length < 10) return 'Il titolo deve essere di almeno 10 caratteri';
-        if (value.trim().length > 50) return 'Il titolo non può superare i 50 caratteri';
+        if (!value.trim()) return t('meals.form.titleRequired');
+        if (value.trim().length < 10) return t('meals.form.titleMinLength');
+        if (value.trim().length > 50) return t('meals.form.titleMaxLength');
         break;
       case 'description':
-        if (!value.trim()) return 'La descrizione è obbligatoria';
-        if (value.trim().length < 10) return 'La descrizione deve essere di almeno 10 caratteri';
-        if (value.trim().length > 1000) return 'La descrizione non può superare i 1000 caratteri';
+        if (!value.trim()) return t('meals.form.descriptionRequired');
+        if (value.trim().length < 10) return t('meals.form.descriptionMinLength');
+        if (value.trim().length > 1000) return t('meals.form.descriptionMaxLength');
         break;
       case 'date':
-        if (!value) return 'Data e ora sono obbligatorie';
-        if (new Date(value) <= new Date()) return 'La data deve essere futura';
+        if (!value) return t('meals.form.dateRequired');
+        if (new Date(value) <= new Date()) return t('meals.form.dateFuture');
         break;
       case 'maxParticipants':
-        if (!value || value < 2) return 'Devono esserci almeno 2 partecipanti';
-        if (value > 10) return 'Non possono partecipare più di 10 persone';
+        if (!value || value < 2) return t('meals.form.maxParticipantsMin');
+        if (value > 10) return t('meals.form.maxParticipantsMax');
         break;
       case 'topics':
-        if (!value || value.length === 0) return 'Aggiungi almeno un argomento di conversazione';
+        if (!value || value.length === 0) return t('meals.form.topicsRequired');
         break;
       case 'location':
-        if (formData.mealType === 'physical' && !value) return 'La posizione è obbligatoria per un TableTalk® fisico';
+        if (formData.mealType === 'physical' && !value) return t('meals.form.locationRequired');
         break;
       default:
         return '';
@@ -171,7 +176,7 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
     <Form onSubmit={handleSubmit} className={styles.form}>
               {/* Sezione Tipo di TableTalk® con pulsanti personalizzati */}
       <div className={styles.formGroup}>
-        <label className={styles.formLabel}>Tipo di TableTalk®</label>
+        <label className={styles.formLabel}>{t('meals.form.typeLabel')}</label>
         <div className={styles.typeSelector}>
           <button
             type="button" // Importante per non inviare il form
@@ -179,8 +184,8 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
             onClick={() => setFormData({ ...formData, mealType: 'virtual', location: null })} // Resetta la location se si sceglie virtuale
           >
             <span className={styles.typeIcon}>🎥</span>
-            <span className={styles.typeText}>Virtuale</span>
-            <small className={styles.typeDescription}>(Videochiamata)</small>
+            <span className={styles.typeText}>{t('meals.form.virtualType')}</span>
+            <small className={styles.typeDescription}>{t('meals.form.virtualDescription')}</small>
           </button>
           <button
             type="button"
@@ -188,14 +193,14 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
             onClick={() => setFormData({ ...formData, mealType: 'physical' })}
           >
             <span className={styles.typeIcon}>📍</span>
-            <span className={styles.typeText}>Fisico</span>
-            <small className={styles.typeDescription}>(In presenza)</small>
+            <span className={styles.typeText}>{t('meals.form.physicalType')}</span>
+            <small className={styles.typeDescription}>{t('meals.form.physicalDescription')}</small>
           </button>
         </div>
         <div className={styles.typeInfo}>
           {formData.mealType === 'virtual' 
-            ? 'I partecipanti si incontreranno tramite videochiamata' 
-            : 'I partecipanti si incontreranno di persona in un luogo specifico'
+            ? t('meals.form.virtualInfo')
+            : t('meals.form.physicalInfo')
           }
         </div>
       </div>
@@ -203,7 +208,7 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
               {/* Sezione Visibilità - solo per TableTalk® fisici */}
       {formData.mealType === 'physical' && (
         <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Visibilità del TableTalk®</label>
+          <label className={styles.formLabel}>{t('meals.form.visibilityLabel')}</label>
           <div className={styles.visibilitySelector}>
             <button
               type="button"
@@ -211,8 +216,8 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
               onClick={() => setFormData({ ...formData, isPublic: true })}
             >
               <span className={styles.visibilityIcon}>🌍</span>
-              <span className={styles.visibilityText}>Pubblico</span>
-              <small className={styles.visibilityDescription}>(Chiunque può richiedere di partecipare)</small>
+              <span className={styles.visibilityText}>{t('meals.form.publicVisibility')}</span>
+              <small className={styles.visibilityDescription}>{t('meals.form.publicDescription')}</small>
             </button>
             <button
               type="button"
@@ -220,21 +225,21 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
               onClick={() => setFormData({ ...formData, isPublic: false })}
             >
               <span className={styles.visibilityIcon}>🔒</span>
-              <span className={styles.visibilityText}>Privato</span>
-              <small className={styles.visibilityDescription}>(Solo con invito)</small>
+              <span className={styles.visibilityText}>{t('meals.form.privateVisibility')}</span>
+              <small className={styles.visibilityDescription}>{t('meals.form.privateDescription')}</small>
             </button>
           </div>
           <div className={styles.visibilityInfo}>
             {formData.isPublic 
-                          ? 'Il TableTalk® sarà visibile sulla mappa e chiunque potrà richiedere di partecipare'
-            : 'Il TableTalk® sarà visibile solo agli utenti che inviterai personalmente'
+                          ? t('meals.form.publicInfo')
+            : t('meals.form.privateInfo')
             }
           </div>
         </div>
       )}
 
       <Form.Group className="mb-3">
-        <Form.Label className={styles.formLabel}>Titolo dell'Evento</Form.Label>
+        <Form.Label className={styles.formLabel}>{t('meals.form.titleLabel')}</Form.Label>
         <Form.Control 
           className={`${styles.formControl} ${errors.title ? 'is-invalid' : ''}`}
           type="text" 
@@ -248,7 +253,7 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
       </Form.Group>
       
       <Form.Group className="mb-3">
-        <Form.Label className={styles.formLabel}>Descrizione</Form.Label>
+        <Form.Label className={styles.formLabel}>{t('meals.form.descriptionLabel')}</Form.Label>
         <Form.Control 
           className={`${styles.formControl} ${errors.description ? 'is-invalid' : ''}`}
           as="textarea" 
@@ -265,16 +270,16 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
       <Row className="mb-3">
         <Col md={6}>
             <Form.Group>
-                <Form.Label className={styles.formLabel}>Categoria</Form.Label>
+                <Form.Label className={styles.formLabel}>{t('meals.form.categoryLabel')}</Form.Label>
                 <Form.Select className={styles.formSelect} name="type" value={formData.type} onChange={handleChange} required>
-                    <option value="" disabled>Seleziona...</option>
+                    <option value="" disabled>{t('meals.form.selectCategory')}</option>
                     {mealTypeOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </Form.Select>
             </Form.Group>
         </Col>
         <Col md={6}>
             <Form.Group>
-                <Form.Label className={styles.formLabel}>Max Partecipanti</Form.Label>
+                <Form.Label className={styles.formLabel}>{t('meals.form.maxParticipantsLabel')}</Form.Label>
                 <Form.Control 
                   className={`${styles.formControl} ${errors.maxParticipants ? 'is-invalid' : ''}`}
                   type="number" 
@@ -294,7 +299,7 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
       <Row className="mb-3">
         <Col xs={12} md={6}>
             <Form.Group>
-                <Form.Label className={styles.formLabel}>Lingua della conversazione</Form.Label>
+                <Form.Label className={styles.formLabel}>{t('meals.form.languageLabel')}</Form.Label>
                 <Form.Select className={styles.formSelect} name="language" value={formData.language} onChange={handleChange} required>
                     {languageOptions.map(lang => <option key={lang} value={lang}>{lang}</option>)}
                 </Form.Select>
@@ -302,7 +307,7 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
         </Col>
         <Col xs={12} md={6}>
             <Form.Group>
-                <Form.Label className={styles.formLabel}>Durata</Form.Label>
+                <Form.Label className={styles.formLabel}>{t('meals.form.durationLabel')}</Form.Label>
                 <Form.Select className={styles.formSelect} name="duration" value={formData.duration} onChange={handleChange} required>
                     {durationOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </Form.Select>
@@ -313,7 +318,7 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
       <Row className="mb-3">
         <Col xs={12} md={6}>
             <Form.Group>
-                <Form.Label className={styles.formLabel}>Data e Ora</Form.Label>
+                <Form.Label className={styles.formLabel}>{t('meals.form.dateLabel')}</Form.Label>
                 <Form.Control 
                   className={`${styles.formControl} ${errors.date ? 'is-invalid' : ''}`}
                   type="datetime-local" 
@@ -330,12 +335,12 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
             {/* Campo per la posizione - visibile solo per TableTalk® fisici */}
             {formData.mealType === 'physical' && (
               <Form.Group>
-                <Form.Label className={styles.formLabel}>Indirizzo</Form.Label>
+                <Form.Label className={styles.formLabel}>{t('meals.form.addressLabel')}</Form.Label>
                 <Form.Control 
                   className={`${styles.formControl} ${errors.location ? 'is-invalid' : ''}`}
                   type="text" 
                   name="location" 
-                  placeholder="Inserisci l'indirizzo del ristorante o luogo di incontro"
+                  placeholder={t('meals.form.addressPlaceholder')}
                   value={formData.location?.address || ''} 
                   onChange={handleChange}
                   onBlur={handleBlur}
@@ -343,7 +348,7 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
                 />
                 {errors.location && <div className="invalid-feedback">{errors.location}</div>}
                 <Form.Text className="text-muted">
-                  Es: "Ristorante Il Gusto, Via Roma 123, Milano"
+                  {t('meals.form.addressExample')}
                 </Form.Text>
               </Form.Group>
             )}
@@ -353,7 +358,7 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
               {/* Mappa per TableTalk® fisici */}
       {formData.mealType === 'physical' && (
         <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Seleziona la posizione sulla mappa</label>
+          <label className={styles.formLabel}>{t('meals.form.mapLabel')}</label>
           <div className={styles.mapContainer}>
             <LocationPicker
               onLocationSelect={(location) => setFormData({ ...formData, location })}
@@ -364,16 +369,16 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
       )}
       
       <Form.Group className="mb-3">
-          <Form.Label className={styles.formLabel}>Argomenti di Conversazione</Form.Label>
+          <Form.Label className={styles.formLabel}>{t('meals.form.topicsLabel')}</Form.Label>
           <TopicInput topics={formData.topics} setTopics={handleTopicsChange} />
           {errors.topics && <div className="invalid-feedback d-block">{errors.topics}</div>}
-          <Form.Text>Scrivi un argomento e premi Invio o la virgola per aggiungerlo. Massimo 5.</Form.Text>
+          <Form.Text>{t('meals.form.topicsHelp')}</Form.Text>
       </Form.Group>
       
       <Form.Group className="mb-3">
-        <Form.Label>Immagine di Copertina</Form.Label>
-        {imagePreview && <img src={imagePreview} alt="Anteprima TableTalk®" className={styles.imagePreview} />}
-        <Button variant="secondary" onClick={handlePhotoSelect} className="d-block w-100 mt-2">Scegli dalla Galleria</Button>
+        <Form.Label>{t('meals.form.coverImageLabel')}</Form.Label>
+        {imagePreview && <img src={imagePreview} alt={t('meals.form.coverImageAlt')} className={styles.imagePreview} />}
+        <Button variant="secondary" onClick={handlePhotoSelect} className="d-block w-100 mt-2">{t('meals.form.chooseFromGallery')}</Button>
       </Form.Group>
       
       <Button 
@@ -385,10 +390,10 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
         {isLoading || isSubmitting ? (
           <>
             <Spinner as="span" animation="border" size="sm" />
-            <span> {isSubmitting ? 'Salvataggio in corso...' : 'Caricamento...'}</span>
+            <span> {isSubmitting ? t('meals.form.saving') : t('meals.form.loading')}</span>
           </>
         ) : (
-          submitButtonText
+          submitButtonText || t('forms.save')
         )}
       </Button>
     </Form>

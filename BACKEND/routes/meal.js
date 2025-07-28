@@ -32,18 +32,18 @@ const {
 } = require('../controllers/mealController');
 
 // ==================== ROTTE PUBBLICHE ====================
-router.get('/', mealController.getMeals);
+router.get('/', protect, mealController.getMeals);
 
 /**
  * @route   GET /api/meals/search
  * @desc    Cerca pasti in base a una query testuale
- * @access  Public
+ * @access  Private
  */
-router.get('/search', mealController.searchMeals); 
+router.get('/search', protect, mealController.searchMeals); 
 
 router.get('/user/all', protect, mealController.getUserMeals);
 
-router.get('/:id', [ check('id', 'ID pasto non valido').isMongoId() ], mealController.getMeal);
+router.get('/:id', [ protect, check('id', 'ID pasto non valido').isMongoId() ], mealController.getMeal);
 
 
 // ==================== ROTTE PROTETTE ====================

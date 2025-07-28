@@ -66,6 +66,7 @@ const UserSchema = new mongoose.Schema(
     isVerified: { type: Boolean, default: false },
     createdMeals: [{ type: mongoose.Schema.ObjectId, ref: 'Meal' }],
     joinedMeals: [{ type: mongoose.Schema.ObjectId, ref: 'Meal' }],
+    blockedUsers: [{ type: mongoose.Schema.ObjectId, ref: 'User' }],
 
     // --- CAMPI DI SICUREZZA ---
     verificationToken: String,
@@ -229,6 +230,29 @@ try {
 
   console.log('--- Fine User.updateProfile ---\n');
   return this;
+};
+
+// Metodi per gestire i blocchi utente
+UserSchema.methods.blockUser = async function(userIdToBlock) {
+  if (!this.blockedUsers.includes(userIdToBlock)) {
+    this.blockedUsers.push(userIdToBlock);
+    await this.save();
+  }
+  return this;
+};
+
+UserSchema.methods.unblockUser = async function(userIdToUnblock) {
+  this.blockedUsers = this.blockedUsers.filter(id => id.toString() !== userIdToUnblock.toString());
+  await this.save();
+  return this;
+};
+
+UserSchema.methods.isUserBlocked = function(userId) {
+  return this.blockedUsers.some(id => id.toString() === userId.toString());
+};
+
+UserSchema.methods.getBlockedUsers = function() {
+  return this.blockedUsers;
 };
 
 const User = mongoose.model('User', UserSchema);

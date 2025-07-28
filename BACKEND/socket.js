@@ -49,8 +49,8 @@ const allowedOrigins = [
   'http://localhost:5001',
   'http://localhost:5002',
   'http://localhost:5003',
-  'http://192.168.1.151:3000', // IP corretto del frontend
-  'http://192.168.1.151:5001', // IP corretto del backend
+  'http://192.168.1.45:3000', // IP corretto del frontend
+  'http://192.168.1.45:5001', // IP corretto del backend
   'capacitor://localhost',
   'http://localhost',
 ];
@@ -175,7 +175,18 @@ function initializeSocket(server) {
 
         // --- LOGICA PUSH NOTIFICATION ---
         if (admin.apps.length > 0) {
-          const recipients = await User.find({ _id: { $in: chat.participants, $ne: socket.user._id } });
+          // Ottieni gli ID degli utenti da escludere (blocchi bidirezionali)
+          const currentUser = await User.findById(socket.user._id);
+          const usersWhoBlockedMe = await User.find({ blockedUsers: socket.user._id }).select('_id');
+          const usersWhoBlockedMeIds = usersWhoBlockedMe.map(user => user._id);
+          const excludedIds = [...currentUser.blockedUsers, ...usersWhoBlockedMeIds, socket.user._id];
+
+          const recipients = await User.find({ 
+            _id: { 
+              $in: chat.participants, 
+              $nin: excludedIds 
+            } 
+          });
 
           // ▼▼▼ FILTRIAMO SOLO GLI UTENTI VERAMENTE OFFLINE ▼▼▼
           const offlineRecipients = recipients.filter(user => !connectedUsers.has(user._id.toString()));

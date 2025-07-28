@@ -1,5 +1,6 @@
 // File: src/pages/MapPage/index.js
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import MapView from '../../components/Map/MapView';
 import profileService from '../../services/profileService';
 import mealService from '../../services/mealService';
@@ -10,6 +11,7 @@ import BackButton from '../../components/common/BackButton';
 import { Button, Alert, Spinner } from 'react-bootstrap';
 
 const MapPage = () => {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [currentUserPosition, setCurrentUserPosition] = useState(null);
     const [nearbyUsers, setNearbyUsers] = useState([]);
@@ -102,19 +104,16 @@ const MapPage = () => {
         }
     };
 
-    // Funzione per richiedere i permessi
+    // Funzione per richiedere i permessi di localizzazione
     const requestLocationPermission = async () => {
         try {
-            console.log('[MapPage] Richiesta permessi di geolocalizzazione...');
-            
             if (Capacitor.isNativePlatform()) {
-                // Su piattaforma nativa, richiedi esplicitamente i permessi
                 const permissions = await Geolocation.requestPermissions();
-                console.log('[MapPage] Risultato richiesta permessi:', permissions.location);
+                console.log('[MapPage] Permessi richiesti:', permissions.location);
                 return permissions.location;
             } else {
                 // Su browser, i permessi vengono richiesti automaticamente
-                // quando si chiama getCurrentPosition per la prima volta
+                // quando si chiama getCurrentPosition
                 return 'prompt';
             }
         } catch (err) {
@@ -123,228 +122,164 @@ const MapPage = () => {
         }
     };
 
-    // Funzione per ottenere la posizione (solo dopo aver ottenuto i permessi)
+    // Funzione per ottenere la posizione corrente
     const getCurrentPosition = async () => {
         try {
-            console.log('[MapPage] Ottenimento posizione corrente...');
-            
-            let position;
             if (Capacitor.isNativePlatform()) {
-                // Usa Capacitor Geolocation su mobile
-                position = await Geolocation.getCurrentPosition({
-                    enableHighAccuracy: true,
-                    timeout: 15000,
-                    maximumAge: 60000 // Cache per 1 minuto
-                });
+                const position = await Geolocation.getCurrentPosition();
+                return {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                };
             } else {
-                // Usa Web Geolocation API sul browser
-                position = await new Promise((resolve, reject) => {
+                // Su browser, usa l'API standard
+                return new Promise((resolve, reject) => {
                     navigator.geolocation.getCurrentPosition(
-                        (pos) => resolve({
-                            coords: {
-                                latitude: pos.coords.latitude,
-                                longitude: pos.coords.longitude
-                            }
-                        }),
-                        (err) => reject(err),
+                        (position) => {
+                            resolve({
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude
+                            });
+                        },
+                        (error) => {
+                            reject(new Error(t('map.locationError')));
+                        },
                         {
                             enableHighAccuracy: true,
-                            timeout: 15000,
+                            timeout: 10000,
                             maximumAge: 60000
                         }
                     );
                 });
             }
-
-            console.log('[MapPage] Posizione ottenuta:', position.coords);
-            return position.coords;
         } catch (err) {
-            console.error('[MapPage] Errore nell\'ottenimento posizione:', err);
+            console.error('[MapPage] Errore nell\'ottenere la posizione:', err);
             throw err;
         }
     };
 
-    // Funzione principale per inizializzare la geolocalizzazione
+    // Funzione per inizializzare la localizzazione
     const initializeLocation = async () => {
-        console.log('[MapPage] 1. Inizializzazione geolocalizzazione...');
-        
         try {
+            setLoading(true);
+            setError('');
+
             // 1. Controlla lo stato dei permessi
-            const currentPermissionStatus = await checkPermissionStatus();
-            setPermissionStatus(currentPermissionStatus);
-            
-            if (currentPermissionStatus === 'denied') {
-                setError('Permesso di geolocalizzazione negato. Per utilizzare la mappa, abilita i permessi di localizzazione nelle impostazioni del dispositivo.');
+            const permissionStatus = await checkPermissionStatus();
+            setPermissionStatus(permissionStatus);
+
+            if (permissionStatus === 'denied') {
+                setError(t('map.permissionDenied'));
                 setLoading(false);
                 return;
             }
 
             // 2. Se i permessi non sono ancora stati concessi, richiedili
-            if (currentPermissionStatus === 'prompt' || currentPermissionStatus === 'unknown') {
+            if (permissionStatus === 'prompt') {
                 const newPermissionStatus = await requestLocationPermission();
                 setPermissionStatus(newPermissionStatus);
                 
                 if (newPermissionStatus === 'denied') {
-                    setError('Permesso di geolocalizzazione negato. Per utilizzare la mappa, abilita i permessi di localizzazione nelle impostazioni del dispositivo.');
+                    setError(t('map.permissionDenied'));
                     setLoading(false);
                     return;
                 }
             }
 
-            // 3. Ora che abbiamo i permessi, otteniamo la posizione
-            const coords = await getCurrentPosition();
-            const { latitude, longitude } = coords;
-            const pos = { lat: latitude, lng: longitude };
-            
-            setCurrentUserPosition(pos);
+            // 3. Ottieni la posizione corrente
+            const position = await getCurrentPosition();
+            setCurrentUserPosition(position);
 
-            // 4. Aggiorna posizione nel DB se l'utente ha abilitato la condivisione
-            if (user.settings?.privacy?.showLocationOnMap) {
-                console.log('[MapPage] Aggiorno posizione utente nel DB...');
-                try {
-                    await profileService.updateUserLocation({ latitude, longitude });
-                    console.log('[MapPage] Posizione utente aggiornata.');
-                } catch (updateError) {
-                    console.warn('[MapPage] Errore aggiornamento posizione:', updateError);
-                }
+            // 4. Aggiorna la posizione dell'utente nel backend
+            try {
+                await profileService.updateLocationFromCoords(position);
+                console.log('[MapPage] Posizione aggiornata nel backend');
+            } catch (err) {
+                console.error('[MapPage] Errore nell\'aggiornamento posizione backend:', err);
+                // Non blocchiamo l'app se l'aggiornamento fallisce
             }
 
-            // 5. Cerca utenti vicini
-            console.log('[MapPage] Cerco utenti vicini...');
-            const users = await profileService.getNearbyUsers({ 
-                latitude, 
-                longitude, 
-                distance: 20000 // 20km
-            });
-            console.log(`[MapPage] Trovati ${users.length} utenti vicini.`);
-            setNearbyUsers(users);
-
-            // 6. Cerca TableTalk® fisici nelle vicinanze
-            await fetchNearbyMeals(coords);
+            // 5. Carica utenti e TableTalk® nelle vicinanze
+            await Promise.all([
+                fetchNearbyUsers(position),
+                fetchNearbyMeals(position)
+            ]);
 
         } catch (err) {
-            console.error('[MapPage] ERRORE:', err);
-            
-            // Gestisci errori specifici
-            if (err.message.includes('permission')) {
-                setError('Permesso di geolocalizzazione negato. Abilita i permessi di localizzazione per utilizzare la mappa.');
-            } else if (err.message.includes('timeout')) {
-                setError('Timeout nel recupero della posizione. Verifica la connessione GPS e riprova.');
-            } else if (err.message.includes('unavailable')) {
-                setError('Servizio di geolocalizzazione non disponibile su questo dispositivo.');
-            } else if (err.message.includes('not supported')) {
-                setError('Geolocalizzazione non supportata dal tuo browser. Prova con un browser diverso.');
-            } else {
-                setError(`Impossibile ottenere la posizione: ${err.message}`);
-            }
+            console.error('[MapPage] Errore nell\'inizializzazione:', err);
+            setError(err.message || t('map.locationError'));
         } finally {
             setLoading(false);
         }
     };
 
-    // Funzione per riprovare
+    // Funzione per caricare utenti nelle vicinanze
+    const fetchNearbyUsers = async (coords) => {
+        try {
+            console.log('👥 [MapPage] Cerco utenti nelle vicinanze...');
+            console.log('📍 [MapPage] Coordinate:', coords);
+            
+            const data = await profileService.getNearbyUsers({
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+                radius: 50 // 50 km di raggio
+            });
+            
+            console.log(`[MapPage] Trovati ${data.length} utenti nelle vicinanze.`);
+            setNearbyUsers(data);
+        } catch (err) {
+            console.error('[MapPage] Errore nel caricamento utenti:', err);
+            setNearbyUsers([]);
+        }
+    };
+
+    // Inizializza la localizzazione quando il componente si monta
+    useEffect(() => {
+        initializeLocation();
+    }, []);
+
     const handleRetry = () => {
-        setError('');
-        setLoading(true);
-        setPermissionStatus('unknown');
-        setNearbyMeals([]);
         initializeLocation();
     };
 
-    useEffect(() => {
-        if (user) {
-            initializeLocation();
-        } else {
-            setError('Utente non autenticato');
-            setLoading(false);
-        }
-    }, [user?.id]);
-    
     if (loading) {
         return (
-            <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                height: '400px',
-                flexDirection: 'column'
-            }}>
+            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
                 <Spinner animation="border" />
-                <div style={{ marginTop: '15px' }}>
-                    {permissionStatus === 'prompt' ? 'Richiesta permessi...' : 'Caricamento mappa...'}
-                </div>
-                <div style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
-                    {permissionStatus === 'prompt' ? 'Concedi i permessi di localizzazione' : 'Ottenendo la tua posizione...'}
-                </div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div style={{ 
-                padding: '20px',
-                maxWidth: '500px',
-                margin: '20px auto'
-            }}>
-                <Alert variant="danger" className="text-center">
-                    <Alert.Heading>Errore Geolocalizzazione</Alert.Heading>
+            <div className="text-center py-5">
+                <Alert variant="danger">
+                    <h4>{t('map.errorTitle')}</h4>
                     <p>{error}</p>
-                    <hr />
-                    <div className="d-flex justify-content-center gap-2">
-                        <Button 
-                            variant="primary" 
-                            onClick={handleRetry}
-                        >
-                            Riprova
-                        </Button>
-                        <Button 
-                            variant="secondary" 
-                            onClick={() => window.history.back()}
-                        >
-                            Torna Indietro
-                        </Button>
-                    </div>
+                    <Button onClick={handleRetry} variant="primary">
+                        {t('map.retryButton')}
+                    </Button>
                 </Alert>
-                <div className="text-center mt-3">
-                    <BackButton />
-                </div>
             </div>
         );
     }
 
     return (
-        // 1. Contenitore principale: lo facciamo diventare alto come tutto lo schermo
-        //    e usiamo flexbox per disporre gli elementi in colonna.
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh' // Occupa il 100% dell'altezza del viewport
-        }}>
-          <div style={{ padding: '0 20px' }}> {/* Un po' di padding per il titolo */}
-                  <h1>Utenti e TableTalk® Fisici Vicino a Te</h1>
-      <p>Esplora chi è disponibile per un TableTalk® nei dintorni e scopri i TableTalk® fisici in programma!</p>
-          </div>
-          
-          {/* 2. Wrapper per la mappa: gli diciamo di occupare tutto lo spazio rimanente */}
-          <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
-            {currentUserPosition && (
-              <MapView
-                userPosition={currentUserPosition}
+        <div className="map-page">
+            <div className="map-header">
+                <BackButton />
+                <h1>{t('map.title')}</h1>
+                <p>{t('map.subtitle')}</p>
+            </div>
+            
+            <MapView
+                currentUserPosition={currentUserPosition}
                 nearbyUsers={nearbyUsers}
-                nearbyMeals={nearbyMeals} // Passiamo anche i TableTalk® fisici
-              />
-            )}
-          </div>
-    
-          {/* Questo non è più necessario qui perché la mappa ha uno spazio definito */}
-          {/* {nearbyUsers.length === 0 && ( ... )} */}
-          
-          <div style={{ padding: '20px' }}>
-            <BackButton />
-          </div>
+                nearbyMeals={nearbyMeals}
+                permissionStatus={permissionStatus}
+            />
         </div>
-      );
+    );
 };
 
 export default MapPage;

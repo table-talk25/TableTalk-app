@@ -1,95 +1,79 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GoogleMap } from '@capacitor/google-maps';
+import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
-import { Button, Alert, Spinner } from 'react-bootstrap';
+import { GoogleMap } from '@capacitor/google-maps';
+import { Spinner, Alert, Button } from 'react-bootstrap';
+import { useAuth } from '../../contexts/AuthContext';
 
 const LocationPicker = ({ onLocationSelect, initialCenter }) => {
+  const { t } = useTranslation();
+  const { user } = useAuth();
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
+  const [userPosition, setUserPosition] = useState(null);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [userPosition, setUserPosition] = useState(null);
+  const [error, setError] = useState('');
 
-  // Ottieni la posizione dell'utente
   useEffect(() => {
     const getUserLocation = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Controlla i permessi
-        const permissionStatus = await Geolocation.checkPermissions();
-        if (permissionStatus.location !== 'granted') {
-          const requestResult = await Geolocation.requestPermissions();
-          if (requestResult.location !== 'granted') {
-            throw new Error('Permessi di geolocalizzazione negati');
-          }
+      if (!Capacitor.isNativePlatform()) {
+        // Su web, usa l'API del browser
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              setUserPosition({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              });
+            },
+            (error) => {
+              console.log('Errore geolocalizzazione web:', error);
+              // Non blocchiamo il caricamento se la geolocalizzazione fallisce
+            }
+          );
         }
-
-        const position = await Geolocation.getCurrentPosition();
-        const userPos = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        setUserPosition(userPos);
-      } catch (err) {
-        console.error('Errore nel ottenere la posizione:', err);
-        setError('Impossibile ottenere la tua posizione. Usa la mappa per selezionare manualmente.');
-        // Usa una posizione di default (Milano)
-        setUserPosition({ lat: 45.4642, lng: 9.1900 });
-      } finally {
-        setLoading(false);
+      } else {
+        // Su mobile, usa Capacitor
+        try {
+          const position = await Geolocation.getCurrentPosition();
+          setUserPosition({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        } catch (error) {
+          console.log('Errore geolocalizzazione mobile:', error);
+          // Non blocchiamo il caricamento se la geolocalizzazione fallisce
+        }
       }
     };
 
     getUserLocation();
   }, []);
 
-  // Crea la mappa
   useEffect(() => {
-    if (!userPosition || !mapRef.current) return;
-
     const createMap = async () => {
       try {
-        const center = initialCenter || userPosition;
-        
+        setLoading(true);
+        setError('');
+
+        // Crea la mappa
         const newMap = await GoogleMap.create({
           id: 'location-picker-map',
           element: mapRef.current,
+          apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
           config: {
-            center: center,
-            zoom: 15,
-          },
+            center: initialCenter || userPosition || { lat: 41.9028, lng: 12.4964 }, // Roma di default
+            zoom: 13
+          }
         });
 
         setMap(newMap);
 
-        // Aggiungi marker per la posizione dell'utente
-        await newMap.addMarker({
-          id: 'user-current',
-          coordinate: userPosition,
-          title: 'La tua posizione',
-          iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-        });
-
-        // Se c'è una posizione iniziale, aggiungi un marker
-        if (initialCenter) {
-          await newMap.addMarker({
-            id: 'selected-location',
-            coordinate: initialCenter,
-            title: 'Posizione selezionata',
-            iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
-          });
-          setSelectedLocation({
-            coordinates: [initialCenter.lng, initialCenter.lat],
-            address: 'Posizione selezionata'
-          });
-        }
-
-        // Gestisci il click sulla mappa
+        // Aggiungi listener per i click sulla mappa
         newMap.setOnMapClickListener(async (event) => {
-          const { coordinate } = event;
+          const clickedPosition = event.coordinate;
           
           // Rimuovi il marker precedente se esiste
           try {
@@ -101,48 +85,26 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
           // Aggiungi il nuovo marker
           await newMap.addMarker({
             id: 'selected-location',
-            coordinate: coordinate,
-            title: 'Posizione selezionata',
+            coordinate: clickedPosition,
+            title: t('map.selectedLocation'),
             iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
           });
 
-          // Ottieni l'indirizzo tramite reverse geocoding
-          try {
-            const response = await fetch(
-              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coordinate.lat},${coordinate.lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}`
-            );
-            const data = await response.json();
-            
-            if (data.results && data.results[0]) {
-              const address = data.results[0].formatted_address;
-              const locationData = {
-                coordinates: [coordinate.lng, coordinate.lat],
-                address: address
-              };
-              setSelectedLocation(locationData);
-              onLocationSelect(locationData);
-            } else {
-              const locationData = {
-                coordinates: [coordinate.lng, coordinate.lat],
-                address: `${coordinate.lat.toFixed(6)}, ${coordinate.lng.toFixed(6)}`
-              };
-              setSelectedLocation(locationData);
-              onLocationSelect(locationData);
-            }
-          } catch (error) {
-            console.error('Errore nel reverse geocoding:', error);
-            const locationData = {
-              coordinates: [coordinate.lng, coordinate.lat],
-              address: `${coordinate.lat.toFixed(6)}, ${coordinate.lng.toFixed(6)}`
-            };
-            setSelectedLocation(locationData);
-            onLocationSelect(locationData);
-          }
+          // Per ora usiamo coordinate semplici, in futuro potremmo fare geocoding
+          const locationData = {
+            coordinates: [clickedPosition.lng, clickedPosition.lat],
+            address: `${clickedPosition.lat.toFixed(6)}, ${clickedPosition.lng.toFixed(6)}`
+          };
+          
+          setSelectedLocation(locationData);
+          onLocationSelect(locationData);
         });
 
       } catch (error) {
         console.error('Errore creazione mappa:', error);
-        setError('Impossibile caricare la mappa. Riprova più tardi.');
+        setError(t('map.loadError'));
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -153,7 +115,7 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
         map.destroy();
       }
     };
-  }, [userPosition, initialCenter, onLocationSelect]);
+  }, [userPosition, initialCenter, onLocationSelect, t]);
 
   const handleUseCurrentLocation = async () => {
     if (!map || !userPosition) return;
@@ -170,7 +132,7 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
       await map.addMarker({
         id: 'selected-location',
         coordinate: userPosition,
-        title: 'Posizione selezionata',
+        title: t('map.selectedLocation'),
         iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
       });
 
@@ -182,7 +144,7 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
 
       const locationData = {
         coordinates: [userPosition.lng, userPosition.lat],
-        address: 'La tua posizione attuale'
+        address: t('map.currentLocation')
       };
       setSelectedLocation(locationData);
       onLocationSelect(locationData);
@@ -195,7 +157,7 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
     return (
       <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Spinner animation="border" />
-        <span className="ms-2">Caricamento mappa...</span>
+        <span className="ms-2">{t('map.loading')}</span>
       </div>
     );
   }
@@ -207,7 +169,7 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
           {error}
         </Alert>
         <Button onClick={() => window.location.reload()} className="mt-2">
-          Riprova
+          {t('map.retryButton')}
         </Button>
       </div>
     );
@@ -222,10 +184,10 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
           onClick={handleUseCurrentLocation}
           disabled={!userPosition}
         >
-          📍 Usa la mia posizione
+          📍 {t('map.useMyLocation')}
         </Button>
         <small className="text-muted ms-2">
-          Clicca sulla mappa per selezionare una posizione
+          {t('map.clickToSelect')}
         </small>
       </div>
       
@@ -238,18 +200,6 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
           borderRadius: '8px'
         }} 
       />
-      
-      {selectedLocation && (
-        <div style={{ 
-          marginTop: '1rem', 
-          padding: '0.75rem', 
-          backgroundColor: '#e8f5e8', 
-          border: '1px solid #28a745', 
-          borderRadius: '6px' 
-        }}>
-          <strong>📍 Posizione selezionata:</strong> {selectedLocation.address}
-        </div>
-      )}
     </div>
   );
 };

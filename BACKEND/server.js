@@ -48,8 +48,8 @@ connectDB();
 // Lista delle origini consentite (completa per Capacitor)
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://192.168.1.151:3000', // IP corretto del frontend
-  'http://192.168.1.151:5001', // IP corretto del backend
+  'http://192.168.1.45:3000', // IP corretto del frontend
+  'http://192.168.1.45:5001', // IP corretto del backend
   'capacitor://localhost',
   'http://localhost'
 ];
@@ -92,6 +92,8 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/invitations', require('./routes/invitations'));
 app.use('/api/join-requests', require('./routes/joinRequests'));
+app.use('/api/reports', require('./routes/reports'));
+app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/video', require('./routes/videoCall'));
 
 // Importa Twilio per la generazione del token video

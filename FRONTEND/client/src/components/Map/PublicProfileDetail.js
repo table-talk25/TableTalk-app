@@ -1,5 +1,6 @@
 import React from 'react';
 import { Accordion, Badge } from 'react-bootstrap';
+import BlockUserMenu from '../common/BlockUserMenu';
 
 const PublicProfileDetail = ({ user, onInvite, onBack }) => {
   if (!user) return null;
@@ -12,7 +13,10 @@ const PublicProfileDetail = ({ user, onInvite, onBack }) => {
   return (
     <div>
       <button onClick={onBack}>← Torna alla lista</button>
-      <div style={{ textAlign: 'center', padding: '20px 0' }}>
+      <div style={{ textAlign: 'center', padding: '20px 0', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: 0, right: 0 }}>
+          <BlockUserMenu userId={user._id} reportedUser={user} />
+        </div>
         <img
           src={user.profileImage ? `/uploads/profile-images/${user.profileImage}` : '/default-avatar.jpg'}
           alt={user.nickname}

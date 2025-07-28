@@ -21,6 +21,21 @@
   border: 1px solid #e9ecef;
 }
 
+.logoContainer {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.logoLink {
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+
+.logoLink:hover {
+  transform: scale(1.05);
+}
+
 .title {
   color: #2d3748;
   font-size: clamp(1.8rem, 5vw, 2.2rem);

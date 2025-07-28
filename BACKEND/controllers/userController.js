@@ -8,6 +8,19 @@ const ErrorResponse = require('../utils/errorResponse');
 const mongoose = require('mongoose');
 const axios = require('axios');
 
+// Helper function per ottenere gli ID degli utenti da escludere (blocchi bidirezionali)
+const getExcludedUserIds = async (currentUserId) => {
+  const currentUser = await User.findById(currentUserId);
+  const usersWhoBlockedMe = await User.find({ blockedUsers: currentUserId }).select('_id');
+  const usersWhoBlockedMeIds = usersWhoBlockedMe.map(user => user._id);
+  
+  return {
+    usersIBlocked: currentUser.blockedUsers || [],
+    usersWhoBlockedMe: usersWhoBlockedMeIds,
+    allExcludedIds: [...currentUser.blockedUsers, ...usersWhoBlockedMeIds, currentUserId]
+  };
+};
+
 
 // Configurazione di multer per il caricamento delle immagini
 const storage = multer.diskStorage({
@@ -123,6 +136,10 @@ exports.getUsers = async (req, res, next) => {
     if (role) query.role = role;
     if (status) query.status = status;
 
+    // Ottieni gli ID degli utenti da escludere (blocchi bidirezionali)
+    const excludedIds = await getExcludedUserIds(req.user.id);
+    query._id = { $nin: excludedIds.allExcludedIds };
+
     // Esegui la query con paginazione
     const users = await User.find(query)
       .select('-password')
@@ -195,64 +212,81 @@ exports.searchUsers = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @desc    Blocca un utente
+ * @desc    Blocca un utente (user-to-user blocking)
  * @route   POST /api/users/:id/block
  * @access  Private
  */
 exports.blockUser = async (req, res) => {
   try {
-    const { reason } = req.body;
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      {
-        status: 'blocked',
-        blockedAt: Date.now(),
-        blockReason: reason
-      },
-      { new: true }
-    ).select('-password');
+    const userToBlockId = req.params.id;
+    const currentUserId = req.user.id;
 
-    if (!user) {
-      return res.status(404).json({ msg: 'Utente non trovato' });
+    // Verifica che l'utente non stia cercando di bloccare se stesso
+    if (currentUserId === userToBlockId) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Non puoi bloccare te stesso' 
+      });
     }
 
-    res.json(user);
+    // Verifica che l'utente da bloccare esista
+    const userToBlock = await User.findById(userToBlockId);
+    if (!userToBlock) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Utente non trovato' 
+      });
+    }
+
+    // Ottieni l'utente corrente e blocca l'altro utente
+    const currentUser = await User.findById(currentUserId);
+    await currentUser.blockUser(userToBlockId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Utente bloccato con successo',
+      data: {
+        blockedUserId: userToBlockId,
+        blockedUsersCount: currentUser.blockedUsers.length
+      }
+    });
   } catch (err) {
-    console.error(err.message);
-    if (err.kind === 'ObjectId') {
-      return res.status(404).json({ msg: 'Utente non trovato' });
-    }
-    res.status(500).send('Errore del server');
+    console.error('Errore nel blocco utente:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Errore nel blocco utente' 
+    });
   }
 };
 
 /**
- * @desc    Sblocca un utente
+ * @desc    Sblocca un utente (user-to-user unblocking)
  * @route   DELETE /api/users/:id/block
  * @access  Private
  */
 exports.unblockUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      {
-        status: 'active',
-        $unset: { blockedAt: 1, blockReason: 1 }
-      },
-      { new: true }
-    ).select('-password');
+    const userToUnblockId = req.params.id;
+    const currentUserId = req.user.id;
 
-    if (!user) {
-      return res.status(404).json({ msg: 'Utente non trovato' });
-    }
+    // Ottieni l'utente corrente e sblocca l'altro utente
+    const currentUser = await User.findById(currentUserId);
+    await currentUser.unblockUser(userToUnblockId);
 
-    res.json(user);
+    res.status(200).json({
+      success: true,
+      message: 'Utente sbloccato con successo',
+      data: {
+        unblockedUserId: userToUnblockId,
+        blockedUsersCount: currentUser.blockedUsers.length
+      }
+    });
   } catch (err) {
-    console.error(err.message);
-    if (err.kind === 'ObjectId') {
-      return res.status(404).json({ msg: 'Utente non trovato' });
-    }
-    res.status(500).send('Errore del server');
+    console.error('Errore nello sblocco utente:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Errore nello sblocco utente' 
+    });
   }
 };
 
@@ -461,6 +495,9 @@ exports.getNearbyUsers = asyncHandler(async (req, res, next) => {
   const lon = parseFloat(longitude);
   const lat = parseFloat(latitude);
 
+  // Ottieni gli ID degli utenti da escludere (blocchi bidirezionali)
+  const excludedIds = await getExcludedUserIds(req.user.id);
+
   const users = await User.aggregate([
     {
       $geoNear: {
@@ -472,7 +509,8 @@ exports.getNearbyUsers = asyncHandler(async (req, res, next) => {
         maxDistance: maxDistance,
         query: { 
           'settings.privacy.showLocationOnMap': true,
-          _id: { $ne: req.user._id }        },
+          _id: { $nin: excludedIds.allExcludedIds }
+        },
         spherical: true // Obbligatorio per calcoli su un globo terrestre
       }
     },
@@ -493,6 +531,47 @@ exports.getNearbyUsers = asyncHandler(async (req, res, next) => {
     success: true,
     count: users.length,
     data: users
+  });
+});
+
+/**
+ * @desc    Ottieni la lista degli utenti bloccati
+ * @route   GET /api/users/blocked
+ * @access  Private
+ */
+exports.getBlockedUsers = asyncHandler(async (req, res, next) => {
+  const currentUserId = req.user.id;
+
+  const currentUser = await User.findById(currentUserId)
+    .populate('blockedUsers', 'nickname profileImage bio');
+
+  res.status(200).json({
+    success: true,
+    data: {
+      blockedUsers: currentUser.blockedUsers,
+      count: currentUser.blockedUsers.length
+    }
+  });
+});
+
+/**
+ * @desc    Verifica se un utente è bloccato
+ * @route   GET /api/users/:userId/is-blocked
+ * @access  Private
+ */
+exports.isUserBlocked = asyncHandler(async (req, res, next) => {
+  const { userId } = req.params;
+  const currentUserId = req.user.id;
+
+  const currentUser = await User.findById(currentUserId);
+  const isBlocked = currentUser.isUserBlocked(userId);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      isBlocked,
+      userId
+    }
   });
 });
 

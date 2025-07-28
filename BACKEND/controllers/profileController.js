@@ -193,13 +193,75 @@ exports.deleteAccount = asyncHandler(async (req, res, next) => {
   if (!isMatch) {
     return next(new ErrorResponse('Password non corretta. Impossibile eliminare l\'account.', 401));
   }
-  
-  await user.deleteOne();
 
-  res.status(200).json({
-    success: true,
-    message: 'Il tuo account è stato eliminato con successo.',
-  });
+  try {
+    // 1. Elimina l'immagine del profilo se non è quella di default
+    if (user.profileImage && user.profileImage !== 'uploads/profile-images/default-avatar.jpg') {
+      try {
+        await fs.unlink(path.resolve(user.profileImage));
+      } catch (err) {
+        console.error('Errore nell\'eliminazione dell\'immagine profilo:', err.message);
+      }
+    }
+
+    // 2. Elimina tutti i pasti creati dall'utente
+    const Meal = require('../models/Meal');
+    await Meal.deleteMany({ host: user._id });
+
+    // 3. Rimuovi l'utente da tutti i pasti a cui ha partecipato
+    await Meal.updateMany(
+      { participants: user._id },
+      { $pull: { participants: user._id } }
+    );
+
+    // 4. Elimina tutte le chat dell'utente
+    const Chat = require('../models/Chat');
+    await Chat.deleteMany({ participants: user._id });
+
+    // 5. Elimina tutte le inviti dell'utente
+    const Invitation = require('../models/Invitation');
+    await Invitation.deleteMany({
+      $or: [
+        { fromUser: user._id },
+        { toUser: user._id }
+      ]
+    });
+
+    // 6. Elimina tutte le richieste di partecipazione dell'utente
+    const JoinRequest = require('../models/JoinRequest');
+    await JoinRequest.deleteMany({
+      $or: [
+        { requester: user._id },
+        { meal: { $in: await Meal.find({ host: user._id }).select('_id') } }
+      ]
+    });
+
+    // 7. Elimina tutte le segnalazioni dell'utente
+    const Report = require('../models/Report');
+    await Report.deleteMany({
+      $or: [
+        { reporter: user._id },
+        { reportedUser: user._id }
+      ]
+    });
+
+    // 8. Rimuovi l'utente dalla lista dei blocchi di altri utenti
+    await User.updateMany(
+      { blockedUsers: user._id },
+      { $pull: { blockedUsers: user._id } }
+    );
+
+    // 9. Elimina l'utente
+    await user.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: 'Il tuo account e tutti i tuoi dati sono stati eliminati con successo.',
+    });
+  } catch (error) {
+    console.error('Errore durante l\'eliminazione dell\'account:', error);
+    return next(new ErrorResponse('Errore durante l\'eliminazione dell\'account. Riprova più tardi.', 500));
+  }
 });
 
 /**

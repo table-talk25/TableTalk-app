@@ -49,11 +49,59 @@ apiClient.interceptors.response.use(
   }
 );
 
+// Funzioni per le segnalazioni di sicurezza
+export const createReport = async (reportData) => {
+  return apiClient.post('/reports', reportData);
+};
+
+export const getMyReports = async () => {
+  return apiClient.get('/reports/my-reports');
+};
+
+// Funzioni per admin
+export const getReports = async (params = {}) => {
+  return apiClient.get('/reports', { params });
+};
+
+export const getReport = async (reportId) => {
+  return apiClient.get(`/reports/${reportId}`);
+};
+
+export const updateReportStatus = async (reportId, statusData) => {
+  return apiClient.put(`/reports/${reportId}/status`, statusData);
+};
+
+export const deleteReport = async (reportId) => {
+  return apiClient.delete(`/reports/${reportId}`);
+};
+
+export const getReportStats = async () => {
+  return apiClient.get('/reports/stats');
+};
+
+// Manteniamo la funzione legacy per compatibilità
 export const sendLeaveReport = async ({ type, id, reason, customReason }) => {
   const url = type === 'meal'
     ? `/meals/${id}/leave-report`
     : `/chats/${id}/leave-report`;
   return apiClient.post(url, { reason, customReason });
+};
+
+// Funzioni per il blocco utenti
+export const blockUser = async (userId) => {
+  return apiClient.post(`/users/${userId}/block`);
+};
+
+export const unblockUser = async (userId) => {
+  return apiClient.delete(`/users/${userId}/block`);
+};
+
+export const getBlockedUsers = async () => {
+  return apiClient.get('/users/blocked');
+};
+
+export const isUserBlocked = async (userId) => {
+  return apiClient.get(`/users/${userId}/is-blocked`);
 };
 
 export default apiClient;

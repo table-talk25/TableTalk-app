@@ -6,6 +6,7 @@ import { Form, Button, Alert, InputGroup, FormCheck } from 'react-bootstrap';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAuth } from '../../../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import Logo from '../../../components/common/Logo';
 import styles from './RegisterPage.module.css';
 
 const RegisterPage = () => {
@@ -98,6 +99,11 @@ const RegisterPage = () => {
     return (
         <div className={styles.page}>
             <div className={styles.card}>
+                <div className={styles.logoContainer}>
+                    <Link to="/" className={styles.logoLink}>
+                        <Logo />
+                    </Link>
+                </div>
                 <h2 className={styles.title}>{t('auth.createAccount')}</h2>
                 <Form onSubmit={handleSubmit} noValidate>
                     <Form.Group className="mb-3">

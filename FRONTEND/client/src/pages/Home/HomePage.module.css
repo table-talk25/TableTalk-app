@@ -6,7 +6,7 @@
 .homeContainer {
   width: 100%;
   overflow-x: hidden;
-  overflow-x: hidden;
+  padding-top: 80px; /* Aggiunge spazio per la navbar fissa */
 }
 
 /* ========================================

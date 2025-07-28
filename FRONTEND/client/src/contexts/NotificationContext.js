@@ -17,7 +17,7 @@ export const NotificationProvider = ({ children }) => {
     if (!token) return; // Non connettere se non c'è token
 
     // Usa esattamente lo stesso indirizzo IP delle API HTTP
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://192.168.1.151:5001/api';
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://192.168.1.45:5001/api';
     const socketUrl = apiUrl.replace('/api', '');
     console.log(`[NotificationContext] Socket URL: ${socketUrl}`);
     const socket = io(socketUrl, { 

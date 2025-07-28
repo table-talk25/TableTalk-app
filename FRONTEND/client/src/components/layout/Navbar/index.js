@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { FaBars, FaTimes, FaHome, FaUserCircle, FaUser, FaMapMarkerAlt, FaEllipsisV } from 'react-icons/fa';
+import { FaBars, FaTimes, FaMapMarkerAlt, FaEllipsisV } from 'react-icons/fa';
 import { useAuth } from '../../../contexts/AuthContext';
 import Logo from '../../common/Logo';
 import styles from './Navbar.module.css';
 import Notifications from '../../../components/notifications/Notifications'; 
 import { getHostAvatarUrl } from '../../../constants/mealConstants';
-import LanguageSwitcher from '../../common/LanguageSwitcher.js';
+import LanguageMenu from '../../common/LanguageMenu';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -66,6 +66,11 @@ const Navbar = () => {
 
         {/* Azioni a destra */}
         <div className={styles.rightSection}>
+            {/* LanguageMenu sempre visibile */}
+            <div className={styles.languageMenuContainer}>
+                <LanguageMenu />
+            </div>
+            
             {isAuthenticated ? (
                 <>
                     <div className={styles.desktopActions}>
@@ -82,9 +87,6 @@ const Navbar = () => {
                             </button>
                             {isKebabMenuOpen && (
                                 <div className={styles.kebabDropdown}>
-                                    <div className={styles.kebabItem}>
-                                        <LanguageSwitcher />
-                                    </div>
                                     <div className={styles.kebabItem}>
                                         <button className={styles.logoutButtonKebab} onClick={handleLogout}>
                                             Logout
@@ -113,7 +115,7 @@ const Navbar = () => {
         {isMobileMenuOpen && (
             <ul className={styles.navMenuMobile}>
                 <li className={styles.navItem}><NavLink to="/meals" className={({ isActive }) => (isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink)} onClick={closeMobileMenu}>TableTalk®</NavLink></li>
-                {isAuthenticated && (
+                {isAuthenticated ? (
                     <>
                         <li className={styles.navItem}><NavLink to="/my-meals" className={({ isActive }) => (isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink)} onClick={closeMobileMenu}>I Miei TableTalk®</NavLink></li>
                         {/* --- LINK MAPPA PER MOBILE --- */}
@@ -130,9 +132,6 @@ const Navbar = () => {
                                 {isKebabMenuOpen && (
                                     <div className={styles.kebabDropdownMobile}>
                                         <div className={styles.kebabItem}>
-                                            <LanguageSwitcher />
-                                        </div>
-                                        <div className={styles.kebabItem}>
                                             <button className={styles.logoutButtonKebab} onClick={handleLogout}>
                                                 Logout
                                             </button>
@@ -142,7 +141,7 @@ const Navbar = () => {
                             </div>
                         </li>
                     </>
-                )}
+                ) : null}
             </ul>
         )}
       </div>

@@ -15,6 +15,7 @@ export const MEAL_TYPES = {
 };
 
 // 2. Mappiamo le chiavi inglesi alle ETICHETTE ITALIANE per l'utente
+// Queste sono le etichette di fallback, ma ora useremo le traduzioni
 export const MEAL_TYPE_LABELS = {
   [MEAL_TYPES.BREAKFAST]: 'Colazione',
   [MEAL_TYPES.LUNCH]: 'Pranzo',
@@ -75,7 +76,7 @@ export const MEAL_STATUS_LABELS = {
 
 // --- FUNZIONI HELPER UNIFICATE ---
 
-// Questa funzione ora traduce la chiave inglese nell'etichetta italiana
+// Queste funzioni ora usano le traduzioni, ma mantengono fallback per compatibilità
 export const getMealTypeText = (typeKey) => MEAL_TYPE_LABELS[typeKey] || typeKey;
 
 export const getMealStatusText = (statusKey) => MEAL_STATUS_LABELS[statusKey] || statusKey;

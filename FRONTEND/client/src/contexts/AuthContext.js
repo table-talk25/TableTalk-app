@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import authService from '../services/authService'; 
+import profileService from '../services/profileService';
 import { authPreferences } from '../utils/preferences';
 
 const AuthContext = createContext();
@@ -74,9 +75,20 @@ export const AuthProvider = ({ children }) => {
         setToken(null); 
         setIsAuthenticated(false);
     };
+
+    const deleteAccount = async (password) => {
+        try {
+            await profileService.deleteAccount(password);
+            // Dopo l'eliminazione, esegui il logout
+            await logout();
+            return { success: true, message: 'Account eliminato con successo' };
+        } catch (error) {
+            throw error;
+        }
+    };
     
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, register, isAuthenticated, loading, error }}>
+        <AuthContext.Provider value={{ user, token, login, logout, register, deleteAccount, isAuthenticated, loading, error }}>
             {!loading && children}
         </AuthContext.Provider>
     );

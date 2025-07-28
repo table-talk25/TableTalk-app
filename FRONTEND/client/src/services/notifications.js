@@ -1,29 +1,44 @@
 // File: FRONTEND/services/notificationService.js
 import apiService from './apiService';
-import { PushNotifications } from '@capacitor/push-notifications';
+import { Capacitor } from '@capacitor/core';
+
+// Controlla se siamo su un dispositivo mobile nativo
+const isNativePlatform = Capacitor.isNativePlatform();
 
 export const registerForPushNotifications = async () => {
-  let permStatus = await PushNotifications.checkPermissions();
-  if (permStatus.receive === 'prompt') {
-    permStatus = await PushNotifications.requestPermissions();
+  // Se non siamo su un dispositivo nativo, salta la registrazione
+  if (!isNativePlatform) {
+    console.log('PushNotifications non disponibili su web');
+    return;
   }
-  if (permStatus.receive !== 'granted') {
-    throw new Error('Permesso per le notifiche non concesso.');
-  }
-  await PushNotifications.register(); // Registra l'app con APNS/FCM
 
-  // Ottieni il token del dispositivo
-  PushNotifications.addListener('registration', (token) => {
-    console.log('Token FCM:', token.value);
-    // Invia il token al backend
-    apiService.post('/profile/add-fcm-token', { token: token.value })
-      .then(response => {
-        console.log('Token FCM salvato nel backend');
-      })
-      .catch(error => {
-        console.error('Errore nel salvare il token FCM:', error);
-      });
-  });
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    
+    let permStatus = await PushNotifications.checkPermissions();
+    if (permStatus.receive === 'prompt') {
+      permStatus = await PushNotifications.requestPermissions();
+    }
+    if (permStatus.receive !== 'granted') {
+      throw new Error('Permesso per le notifiche non concesso.');
+    }
+    await PushNotifications.register(); // Registra l'app con APNS/FCM
+
+    // Ottieni il token del dispositivo
+    PushNotifications.addListener('registration', (token) => {
+      console.log('Token FCM:', token.value);
+      // Invia il token al backend
+      apiService.post('/profile/add-fcm-token', { token: token.value })
+        .then(response => {
+          console.log('Token FCM salvato nel backend');
+        })
+        .catch(error => {
+          console.error('Errore nel salvare il token FCM:', error);
+        });
+    });
+  } catch (error) {
+    console.log('PushNotifications non disponibili:', error.message);
+  }
 };
 
 // Funzioni per gestire le notifiche dal frontend

@@ -1,9 +1,14 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-// Qui importeremo le nostre traduzioni
+// Importiamo tutte le nostre traduzioni
 import translationEN from './locales/en/translation.json';
 import translationIT from './locales/it/translation.json';
+import translationFR from './locales/fr/translation.json';
+import translationDE from './locales/de/translation.json';
+import translationES from './locales/es/translation.json';
+import translationAR from './locales/ar/translation.json';
+import translationZH from './locales/zh/translation.json';
 
 const resources = {
   en: {
@@ -11,6 +16,21 @@ const resources = {
   },
   it: {
     translation: translationIT,
+  },
+  fr: {
+    translation: translationFR,
+  },
+  de: {
+    translation: translationDE,
+  },
+  es: {
+    translation: translationES,
+  },
+  ar: {
+    translation: translationAR,
+  },
+  zh: {
+    translation: translationZH,
   },
 };
 

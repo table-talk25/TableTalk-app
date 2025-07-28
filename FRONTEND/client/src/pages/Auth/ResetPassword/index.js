@@ -1,14 +1,17 @@
 // File: src/pages/Auth/ResetPassword/index.js (Versione Corretta)
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 // --- CORREZIONE: Importiamo l'oggetto di default senza parentesi graffe ---
 import authService from '../../../services/authService';
+import Logo from '../../../components/common/Logo';
 import styles from './ResetPassword.module.css';
 
 const ResetPasswordPage = () => {
+    const { t } = useTranslation();
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -18,17 +21,17 @@ const ResetPasswordPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (password !== confirmPassword) {
-            toast.error('Le password non coincidono.');
+            toast.error(t('auth.passwordsDoNotMatch'));
             return;
         }
         setLoading(true);
         try {
             // Dobbiamo aggiungere la funzione al service, per ora simuliamo
             // await authService.resetPassword(token, password);
-            toast.success('Password reimpostata con successo! Ora puoi fare il login.');
+            toast.success(t('auth.resetPasswordSuccess'));
             navigate('/login');
         } catch (error) {
-            toast.error(error.message || 'Token non valido o scaduto.');
+            toast.error(error.message || t('auth.invalidToken'));
         } finally {
             setLoading(false);
         }
@@ -37,10 +40,15 @@ const ResetPasswordPage = () => {
     return (
         <div className={styles.container}>
             <div className={styles.card}>
-                <h2>Reimposta Password</h2>
+                <div className={styles.logoContainer}>
+                    <Link to="/" className={styles.logoLink}>
+                        <Logo />
+                    </Link>
+                </div>
+                <h2>{t('auth.resetPassword')}</h2>
                 <form onSubmit={handleSubmit}>
                     <div className={styles.formGroup}>
-                        <label htmlFor="password">Nuova Password</label>
+                        <label htmlFor="password">{t('auth.newPassword')}</label>
                         <input
                             type="password"
                             id="password"
@@ -50,7 +58,7 @@ const ResetPasswordPage = () => {
                         />
                     </div>
                     <div className={styles.formGroup}>
-                        <label htmlFor="confirmPassword">Conferma Nuova Password</label>
+                        <label htmlFor="confirmPassword">{t('auth.confirmNewPassword')}</label>
                         <input
                             type="password"
                             id="confirmPassword"
@@ -60,7 +68,7 @@ const ResetPasswordPage = () => {
                         />
                     </div>
                     <button type="submit" className={styles.submitButton} disabled={loading}>
-                        {loading ? 'Salvataggio...' : 'Salva Nuova Password'}
+                        {loading ? t('forms.saving') : t('forms.saveNewPassword')}
                     </button>
                 </form>
             </div>

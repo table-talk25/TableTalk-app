@@ -12,6 +12,17 @@ export const availableLanguages = [
   { code: 'ar', name: 'Arabo' }
 ];
 
+// Lingue effettivamente tradotte (solo quelle che abbiamo completato)
+export const translatedLanguages = [
+  { code: 'it', name: 'Italiano' },
+  { code: 'en', name: 'Inglese' },
+  { code: 'fr', name: 'Francese' },
+  { code: 'es', name: 'Spagnolo' },
+  { code: 'de', name: 'Tedesco' },
+  { code: 'ar', name: 'Arabo' },
+  { code: 'zh', name: 'Cinese' }
+];
+
 // Interessi standardizzati disponibili
 export const availableInterests = [
   'Cucina',

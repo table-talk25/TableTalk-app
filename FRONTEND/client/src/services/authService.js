@@ -55,12 +55,32 @@ export const verifyToken = async () => {
     return response.data.data;
 };
 
+/**
+ * Richiede il reset della password.
+ * @param {object} data - Oggetto con { email }
+ */
+export const forgotPassword = async (data) => {
+  const response = await apiClient.post('/auth/forgot-password', data);
+  return response.data;
+};
+
+/**
+ * Cambia la password dell'utente.
+ * @param {object} data - Oggetto con { currentPassword, newPassword }
+ */
+export const changePassword = async (data) => {
+  const response = await apiClient.put('/profile/me/password', data);
+  return response.data;
+};
+
 
 const authService = {
   register,
   login,
   logout,
   verifyToken,
+  forgotPassword,
+  changePassword,
 };
 
 export default authService;

@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FaBell, FaRegBell } from 'react-icons/fa';
 import notificationService from '../../../services/notifications.js';
 import styles from './Notifications.module.css';
 import { toast } from 'react-toastify';
 
 const Notifications = () => {
+  const { t } = useTranslation();
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -18,11 +20,11 @@ const Notifications = () => {
       const response = await notificationService.getMyNotifications();
       setNotifications(response.data);
     } catch (error) {
-      toast.error('Impossibile caricare le notifiche.');
+      toast.error(t('notifications.loadError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchNotifications();
@@ -56,7 +58,7 @@ const Notifications = () => {
       {isOpen && (
         <div className={styles.dropdownMenu}>
           {loading ? (
-            <div className={styles.notificationItem}>Caricamento...</div>
+            <div className={styles.notificationItem}>{t('notifications.loading')}</div>
           ) : notifications.length > 0 ? (
             notifications.map(notif => (
               <Link 
@@ -67,12 +69,12 @@ const Notifications = () => {
               >
                 {notif.message}
                 <span className={styles.notificationDate}>
-                  {new Date(notif.createdAt).toLocaleDateString('it-IT')}
+                  {new Date(notif.createdAt).toLocaleDateString()}
                 </span>
               </Link>
             ))
           ) : (
-            <div className={styles.notificationItem}>Nessuna notifica.</div>
+            <div className={styles.notificationItem}>{t('notifications.noNotifications')}</div>
           )}
         </div>
       )}

@@ -32,6 +32,18 @@
   margin: 0 0 0.5rem 0;
 }
 
+.headerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .profileContent {
   padding: 1rem 0;
 }

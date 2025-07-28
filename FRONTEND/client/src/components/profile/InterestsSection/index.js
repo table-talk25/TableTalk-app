@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaEdit, FaSave, FaTimes, FaPlus, FaChevronDown } from 'react-icons/fa';
 import { availableCuisines, availableInterests, availableLanguages } from '../../../constants/profileConstants';
 import styles from './InterestsSection.module.css';
 
 const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [interests, setInterests] = useState(profileData?.interests || []);
   const [languages, setLanguages] = useState(profileData?.languages || []);
@@ -110,20 +112,20 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
   return (
     <div className={styles.interestsContainer}>
       <div className={styles.sectionHeader}>
-        <h2>Interessi e Preferenze</h2>
+        <h2>{t('profile.interests.title')}</h2>
         {!isPublicView && !isEditing && (
-          <button className={styles.editButton} onClick={() => setIsEditing(true)}><FaEdit /> Modifica</button>
+          <button className={styles.editButton} onClick={() => setIsEditing(true)}><FaEdit /> {t('profile.interests.edit')}</button>
         )}
         {isEditing && (
           <div className={styles.editButtons}>
-            <button className={styles.cancelButton} onClick={handleCancel}><FaTimes /> Annulla</button>
-            <button className={styles.saveButton} onClick={handleSave}> Salva</button>
+            <button className={styles.cancelButton} onClick={handleCancel}><FaTimes /> {t('profile.interests.cancel')}</button>
+            <button className={styles.saveButton} onClick={handleSave}><FaSave /> {t('profile.interests.save')}</button>
           </div>
         )}
       </div>
 
       <div className={styles.interestsSection}>
-        <h3>I tuoi interessi</h3>
+        <h3>{t('profile.interests.yourInterests')}</h3>
         {isEditing && (
           <div className={styles.inputGroup}>
             <div className={styles.autocompleteContainer} ref={interestInputRef}>
@@ -135,7 +137,7 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
                   setShowInterestSuggestions(true);
                 }}
                 onFocus={() => setShowInterestSuggestions(true)}
-                placeholder="Cerca interesse..." 
+                placeholder={t('profile.interests.searchInterest')} 
                 className={styles.autocompleteInput}
               />
               {showInterestSuggestions && filteredInterestSuggestions.length > 0 && (
@@ -163,12 +165,12 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
               {item}
               {isEditing && <button onClick={() => handleRemoveInterest(item)}><FaTimes /></button>}
             </span>
-          )) : !isEditing && <p className={styles.noItems}>Nessun interesse aggiunto.</p>}
+          )) : !isEditing && <p className={styles.noItems}>{t('profile.interests.noInterests')}</p>}
         </div>
       </div>
 
       <div className={styles.languagesSection}>
-        <h3>Lingue parlate</h3>
+        <h3>{t('profile.interests.languagesSpoken')}</h3>
         {isEditing && (
           <div className={styles.inputGroup}>
             <div className={styles.autocompleteContainer} ref={languageInputRef}>
@@ -180,7 +182,7 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
                   setShowLanguageSuggestions(true);
                 }}
                 onFocus={() => setShowLanguageSuggestions(true)}
-                placeholder="Cerca lingua..." 
+                placeholder={t('profile.interests.searchLanguage')} 
                 className={styles.autocompleteInput}
               />
               {showLanguageSuggestions && filteredLanguageSuggestions.length > 0 && (
@@ -208,19 +210,19 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
               {item}
               {isEditing && <button onClick={() => handleRemoveLanguage(item)}><FaTimes /></button>}
             </span>
-          )) : !isEditing && <p className={styles.noItems}>Nessuna lingua aggiunta.</p>}
+          )) : !isEditing && <p className={styles.noItems}>{t('profile.interests.noLanguages')}</p>}
         </div>
       </div>
 
       <div className={styles.cuisineSection}>
-        <h3>Cucina Preferita</h3>
+        <h3>{t('profile.interests.preferredCuisine')}</h3>
         {!isEditing ? (
           <div className={styles.preferredCuisine}>
-            {preferredCuisine ? <span className={styles.cuisineTag}>{preferredCuisine}</span> : <p className={styles.noItems}>Nessuna cucina selezionata.</p>}
+            {preferredCuisine ? <span className={styles.cuisineTag}>{preferredCuisine}</span> : <p className={styles.noItems}>{t('profile.interests.noCuisine')}</p>}
           </div>
         ) : (
           <select value={preferredCuisine} onChange={(e) => setPreferredCuisine(e.target.value)} className={styles.cuisineSelect}>
-            <option value="">Seleziona una cucina...</option>
+            <option value="">{t('profile.interests.selectCuisine')}</option>
             {availableCuisines.map((cuisine, index) => (
               <option key={index} value={cuisine}>{cuisine}</option>
             ))}

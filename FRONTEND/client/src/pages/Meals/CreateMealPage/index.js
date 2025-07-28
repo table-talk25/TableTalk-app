@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import mealService from '../../../services/mealService'; 
 import { useMeals } from '../../../contexts/MealsContext';
 import { toast } from 'react-toastify';
@@ -10,6 +11,7 @@ import styles from './CreateMealPage.module.css';
 import BackButton from '../../../components/common/BackButton';
 
 const CreateMealPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -21,10 +23,10 @@ const CreateMealPage = () => {
     setError(''); // Pulisci eventuali errori precedenti
     try {
       const newMeal = await mealService.createMeal(formData); // Usiamo il servizio
-      toast.success('TableTalk® creato con successo!');
+      toast.success(t('meals.createSuccess'));
       navigate(`/meals/${newMeal._id}`); 
     } catch (error) {
-      const errorMessage = error.message || 'Errore nella creazione del TableTalk®.';
+      const errorMessage = error.message || t('meals.createError');
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -35,8 +37,8 @@ const CreateMealPage = () => {
   return (
     <div className={styles.createMealPage}>
       <header className={styles.createMealHeader}>
-      <h1 className={styles.createMealTitle}>Crea un Nuovo TableTalk®</h1>
-      <p className={styles.createMealSubtitle}>Compila i campi per organizzare il tuo prossimo incontro virtuale.</p>
+        <h1 className={styles.createMealTitle}>{t('meals.createNewTitle')}</h1>
+        <p className={styles.createMealSubtitle}>{t('meals.createNewSubtitle')}</p>
       </header>
 
       <div className={styles.createMealContent}>
@@ -56,7 +58,7 @@ const CreateMealPage = () => {
           onSubmit={handleCreateSubmit}
           isLoading={isLoading}
           isSubmitting={isLoading}
-          submitButtonText="Crea TableTalk®"
+          submitButtonText={t('meals.createButton')}
         />
       </div>
       <BackButton className="mb-4" /> 

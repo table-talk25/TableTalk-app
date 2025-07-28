@@ -87,9 +87,16 @@ exports.sendInvitation = asyncHandler(async (req, res, next) => {
 });
 
 exports.getReceivedInvitations = asyncHandler(async (req, res, next) => {
+  // Ottieni gli ID degli utenti da escludere (blocchi bidirezionali)
+  const currentUser = await User.findById(req.user.id);
+  const usersWhoBlockedMe = await User.find({ blockedUsers: req.user.id }).select('_id');
+  const usersWhoBlockedMeIds = usersWhoBlockedMe.map(user => user._id);
+  const excludedIds = [...currentUser.blockedUsers, ...usersWhoBlockedMeIds];
+
   const invitations = await Invitation.find({
     toUser: req.user.id,
     status: 'pending',
+    fromUser: { $nin: excludedIds } // Escludi inviti da utenti bloccati
   })
   .populate('fromUser', 'nickname profileImage bio')
   .sort({ createdAt: -1 });

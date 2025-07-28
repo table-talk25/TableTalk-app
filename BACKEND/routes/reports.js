@@ -1,15 +1,25 @@
 const express = require('express');
 const router = express.Router();
-const { protect, adminOnly } = require('../middleware/auth');
-const reportsController = require('../controllers/reportsController');
+const { protect, authorize } = require('../middleware/auth');
+const {
+    createReport,
+    getReports,
+    getMyReports,
+    getReport,
+    updateReportStatus,
+    deleteReport,
+    getReportStats
+} = require('../controllers/reportController');
 
-// Report abbandono pasto
-router.post('/meals/:id/leave-report', protect, reportsController.createMealLeaveReport);
+// Routes per utenti autenticati
+router.post('/', protect, createReport);
+router.get('/my-reports', protect, getMyReports);
 
-// Report abbandono chat
-router.post('/chats/:id/leave-report', protect, reportsController.createChatLeaveReport);
-
-// (Opzionale) Rotta admin per vedere tutti i report
-router.get('/leave-reports', protect, adminOnly, reportsController.getAllLeaveReports);
+// Routes per admin
+router.get('/', protect, authorize('admin'), getReports);
+router.get('/stats', protect, authorize('admin'), getReportStats);
+router.get('/:id', protect, authorize('admin'), getReport);
+router.put('/:id/status', protect, authorize('admin'), updateReportStatus);
+router.delete('/:id', protect, authorize('admin'), deleteReport);
 
 module.exports = router; 

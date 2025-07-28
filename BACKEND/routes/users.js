@@ -26,6 +26,13 @@ router.get('/', [
 router.get('/nearby', protect, userController.getNearbyUsers);
 
 /**
+ * @route   GET /api/users/blocked
+ * @desc    Get list of blocked users
+ * @access  Private
+ */
+router.get('/blocked', protect, userController.getBlockedUsers);
+
+/**
  * @route   GET /api/users/:id
  * @desc    Get user by ID
  * @access  Private
@@ -56,26 +63,34 @@ router.delete('/me/location', protect, userController.removeUserLocation);
 
 /**
  * @route   POST /api/users/:id/block
- * @desc    Block a user
- * @access  Private/Admin
+ * @desc    Block a user (user-to-user blocking)
+ * @access  Private
  */
 router.post('/:id/block', [
   protect,
-  authorize('admin'),
   check('id', 'ID utente non valido').isMongoId()
 ], userController.blockUser);
 
 
 /**
  * @route   DELETE /api/users/:id/block
- * @desc    Unblock a user
- * @access  Private/Admin
+ * @desc    Unblock a user (user-to-user unblocking)
+ * @access  Private
  */
 router.delete('/:id/block', [
   protect,
-  authorize('admin'),
   check('id', 'ID utente non valido').isMongoId()
 ], userController.unblockUser);
+
+/**
+ * @route   GET /api/users/:userId/is-blocked
+ * @desc    Check if a user is blocked
+ * @access  Private
+ */
+router.get('/:userId/is-blocked', [
+  protect,
+  check('userId', 'ID utente non valido').isMongoId()
+], userController.isUserBlocked);
 
 /**
  * @route   PUT /api/users/:id/role

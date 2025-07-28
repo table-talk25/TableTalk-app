@@ -13,7 +13,8 @@
   width: 100%;
   z-index: 1000;
   transition: all 0.3s ease;
-  border-bottom: 1px solid transparent;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 .navbar.scrolled {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -73,6 +74,13 @@
 .rightSection {
   display: flex;
   align-items: center;
+  gap: 1rem;
+}
+
+/* Container per il menu lingua */
+.languageMenuContainer {
+  display: flex;
+  align-items: center;
 }
 
 /* Stili per le azioni utente (loggato) su DESKTOP */
@@ -92,14 +100,14 @@
 }
 
 .kebabButton {
-  background: none;
-  border: none;
+  background: #f8f9fa;
+  border: 1px solid #e2e8f0;
   font-size: 1.2rem;
   color: #4a5568;
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 50%;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .kebabButton:hover {
@@ -184,13 +192,23 @@
     gap: 0.75rem;
 }
 .loginButton {
-    background: none; border: 1px solid #ccc;
+    background: none; border: 1px solid #667eea;
     padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;
-    text-decoration: none; color: #333;
+    text-decoration: none; color: #667eea;
+    transition: all 0.3s ease;
+}
+.loginButton:hover {
+    background-color: #667eea;
+    color: white;
 }
 .registerButton {
-    background-color: var(--primary-color); color: white;
+    background-color: #667eea; color: white;
     padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none;
+    transition: all 0.3s ease;
+}
+.registerButton:hover {
+    background-color: #5a67d8;
+    transform: translateY(-1px);
 }
 
 /* Stili per le azioni utente su MOBILE */
@@ -230,5 +248,15 @@
   }
   .mobileActions {
     display: flex; /* Mostriamo il blocco con campanella e hamburger */
+  }
+  
+  /* Assicuriamoci che il LanguageMenu rimanga visibile su mobile */
+  .languageMenuContainer {
+    display: flex;
+  }
+  
+  /* Aggiustiamo il gap per mobile */
+  .rightSection {
+    gap: 0.5rem;
   }
 }

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaTimes } from 'react-icons/fa';
 import styles from './ConfirmationModal.module.css'; 
 
@@ -8,10 +9,12 @@ const ConfirmationModal = ({
   onConfirm,           // Funzione da eseguire alla conferma
   title,               // Titolo del modale
   children,            // Contenuto personalizzato (es. un testo o un form)
-  confirmText = 'Conferma',
-  cancelText = 'Annulla',
+  confirmText,         // Testo del pulsante di conferma
+  cancelText,          // Testo del pulsante di annullamento
   isConfirming = false // Per mostrare uno stato di caricamento sul pulsante di conferma
 }) => {
+  const { t } = useTranslation();
+  
   if (!show) {
     return null; // Se 'show' è false, il componente non renderizza nulla
   }
@@ -25,7 +28,7 @@ const ConfirmationModal = ({
         {/* Header del modale con titolo e pulsante di chiusura */}
         <div className={styles.modalHeader}>
           <h3 className={styles.modalTitle}>{title}</h3>
-          <button className={styles.modalCloseButton} onClick={onClose} aria-label="Chiudi modale">
+          <button className={styles.modalCloseButton} onClick={onClose} aria-label={t('common.close')}>
             <FaTimes />
           </button>
         </div>
@@ -38,14 +41,14 @@ const ConfirmationModal = ({
         {/* Footer del modale con i pulsanti di azione */}
         <div className={styles.modalFooter}>
           <button className={styles.modalButtonCancel} onClick={onClose}>
-            {cancelText}
+            {cancelText || t('common.cancel')}
           </button>
           <button 
             className={styles.modalButtonConfirm} 
             onClick={onConfirm}
             disabled={isConfirming}
           >
-            {isConfirming ? <div className={styles.spinnerSmall}></div> : confirmText}
+            {isConfirming ? <div className={styles.spinnerSmall}></div> : (confirmText || t('common.confirm'))}
           </button>
         </div>
       </div>

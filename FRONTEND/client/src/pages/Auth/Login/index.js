@@ -3,11 +3,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Form, Button, Alert, InputGroup } from 'react-bootstrap';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import Logo from '../../../components/common/Logo';
 import styles from './LoginPage.module.css';
 
 const LoginPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
@@ -43,7 +46,7 @@ const LoginPage = () => {
     
     } catch (err) {
       console.error('Errore durante il login:', err);
-      setError(err.message || 'Errore durante il login. Riprova più tardi.');
+      setError(err.message || t('auth.loginError'));
     } finally {
       setIsLoading(false);
     }
@@ -52,27 +55,32 @@ const LoginPage = () => {
   return (
     <div className={styles.page}>
         <div className={styles.card}>
-            <h2 className={styles.title}>Accedi a TableTalk</h2>
+            <div className={styles.logoContainer}>
+                <Link to="/" className={styles.logoLink}>
+                    <Logo />
+                </Link>
+            </div>
+            <h2 className={styles.title}>{t('auth.loginToTableTalk')}</h2>
             
             {location.state?.message && <Alert variant="success">{location.state.message}</Alert>}
             {error && <Alert variant="danger">{error}</Alert>}
             
             <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
-                    <Form.Label className={styles.formLabel}>Email</Form.Label>
+                    <Form.Label className={styles.formLabel}>{t('auth.email')}</Form.Label>
                     <Form.Control
                         className={styles.formInput}
                         type="email"
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        placeholder="iltuo@indirizzo.email"
+                        placeholder={t('auth.emailPlaceholder')}
                         required
                     />
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                    <Form.Label className={styles.formLabel}>Password</Form.Label>
+                    <Form.Label className={styles.formLabel}>{t('auth.password')}</Form.Label>
                     <InputGroup>
                         <Form.Control
                             className={styles.formInput}
@@ -80,7 +88,7 @@ const LoginPage = () => {
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
-                            placeholder="La tua password"
+                            placeholder={t('auth.passwordPlaceholder')}
                             required
                         />
                         <InputGroup.Text
@@ -97,13 +105,18 @@ const LoginPage = () => {
                     className={styles.submitButton}
                     disabled={isLoading}
                 >
-                    {isLoading ? 'Accesso in corso...' : 'Accedi'}
+                    {isLoading ? t('auth.loggingIn') : t('auth.login')}
                 </Button>
-            
-                <div className={styles.bottomLink}>
-                    Non hai un account? <Link to="/register">Registrati</Link>
-                </div>
             </Form>
+
+            <div className={styles.links}>
+                <Link to="/forgot-password" className={styles.link}>
+                    {t('auth.forgotPassword')}
+                </Link>
+                <Link to="/register" className={styles.link}>
+                    {t('auth.alreadyHaveAccount')}
+                </Link>
+            </div>
         </div>
     </div>
   );

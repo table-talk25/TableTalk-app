@@ -53,6 +53,7 @@
 .profileHeaderCard,
 .profilePersonalInfoCard,
 .profileInterestsCard,
+.profileLanguagesCard,
 .profileSettingsCard {
     background: white;
     border-radius: 12px;
@@ -65,6 +66,7 @@
 .profileHeaderCard:hover,
 .profilePersonalInfoCard:hover,
 .profileInterestsCard:hover,
+.profileLanguagesCard:hover,
 .profileSettingsCard:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.09);
@@ -96,13 +98,15 @@
     }
 
     .profileInterestsCard,
+    .profileLanguagesCard,
     .profileSettingsCard {
-        grid-column: span 1; /* Interessi e Impostazioni stanno sulla stessa riga */
+        grid-column: span 1; /* Interessi, Lingue e Impostazioni stanno sulla stessa riga */
     }
     
     .profileHeaderCard,
     .profilePersonalInfoCard,
     .profileInterestsCard,
+    .profileLanguagesCard,
     .profileSettingsCard {
         padding: 2rem;
     }
@@ -127,7 +131,11 @@
     }
 
     .profileInterestsCard {
-        grid-column: 5 / 13;  /* Occupa lo spazio sotto le info personali */
+        grid-column: 5 / 9;   /* Occupa 4 colonne a destra */
+    }
+    
+    .profileLanguagesCard {
+        grid-column: 9 / 13;  /* Occupa le altre 4 colonne a destra */
     }
     
     .profileSettingsCard {

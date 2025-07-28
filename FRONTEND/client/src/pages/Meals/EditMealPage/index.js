@@ -1,6 +1,7 @@
 // File: src/pages/Meals/EditMealPage/index.js (Versione Corretta)
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import mealService from '../../../services/mealService';
 import { toast } from 'react-toastify';
@@ -11,6 +12,7 @@ import { useMeals } from '../../../contexts/MealsContext'; // <-- 1. IMPORTA L'H
 import BackButton from '../../../components/common/BackButton';
 
 const EditMealPage = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   
@@ -26,12 +28,12 @@ const EditMealPage = () => {
       const response = await mealService.getMealById(id);
       setInitialData(response.data); // Salviamo i dati per pre-compilare il form
     } catch (err) {
-      setError(err.message || 'Errore nel caricamento dei dati.');
-              toast.error('Impossibile caricare i dati del TableTalk®.');
+      setError(err.message || t('meals.loadError'));
+              toast.error(t('meals.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
     fetchMealData();
@@ -42,10 +44,10 @@ const EditMealPage = () => {
     setIsUpdating(true);
     try {
       const response = await mealService.updateMeal(id, formData);
-              toast.success('TableTalk® aggiornato con successo!');
+              toast.success(t('meals.updateSuccess'));
       navigate(`/meals/${response.data._id}`);
     } catch (err) {
-      toast.error(err.message || 'Errore durante l\'aggiornamento.');
+      toast.error(err.message || t('meals.updateError'));
     } finally {
       setIsUpdating(false);
     }
@@ -58,16 +60,16 @@ const EditMealPage = () => {
     <div className={styles.editPage}>
       <Card className={styles.card}>
         <Card.Body className="p-4 p-md-5">
-          <h2 className={styles.title}>Modifica il Tuo TableTalk®</h2>
+          <h2 className={styles.title}>{t('meals.editMeal')}</h2>
           {initialData ? (
             <MealForm
               initialData={initialData}
               onSubmit={handleEditSubmit}
               isLoading={isUpdating}
-              submitButtonText="Salva Modifiche"
+              submitButtonText={t('forms.saveChanges')}
             />
           ) : (
-            <Alert variant="warning">Dati del TableTalk® non trovati.</Alert>
+            <Alert variant="warning">{t('meals.noMeals')}</Alert>
           )}
         </Card.Body>
       </Card>
