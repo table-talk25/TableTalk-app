@@ -32,9 +32,17 @@ const MealDetailPage = () => {
         setLoading(true);
         try {
             const response = await mealService.getMealById(id);
-            setMeal(response.data);
+            console.log('🍽️ MealDetail: Response completa:', response);
+            console.log('🍽️ MealDetail: Dati meal:', response.data);
+            
+            // Il servizio già restituisce response.data, quindi usiamo direttamente response
+            const mealData = response.data || response;
+            console.log('🍽️ MealDetail: Meal finale:', mealData);
+            setMeal(mealData);
         } catch (err) { 
+            console.error('❌ MealDetail: Errore caricamento:', err);
             toast.error(t('meals.detail.loadError'));
+            setError(err.message || 'Errore nel caricamento del TableTalk®');
         } finally { 
             setLoading(false); 
         }
@@ -91,10 +99,12 @@ const MealDetailPage = () => {
     };
 
     if (loading || !meal) {
-        return 
+        return (
            <Container className="text-center py-5">
             <Spinner animation="border" />
-            </Container>;
+            <p>{t('meals.loading')}</p>
+            </Container>
+        );
     }
     
     if (error) {
