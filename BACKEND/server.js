@@ -51,9 +51,12 @@ const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split('
 // Aggiungiamo un log per vedere quali origini vengono caricate all'avvio
 console.log('[CORS] Origini permesse caricate:', allowedOrigins);
 
+// Legge le origini permesse dalla variabile d'ambiente
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
+console.log('[CORS] Origini permesse caricate:', allowedOrigins);
+
 const corsOptions = {
   origin: (origin, callback) => {
-    // Permette le richieste se l'origine è nella lista o se la richiesta non ha un'origine (es. da Postman/mobile)
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -61,10 +64,15 @@ const corsOptions = {
       callback(new Error('Origine non permessa dalla policy CORS'));
     }
   },
+  // Aggiungiamo queste opzioni per gestire il preflight
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
+  allowedHeaders: 'Content-Type,Authorization'
 };
 
+// Applichiamo le opzioni CORS a tutte le rotte
 app.use(cors(corsOptions));
+
 
 
 // Middleware essenziali (tutti ripristinati)
