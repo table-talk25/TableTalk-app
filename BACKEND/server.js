@@ -48,35 +48,47 @@ connectDB();
 // Legge le origini permesse dalla variabile d'ambiente e le divide in un array
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
 
-// Aggiungiamo un log per vedere quali origini vengono caricate all'avvio
-console.log('[CORS] Origini permesse caricate:', allowedOrigins);
+// Debug delle variabili d'ambiente
+console.log('[ENV] CORS_ORIGIN:', process.env.CORS_ORIGIN);
+console.log('[ENV] FRONTEND_URL:', process.env.FRONTEND_URL);
+console.log('[ENV] NODE_ENV:', process.env.NODE_ENV);
 
-// Legge le origini permesse dalla variabile d'ambiente
-const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
+// Aggiungiamo un log per vedere quali origini vengono caricate all'avvio
 console.log('[CORS] Origini permesse caricate:', allowedOrigins);
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    // Permetti richieste senza origin (Postman, mobile apps, ecc.)
+    if (!origin) {
+      console.log('[CORS] Richiesta senza origin permessa');
+      return callback(null, true);
+    }
+    
+    // Controlla se l'origin è nella lista permessa
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log(`[CORS] Origin permesso: ${origin}`);
       callback(null, true);
     } else {
       console.error(`[CORS] ERRORE: Origine Rifiutata -> ${origin}`);
+      console.error(`[CORS] Origini permesse:`, allowedOrigins);
       callback(new Error('Origine non permessa dalla policy CORS'));
     }
   },
-  // Aggiungiamo queste opzioni per gestire il preflight
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  // Opzioni essenziali per gestire il preflight
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
   credentials: true,
-  allowedHeaders: 'Content-Type,Authorization'
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Set-Cookie'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 
-// Applichiamo le opzioni CORS a tutte le rotte
+// Middleware essenziali
 app.use(cors(corsOptions));
 
+// Gestione esplicita delle richieste OPTIONS per il preflight
+app.options('*', cors(corsOptions));
 
-
-// Middleware essenziali (tutti ripristinati)
-app.use(cors(corsOptions));
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
