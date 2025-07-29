@@ -49,28 +49,40 @@ connectDB();
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
 
 // Debug delle variabili d'ambiente
-console.log('[ENV] CORS_ORIGIN:', process.env.CORS_ORIGIN);
-console.log('[ENV] FRONTEND_URL:', process.env.FRONTEND_URL);
-console.log('[ENV] NODE_ENV:', process.env.NODE_ENV);
+console.log('🔧 [ENV] CORS_ORIGIN:', process.env.CORS_ORIGIN);
+console.log('🔧 [ENV] FRONTEND_URL:', process.env.FRONTEND_URL);
+console.log('🔧 [ENV] NODE_ENV:', process.env.NODE_ENV);
+console.log('🔧 [ENV] PORT:', process.env.PORT);
 
 // Aggiungiamo un log per vedere quali origini vengono caricate all'avvio
-console.log('[CORS] Origini permesse caricate:', allowedOrigins);
+console.log('🛡️ [CORS] Origini permesse caricate:', allowedOrigins);
+console.log('🛡️ [CORS] Numero di origini:', allowedOrigins.length);
 
 const corsOptions = {
   origin: (origin, callback) => {
+    console.log('🌐 [CORS] Richiesta ricevuta da origin:', origin);
+    console.log('🌐 [CORS] Tipo origin:', typeof origin);
+    console.log('🌐 [CORS] Origin è undefined?', origin === undefined);
+    console.log('🌐 [CORS] Origin è null?', origin === null);
+    
     // Permetti richieste senza origin (Postman, mobile apps, ecc.)
     if (!origin) {
-      console.log('[CORS] Richiesta senza origin permessa');
+      console.log('✅ [CORS] Richiesta senza origin permessa');
       return callback(null, true);
     }
     
     // Controlla se l'origin è nella lista permessa
+    console.log('🔍 [CORS] Controllo origin nella lista...');
+    console.log('🔍 [CORS] allowedOrigins:', allowedOrigins);
+    console.log('🔍 [CORS] indexOf result:', allowedOrigins.indexOf(origin));
+    
     if (allowedOrigins.indexOf(origin) !== -1) {
-      console.log(`[CORS] Origin permesso: ${origin}`);
+      console.log(`✅ [CORS] Origin permesso: ${origin}`);
       callback(null, true);
     } else {
-      console.error(`[CORS] ERRORE: Origine Rifiutata -> ${origin}`);
-      console.error(`[CORS] Origini permesse:`, allowedOrigins);
+      console.error(`❌ [CORS] ERRORE: Origine Rifiutata -> ${origin}`);
+      console.error(`❌ [CORS] Origini permesse:`, allowedOrigins);
+      console.error(`❌ [CORS] Lunghezza allowedOrigins:`, allowedOrigins.length);
       callback(new Error('Origine non permessa dalla policy CORS'));
     }
   },
@@ -84,10 +96,21 @@ const corsOptions = {
 };
 
 // Middleware essenziali
+console.log('🚀 [SERVER] Applicando middleware CORS...');
 app.use(cors(corsOptions));
 
 // Gestione esplicita delle richieste OPTIONS per il preflight
+console.log('🚀 [SERVER] Configurando gestione OPTIONS...');
 app.options('*', cors(corsOptions));
+
+// Middleware per loggare tutte le richieste
+app.use((req, res, next) => {
+  console.log(`📥 [REQUEST] ${req.method} ${req.url}`);
+  console.log(`📥 [REQUEST] Origin: ${req.get('Origin')}`);
+  console.log(`📥 [REQUEST] User-Agent: ${req.get('User-Agent')}`);
+  console.log(`📥 [REQUEST] Headers:`, Object.keys(req.headers));
+  next();
+});
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(express.json());
@@ -217,4 +240,8 @@ notificationService.initialize(connectedUsers);
 
 server.listen(PORT, HOST, () => {
   console.log(`\n🚀 Server TableTalk in esecuzione su http://localhost:${PORT}`);
+  console.log(`🌍 [SERVER] HOST: ${HOST}`);
+  console.log(`🔌 [SERVER] PORT: ${PORT}`);
+  console.log(`🛡️ [SERVER] CORS configurato per:`, allowedOrigins);
+  console.log(`📡 [SERVER] Server pronto per ricevere richieste!`);
 });
