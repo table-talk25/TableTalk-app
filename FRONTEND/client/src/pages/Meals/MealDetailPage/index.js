@@ -276,10 +276,24 @@ const MealDetailPage = () => {
                                     </div>
                                     <div className={styles.infoItem}>
                                         <FaUsers className={styles.infoIcon} />
-                                        <span>{t('meals.detail.participants', { 
-                                            count: meal.participants?.length || 0, 
-                                            max: meal.maxParticipants || 0 
-                                        })}</span>
+                                        <span>{(() => {
+                                            const count = meal.participants?.length || 0;
+                                            const max = meal.maxParticipants || 0;
+                                            console.log('👥 [MealDetail] Participants count:', count);
+                                            console.log('👥 [MealDetail] Max participants:', max);
+                                            
+                                            // Proviamo prima con l'interpolazione normale
+                                            const translated = t('meals.detail.participants', { count, max });
+                                            console.log('👥 [MealDetail] Translated text:', translated);
+                                            
+                                            // Se non funziona, usiamo una stringa template
+                                            if (translated.includes('{count}') || translated.includes('{max}')) {
+                                                console.log('👥 [MealDetail] Interpolation failed, using template');
+                                                return `${count} di ${max} partecipanti`;
+                                            }
+                                            
+                                            return translated;
+                                        })()}</span>
                                     </div>
                                     {meal.topic && (
                                         <div className={styles.infoItem}>
