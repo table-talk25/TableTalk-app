@@ -62,42 +62,15 @@ const MapPage = () => {
             console.log('🍽️ [MapPage] Cerco TableTalk® fisici nelle vicinanze...');
             console.log('📍 [MapPage] Coordinate:', coords);
             
-            // Passiamo un nuovo filtro al servizio!
-            const response = await mealService.getMeals({
+            // Ottieni i TableTalk® fisici nelle vicinanze
+            const meals = (await mealService.getMeals({
                 near: `${coords.latitude},${coords.longitude}`,
-                mealType: 'physical', // <-- AGGIUNTA FONDAMENTALE
+                mealType: 'physical',
                 status: 'upcoming,ongoing'
-            });
+            })) || [];
             
-            console.log('🔍 [MapPage] Response getMeals:', response);
-            console.log('🔍 [MapPage] Response type:', typeof response);
-            console.log('🔍 [MapPage] Response keys:', Object.keys(response || {}));
-            
-            // Gestione robusta della risposta
-            let mealsArray = [];
-            
-            if (Array.isArray(response)) {
-                mealsArray = response;
-                console.log('🔍 [MapPage] Response è un array diretto');
-            } else if (response && Array.isArray(response.data)) {
-                mealsArray = response.data;
-                console.log('🔍 [MapPage] Response.data è un array');
-            } else if (response && response.data && Array.isArray(response.data.data)) {
-                mealsArray = response.data.data;
-                console.log('🔍 [MapPage] Response.data.data è un array');
-            } else {
-                console.error('🔍 [MapPage] Struttura response non riconosciuta:', response);
-                mealsArray = [];
-            }
-            
-            console.log('🔍 [MapPage] Meals array finale:', mealsArray);
-            console.log('🔍 [MapPage] Is array?', Array.isArray(mealsArray));
-            console.log('🔍 [MapPage] Array length:', mealsArray.length);
-            
-            // Filtra ulteriormente per sicurezza, solo se è un array
-            const validMeals = Array.isArray(mealsArray) 
-                ? mealsArray.filter(meal => meal && meal.location && meal.location.coordinates)
-                : [];
+            // Filtra solo quelli con coordinate valide
+            const validMeals = meals.filter(meal => meal && meal.location && meal.location.coordinates);
             console.log(`[MapPage] Trovati ${validMeals.length} TableTalk® fisici nelle vicinanze.`);
             setNearbyMeals(validMeals);
         } catch (err) {
