@@ -23,7 +23,11 @@ if (isProduction) {
   }
 }
 
-// 4. Esportiamo la variabile finale
+// 4. Esportiamo le variabili finali
 export const API_URL = apiUrl;
-
+export { isNative };
 export const IS_NATIVE_PLATFORM = isNative;
+
+// Manteniamo anche i vecchi export per compatibilità
+export const DEV_SERVER_URL = 'http://192.168.1.45:5001';
+export const SERVER_URL = 'http://192.168.1.45:5001';
