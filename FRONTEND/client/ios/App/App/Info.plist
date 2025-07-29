@@ -4,6 +4,8 @@
 <dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>TableTalk usa la tua posizione per mostrarti sulla mappa i TableTalk® organizzati vicino a te.</string>
+	<key>GMSApiKey</key>
+	<string>${MAPS_API_KEY}</string>
 	<key>CapacitorCameraRemoveBackground</key>
 	<false/>
 	<key>NSPhotoLibraryUsageDescription</key>
