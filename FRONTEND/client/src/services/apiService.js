@@ -1,17 +1,14 @@
 import axios from 'axios';
-import { isNative } from '../config/capacitorConfig';
-import { DEV_SERVER_URL, SERVER_URL } from '../config/capacitorConfig';
+// 1. Importiamo la nostra NUOVA e unica variabile intelligente
+import { API_URL } from '../config/capacitorConfig';
+
 import { Dialog } from '@capacitor/dialog';
 import { authPreferences } from '../utils/preferences';
 
-const API_BASE_URL = isNative ? DEV_SERVER_URL : SERVER_URL;
-
-// Selezioniamo l'URL corretto in base alla piattaforma
-// Nota: la guida originale aveva una logica più complessa, la semplifichiamo
-// per usare la configurazione che abbiamo già definito.
-
 const apiClient = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
+  // 2. Usiamo direttamente la nuova variabile API_URL
+  // (che contiene già /api alla fine, grazie alla nostra nuova logica)
+  baseURL: API_URL, 
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
