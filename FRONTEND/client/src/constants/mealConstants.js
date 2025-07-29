@@ -104,20 +104,20 @@ export const formatDate = (dateString, formatString = "DD MMM, HH:mm") => {
 // @param {string} imageName - Il nome del file dell'immagine.
 // @returns {string} L'URL completo o un'immagine di fallback.
 export const getMealCoverImageUrl = (imageName) => {
-  if (!imageName || imageName.includes('default-meal')) {
+  if (!imageName || typeof imageName !== 'string' || imageName.includes('default-meal')) {
     return '/images/default-meal-background.jpg';
   }
   // Caso Capacitor (foto locale su device)
-  if (imageName.startsWith('capacitor://')) {
+  if (typeof imageName === 'string' && imageName.startsWith('capacitor://')) {
     return imageName;
   }
   // Caso URL assoluto (già pronto)
-  if (imageName.startsWith('http')) {
+  if (typeof imageName === 'string' && imageName.startsWith('http')) {
     return imageName;
   }
   // Caso path relativo dal backend - usa la configurazione corretta
   const baseUrl = isNative ? DEV_SERVER_URL : SERVER_URL;
-  if (imageName.includes('uploads/')) {
+  if (typeof imageName === 'string' && imageName.includes('uploads/')) {
     return `${baseUrl}/${imageName}`;
   } else {
     return `${baseUrl}/uploads/meal-images/${imageName}`;
@@ -132,15 +132,15 @@ export const getMealCoverImageUrl = (imageName) => {
  */
 export const getHostAvatarUrl = (profileImage) => {
   // Se non c'è un'immagine o è quella di default, usa il placeholder locale
-  if (!profileImage || profileImage.includes('default')) {
+  if (!profileImage || typeof profileImage !== 'string' || profileImage.includes('default')) {
     return '/images/default-avatar.jpg';
   }
   // Caso Capacitor (foto locale su device)
-  if (profileImage.startsWith('capacitor://')) {
+  if (typeof profileImage === 'string' && profileImage.startsWith('capacitor://')) {
     return profileImage;
   }
   // Caso URL assoluto (già pronto)
-  if (profileImage.startsWith('http')) {
+  if (typeof profileImage === 'string' && profileImage.startsWith('http')) {
     return profileImage;
   }
   // Caso path relativo dal backend - usa la configurazione corretta

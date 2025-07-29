@@ -36,8 +36,16 @@ const CreateMealPage = () => {
       console.log('📡 [CreateMeal] Chiamando mealService.createMeal...');
       const newMeal = await mealService.createMeal(formData); // Usiamo il servizio
       console.log('✅ [CreateMeal] Pasto creato con successo:', newMeal);
+      console.log('✅ [CreateMeal] newMeal._id:', newMeal._id);
+      console.log('✅ [CreateMeal] Navigating to:', `/meals/${newMeal._id}`);
+      
       toast.success(t('meals.createSuccess'));
-      navigate(`/meals/${newMeal._id}`); 
+      
+      // Aggiungiamo un piccolo delay prima della navigazione
+      setTimeout(() => {
+        console.log('🚀 [CreateMeal] Eseguendo navigazione...');
+        navigate(`/meals/${newMeal._id}`);
+      }, 1000); 
     } catch (error) {
       console.error('❌ [CreateMeal] Errore nella creazione:', error);
       console.error('❌ [CreateMeal] Error details:', {
