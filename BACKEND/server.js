@@ -45,24 +45,26 @@ const server = http.createServer(app);
 // Connetti al DB
 connectDB();
 
-// Lista delle origini consentite (completa per Capacitor)
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://192.168.1.45:3000', // IP corretto del frontend
-  'http://192.168.1.45:5001', // IP corretto del backend
-  'capacitor://localhost',
-  'http://localhost'
-];
+// Legge le origini permesse dalla variabile d'ambiente e le divide in un array
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
+
+// Aggiungiamo un log per vedere quali origini vengono caricate all'avvio
+console.log('[CORS] Origini permesse caricate:', allowedOrigins);
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Permette le richieste se l'origine è nella lista o se la richiesta non ha un'origine (es. da Postman/mobile)
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      console.error(`[CORS] ERRORE: Origine Rifiutata -> ${origin}`);
       callback(new Error('Origine non permessa dalla policy CORS'));
     }
-  }
+  },
+  credentials: true,
 };
+
+app.use(cors(corsOptions));
 
 
 // Middleware essenziali (tutti ripristinati)
