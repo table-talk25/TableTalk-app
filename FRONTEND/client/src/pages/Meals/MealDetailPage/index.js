@@ -29,18 +29,40 @@ const MealDetailPage = () => {
     const [showLeaveModal, setShowLeaveModal] = useState(false);
 
     const fetchMealDetails = useCallback(async () => {
+        console.log('🔄 MealDetail: Inizio caricamento per ID:', id);
         setLoading(true);
+        setError('');
         try {
             const response = await mealService.getMealById(id);
             console.log('🍽️ MealDetail: Response completa:', response);
-            console.log('🍽️ MealDetail: Dati meal:', response.data);
+            console.log('🍽️ MealDetail: Tipo response:', typeof response);
+            console.log('🍽️ MealDetail: Keys response:', Object.keys(response || {}));
             
-            // Il servizio già restituisce response.data, quindi usiamo direttamente response
-            const mealData = response.data || response;
+            // Proviamo diverse strutture possibili
+            let mealData = null;
+            if (response && response.data && response.data.data) {
+                mealData = response.data.data;
+                console.log('🎯 MealDetail: Usando response.data.data');
+            } else if (response && response.data) {
+                mealData = response.data;
+                console.log('🎯 MealDetail: Usando response.data');
+            } else if (response) {
+                mealData = response;
+                console.log('🎯 MealDetail: Usando response direttamente');
+            }
+            
             console.log('🍽️ MealDetail: Meal finale:', mealData);
+            console.log('🍽️ MealDetail: Meal finale tipo:', typeof mealData);
+            console.log('🍽️ MealDetail: Meal finale keys:', Object.keys(mealData || {}));
+            
+            if (!mealData) {
+                throw new Error('Nessun dato ricevuto dal server');
+            }
+            
             setMeal(mealData);
         } catch (err) { 
             console.error('❌ MealDetail: Errore caricamento:', err);
+            console.error('❌ MealDetail: Errore stack:', err.stack);
             toast.error(t('meals.detail.loadError'));
             setError(err.message || 'Errore nel caricamento del TableTalk®');
         } finally { 
@@ -49,10 +71,17 @@ const MealDetailPage = () => {
     }, [id, t]);
 
     useEffect(() => {
+        console.log('🔄 MealDetail: useEffect triggered, ID:', id);
+        if (!id) {
+            console.error('❌ MealDetail: ID non valido:', id);
+            setError('ID del TableTalk® non valido');
+            setLoading(false);
+            return;
+        }
         fetchMealDetails();
         const timer = setInterval(() => setNow(new Date()), 10000);
         return () => clearInterval(timer);
-    }, [fetchMealDetails]);
+    }, [fetchMealDetails, id]);
 
     const handleJoinMeal = async () => {
         try {
@@ -98,7 +127,10 @@ const MealDetailPage = () => {
         }
     };
 
-    if (loading || !meal) {
+    console.log('🎯 MealDetail: Render state - loading:', loading, 'meal:', !!meal, 'error:', error);
+    
+    if (loading) {
+        console.log('🔄 MealDetail: Mostrando loading...');
         return (
            <Container className="text-center py-5">
             <Spinner animation="border" />
@@ -108,9 +140,25 @@ const MealDetailPage = () => {
     }
     
     if (error) {
+        console.log('❌ MealDetail: Mostrando errore:', error);
         return (
             <Container className="text-center py-5">
                 <Alert variant="danger">{error}</Alert>
+                <Button variant="primary" onClick={fetchMealDetails}>
+                    Riprova
+                </Button>
+            </Container>
+        );
+    }
+    
+    if (!meal) {
+        console.log('❌ MealDetail: Meal non trovato');
+        return (
+            <Container className="text-center py-5">
+                <Alert variant="warning">TableTalk® non trovato</Alert>
+                <Link to="/meals">
+                    <Button variant="primary">Torna ai TableTalk®</Button>
+                </Link>
             </Container>
         );
     }
