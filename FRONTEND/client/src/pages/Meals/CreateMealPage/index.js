@@ -19,14 +19,33 @@ const CreateMealPage = () => {
 
   // La logica di submit ora chiama il servizio corretto
   const handleCreateSubmit = async (formData) => {
+    console.log('🚀 [CreateMeal] Inizio creazione pasto...');
+    console.log('🚀 [CreateMeal] FormData ricevuto:', formData);
+    
+    // Debug: mostra tutti i campi del FormData
+    if (formData instanceof FormData) {
+      console.log('🚀 [CreateMeal] Campi FormData:');
+      for (let [key, value] of formData.entries()) {
+        console.log(`  ${key}:`, value);
+      }
+    }
+    
     setIsLoading(true);
     setError(''); // Pulisci eventuali errori precedenti
     try {
+      console.log('📡 [CreateMeal] Chiamando mealService.createMeal...');
       const newMeal = await mealService.createMeal(formData); // Usiamo il servizio
+      console.log('✅ [CreateMeal] Pasto creato con successo:', newMeal);
       toast.success(t('meals.createSuccess'));
       navigate(`/meals/${newMeal._id}`); 
     } catch (error) {
-      const errorMessage = error.message || t('meals.createError');
+      console.error('❌ [CreateMeal] Errore nella creazione:', error);
+      console.error('❌ [CreateMeal] Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      const errorMessage = error.response?.data?.message || error.message || t('meals.createError');
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {

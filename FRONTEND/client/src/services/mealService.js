@@ -14,13 +14,22 @@ const getMealById = async (id) => {
 
 const createMeal = async (formData) => { // formData qui è un oggetto FormData
   try {
+    console.log('📡 [mealService] Invio richiesta POST /meals...');
+    console.log('📡 [mealService] FormData:', formData);
+    
     const response = await apiClient.post('/meals', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
+    
+    console.log('✅ [mealService] Risposta ricevuta:', response);
+    console.log('✅ [mealService] Response data:', response.data);
+    
     return response.data.data;
   } catch (error) {
+    console.error('❌ [mealService] Errore nella richiesta:', error);
+    console.error('❌ [mealService] Error response:', error.response);
     throw error;
   }
 };

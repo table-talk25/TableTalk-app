@@ -50,8 +50,6 @@ router.get('/:id', [ protect, check('id', 'ID pasto non valido').isMongoId() ], 
 
 router.use(protect);
 
-router.route('/').post(upload.single('coverImage'), createMeal);
-
 router.route('/:id')
   .put(upload.single('coverImage'), updateMeal)
   .delete(deleteMeal);
