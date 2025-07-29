@@ -142,7 +142,7 @@ router.delete('/me', [
 
 /**
  * @route   PUT /api/users/me/location-from-coords
- * @desc    Update user's location address from coordinates
+ * @desc    Update user's location address from coordinates (reverse geocoding)
  * @access  Private
  */
 router.put('/me/location-from-coords', protect, userController.updateUserLocationFromCoords);

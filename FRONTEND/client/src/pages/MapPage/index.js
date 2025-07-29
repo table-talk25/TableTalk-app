@@ -73,13 +73,31 @@ const MapPage = () => {
             console.log('🔍 [MapPage] Response type:', typeof response);
             console.log('🔍 [MapPage] Response keys:', Object.keys(response || {}));
             
-            // La risposta potrebbe essere { data: [...] } o direttamente [...]
-            const mealsArray = Array.isArray(response) ? response : (response.data || []);
-            console.log('🔍 [MapPage] Meals array:', mealsArray);
-            console.log('🔍 [MapPage] Is array?', Array.isArray(mealsArray));
+            // Gestione robusta della risposta
+            let mealsArray = [];
             
-            // Filtra ulteriormente per sicurezza, come già fai
-            const validMeals = mealsArray.filter(meal => meal.location && meal.location.coordinates);
+            if (Array.isArray(response)) {
+                mealsArray = response;
+                console.log('🔍 [MapPage] Response è un array diretto');
+            } else if (response && Array.isArray(response.data)) {
+                mealsArray = response.data;
+                console.log('🔍 [MapPage] Response.data è un array');
+            } else if (response && response.data && Array.isArray(response.data.data)) {
+                mealsArray = response.data.data;
+                console.log('🔍 [MapPage] Response.data.data è un array');
+            } else {
+                console.error('🔍 [MapPage] Struttura response non riconosciuta:', response);
+                mealsArray = [];
+            }
+            
+            console.log('🔍 [MapPage] Meals array finale:', mealsArray);
+            console.log('🔍 [MapPage] Is array?', Array.isArray(mealsArray));
+            console.log('🔍 [MapPage] Array length:', mealsArray.length);
+            
+            // Filtra ulteriormente per sicurezza, solo se è un array
+            const validMeals = Array.isArray(mealsArray) 
+                ? mealsArray.filter(meal => meal && meal.location && meal.location.coordinates)
+                : [];
             console.log(`[MapPage] Trovati ${validMeals.length} TableTalk® fisici nelle vicinanze.`);
             setNearbyMeals(validMeals);
         } catch (err) {
