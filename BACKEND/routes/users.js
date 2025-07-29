@@ -145,6 +145,6 @@ router.delete('/me', [
  * @desc    Update user's location address from coordinates
  * @access  Private
  */
-// router.put('/me/location-from-coords', protect, updateUserLocationFromCoords);
+router.put('/me/location-from-coords', protect, userController.updateUserLocationFromCoords);
 
 module.exports = router;

@@ -63,14 +63,23 @@ const MapPage = () => {
             console.log('📍 [MapPage] Coordinate:', coords);
             
             // Passiamo un nuovo filtro al servizio!
-            const data = await mealService.getMeals({
+            const response = await mealService.getMeals({
                 near: `${coords.latitude},${coords.longitude}`,
                 mealType: 'physical', // <-- AGGIUNTA FONDAMENTALE
                 status: 'upcoming,ongoing'
             });
             
+            console.log('🔍 [MapPage] Response getMeals:', response);
+            console.log('🔍 [MapPage] Response type:', typeof response);
+            console.log('🔍 [MapPage] Response keys:', Object.keys(response || {}));
+            
+            // La risposta potrebbe essere { data: [...] } o direttamente [...]
+            const mealsArray = Array.isArray(response) ? response : (response.data || []);
+            console.log('🔍 [MapPage] Meals array:', mealsArray);
+            console.log('🔍 [MapPage] Is array?', Array.isArray(mealsArray));
+            
             // Filtra ulteriormente per sicurezza, come già fai
-            const validMeals = data.filter(meal => meal.location && meal.location.coordinates);
+            const validMeals = mealsArray.filter(meal => meal.location && meal.location.coordinates);
             console.log(`[MapPage] Trovati ${validMeals.length} TableTalk® fisici nelle vicinanze.`);
             setNearbyMeals(validMeals);
         } catch (err) {
