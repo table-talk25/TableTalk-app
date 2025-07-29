@@ -29,5 +29,5 @@ export { isNative };
 export const IS_NATIVE_PLATFORM = isNative;
 
 // Manteniamo anche i vecchi export per compatibilità
-export const DEV_SERVER_URL = 'http://192.168.1.45:5001';
-export const SERVER_URL = 'http://192.168.1.45:5001';
+export const DEV_SERVER_URL = isProduction ? 'https://tabletalk-app-backend.onrender.com' : 'http://192.168.1.45:5001';
+export const SERVER_URL = isProduction ? 'https://tabletalk-app-backend.onrender.com' : 'http://192.168.1.45:5001';
