@@ -241,7 +241,12 @@ const MealDetailPage = () => {
                         <Card className={styles.mealCard}>
                             <div className={styles.coverImageContainer}>
                                 <img 
-                                    src={getMealCoverImageUrl(meal.coverImage)} 
+                                    src={(() => {
+                                        console.log('🖼️ [MealDetail] meal.coverImage:', meal.coverImage);
+                                        const imageUrl = getMealCoverImageUrl(meal.coverImage);
+                                        console.log('🖼️ [MealDetail] Generated URL:', imageUrl);
+                                        return imageUrl;
+                                    })()} 
                                     alt={t('meals.detail.coverImageAlt')}
                                     className={styles.coverImage}
                                 />
@@ -304,7 +309,12 @@ const MealDetailPage = () => {
                             <Card.Body>
                                 <div className={styles.hostInfo}>
                                     <img 
-                                        src={getHostAvatarUrl(meal.host.profileImage)} 
+                                        src={(() => {
+                                            console.log('👤 [MealDetail] meal.host.profileImage:', meal.host.profileImage);
+                                            const avatarUrl = getHostAvatarUrl(meal.host.profileImage);
+                                            console.log('👤 [MealDetail] Generated avatar URL:', avatarUrl);
+                                            return avatarUrl;
+                                        })()} 
                                         alt={t('meals.detail.hostAvatarAlt')}
                                         className={styles.hostAvatar}
                                     />
