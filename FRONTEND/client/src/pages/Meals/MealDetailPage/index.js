@@ -271,7 +271,10 @@ const MealDetailPage = () => {
                                     </div>
                                     <div className={styles.infoItem}>
                                         <FaUsers className={styles.infoIcon} />
-                                        <span>{t('meals.detail.participants', { count: meal.participants?.length || 0, max: meal.maxParticipants })}</span>
+                                        <span>{t('meals.detail.participants', { 
+                                            count: meal.participants?.length || 0, 
+                                            max: meal.maxParticipants || 0 
+                                        })}</span>
                                     </div>
                                     {meal.topic && (
                                         <div className={styles.infoItem}>

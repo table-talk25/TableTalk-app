@@ -105,7 +105,7 @@ export const formatDate = (dateString, formatString = "DD MMM, HH:mm") => {
 // @returns {string} L'URL completo o un'immagine di fallback.
 export const getMealCoverImageUrl = (imageName) => {
   if (!imageName || typeof imageName !== 'string' || imageName.includes('default-meal')) {
-    return '/images/default-meal-background.jpg';
+    return '/assets/images/default-meal-placeholder.jpeg';
   }
   // Caso Capacitor (foto locale su device)
   if (typeof imageName === 'string' && imageName.startsWith('capacitor://')) {
@@ -133,7 +133,7 @@ export const getMealCoverImageUrl = (imageName) => {
 export const getHostAvatarUrl = (profileImage) => {
   // Se non c'è un'immagine o è quella di default, usa il placeholder locale
   if (!profileImage || typeof profileImage !== 'string' || profileImage.includes('default')) {
-    return '/images/default-avatar.jpg';
+    return '/assets/images/default-avatar.jpeg';
   }
   // Caso Capacitor (foto locale su device)
   if (typeof profileImage === 'string' && profileImage.startsWith('capacitor://')) {
