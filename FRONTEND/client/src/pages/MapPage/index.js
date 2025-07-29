@@ -9,7 +9,6 @@ import { Geolocation } from '@capacitor/geolocation';
 import { Capacitor } from '@capacitor/core';
 import BackButton from '../../components/common/BackButton';
 import { Button, Alert, Spinner } from 'react-bootstrap';
-import 'leaflet/dist/leaflet.css';
 
 const MapPage = () => {
     const { t } = useTranslation();
