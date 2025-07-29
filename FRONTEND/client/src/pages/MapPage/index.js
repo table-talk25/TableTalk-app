@@ -61,21 +61,25 @@ const MapPage = () => {
         try {
             console.log('🍽️ [MapPage] Cerco TableTalk® fisici nelle vicinanze...');
             console.log('📍 [MapPage] Coordinate:', coords);
-            
-            // Ottieni i TableTalk® fisici nelle vicinanze
-            const meals = (await mealService.getMeals({
+
+            const meals = await mealService.getMeals({
                 near: `${coords.latitude},${coords.longitude}`,
                 mealType: 'physical',
                 status: 'upcoming,ongoing'
-            })) || [];
-            
-            // Filtra solo quelli con coordinate valide
-            const validMeals = meals.filter(meal => meal && meal.location && meal.location.coordinates);
+            });
+
+            if (!Array.isArray(meals)) {
+                console.warn('⚠️ [MapPage] Risposta inattesa da getMeals:', meals);
+                setNearbyMeals([]);
+                return;
+            }
+
+            console.log('🔍 [MapPage] Meals ricevuti:', meals);
+            const validMeals = meals.filter(meal => meal && meal._id && meal.location && meal.location.coordinates);
             console.log(`[MapPage] Trovati ${validMeals.length} TableTalk® fisici nelle vicinanze.`);
             setNearbyMeals(validMeals);
-        } catch (err) {
-                    console.error('[MapPage] Errore nel caricamento TableTalk®:', err);
-        // Non blocchiamo l'intera pagina se i TableTalk® non si caricano
+        } catch (error) {
+            console.error('[MapPage] Errore nel caricamento TableTalk®:', error);
             setNearbyMeals([]);
         }
     };
