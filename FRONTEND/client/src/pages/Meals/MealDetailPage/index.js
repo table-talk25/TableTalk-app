@@ -241,7 +241,7 @@ const MealDetailPage = () => {
                         <Card className={styles.mealCard}>
                             <div className={styles.coverImageContainer}>
                                 <img 
-                                    src={getMealCoverImageUrl(meal)} 
+                                    src={getMealCoverImageUrl(meal.coverImage)} 
                                     alt={t('meals.detail.coverImageAlt')}
                                     className={styles.coverImage}
                                 />
@@ -304,7 +304,7 @@ const MealDetailPage = () => {
                             <Card.Body>
                                 <div className={styles.hostInfo}>
                                     <img 
-                                        src={getHostAvatarUrl(meal.host)} 
+                                        src={getHostAvatarUrl(meal.host.profileImage)} 
                                         alt={t('meals.detail.hostAvatarAlt')}
                                         className={styles.hostAvatar}
                                     />
