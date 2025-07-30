@@ -67,3 +67,8 @@ next-env.d.ts
 
 # Credenziali segrete di Firebase
 firebase-service-account.json
+
+# Android release keys (sicurezza)
+*.jks
+*.keystore
+table-talk-release-key.jks
