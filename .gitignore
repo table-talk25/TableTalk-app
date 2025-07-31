@@ -48,6 +48,7 @@ npm-debug.log
 # File di cache degli editor
 *.code-search
 .vscode/
+.idea/
 
 # debug
 npm-debug.log*
@@ -72,3 +73,4 @@ firebase-service-account.json
 *.jks
 *.keystore
 table-talk-release-key.jks
+keystore.properties
