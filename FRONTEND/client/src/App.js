@@ -34,6 +34,7 @@ import { MealsProvider } from './contexts/MealsContext'; // Questo è essenziale
 import { AuthProvider } from './contexts/AuthContext'; 
 import Spinner from './components/common/Spinner';
 import { Suspense } from 'react';
+import DeleteAccountPage from './pages/DeleteAccountPage';
 
 const App = () => {
   console.log('--- L\'APP SI STA CARICANDO ---'); // <-- AGGIUNGI QUESTA RIGA
