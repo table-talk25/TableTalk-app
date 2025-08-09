@@ -15,6 +15,11 @@ if (isProduction) {
   apiUrl = 'http://localhost:5001/api';
 }
 
+// Fallback per produzione se la variabile d'ambiente non è impostata
+if (!apiUrl || apiUrl === 'undefined') {
+  apiUrl = 'https://tabletalk-app-backend.onrender.com/api';
+}
+
 /**
  * Esportazioni NOMINALI per essere usate nel resto della tua app (es. nel tuo ApiService).
  * Esempio di utilizzo: import { API_URL } from './capacitor.config';
