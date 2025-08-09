@@ -1,6 +1,6 @@
 // FRONTEND/client/src/contexts/AuthContext.js (Versione Definitiva e Pulita)
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useState, useEffect, useContext, useMemo } from 'react';
 import authService from '../services/authService'; 
 import profileService from '../services/profileService';
 import { authPreferences } from '../utils/preferences';
@@ -87,12 +87,26 @@ export const AuthProvider = ({ children }) => {
         }
     };
     
-    return (
-        <AuthContext.Provider value={{ user, token, login, logout, register, deleteAccount, isAuthenticated, loading, error }}>
-            {!loading && children}
-        </AuthContext.Provider>
-    );
-};
-
-
-export const useAuth = () => useContext(AuthContext);
+    // 2. Creiamo la costante 'value' con useMemo
+    const value = useMemo(() => ({
+        user,
+        token,
+        isAuthenticated,
+        loading,
+        error,
+        login,
+        logout,
+        register,
+        deleteAccount
+      }), [user, token, loading, error]); // Le dipendenze che fanno ricreare l'oggetto
+  
+  
+      // 3. Usiamo la costante 'value' nel Provider
+      return (
+          <AuthContext.Provider value={value}>
+              {!loading && children}
+          </AuthContext.Provider>
+      );
+  };
+  
+  export const useAuth = () => useContext(AuthContext);

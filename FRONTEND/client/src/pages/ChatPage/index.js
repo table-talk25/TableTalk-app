@@ -81,7 +81,7 @@ const ChatPage = () => {
 
 
     // Usa esattamente lo stesso indirizzo IP delle API HTTP
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://192.168.1.45:5001/api';
+    const apiUrl = process.env.REACT_APP_API_URL || 'http://192.168.1.224:5001/api';
     const socketUrl = apiUrl.replace('/api', '');
     console.log(`[DEBUG] API URL: ${apiUrl}`);
     console.log(`[DEBUG] Socket URL: ${socketUrl}`);

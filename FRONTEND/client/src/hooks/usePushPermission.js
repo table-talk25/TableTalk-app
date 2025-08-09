@@ -12,6 +12,10 @@ function usePushPermission() {
     }
 
     const initializePushNotifications = async () => {
+      // TEMPORANEAMENTE DISABILITATO: Firebase non configurato correttamente
+      console.log('Push notifications temporaneamente disabilitate - Firebase non configurato');
+      return;
+      
       try {
         const { PushNotifications } = await import('@capacitor/push-notifications');
         

@@ -6,6 +6,10 @@ import { Capacitor } from '@capacitor/core';
 const isNativePlatform = Capacitor.isNativePlatform();
 
 export const registerForPushNotifications = async () => {
+  // TEMPORANEAMENTE DISABILITATO: Firebase non configurato correttamente
+  console.log('Push notifications temporaneamente disabilitate - Firebase non configurato');
+  return;
+  
   // Se non siamo su un dispositivo nativo, salta la registrazione
   if (!isNativePlatform) {
     console.log('PushNotifications non disponibili su web');

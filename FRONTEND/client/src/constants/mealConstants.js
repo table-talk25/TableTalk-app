@@ -2,7 +2,7 @@
 
 import dayjs from 'dayjs';
 import 'dayjs/locale/it';
-import { isNative, DEV_SERVER_URL, SERVER_URL } from '../config/capacitorConfig';
+import { DEV_SERVER_URL, SERVER_URL, isNative } from '../config/capacitorConfig';
 
 // --- TIPI DI TABLETALK® ---
 

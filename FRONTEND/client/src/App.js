@@ -56,11 +56,6 @@ const App = () => {
     };
   }, [navigate]);
   
-  useEffect(() => {
-    const apiUrl = window.APP_CONFIG ? window.APP_CONFIG.API_URL : 'Configurazione non trovata!';
-    alert('Sto provando a connettermi a: ' + apiUrl);
-  }, []);
-
   usePushPermission();
   return (
       <AuthProvider>

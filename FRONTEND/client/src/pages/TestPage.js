@@ -13,10 +13,10 @@ const TestPage = () => {
   useEffect(() => {
     // IMPORTANTE: Assicurati che questo sia l'IP corretto del tuo computer
     // e che la porta sia 5002 (quella del nostro server di test)
-    const socket = io('http://192.168.1.45:5002');
+    const socket = io('http://192.168.1.224:5002');
     
     setStatus(t('test.connecting'));
-    console.log('Tentativo di connessione a http://192.168.1.45:5002');
+    console.log('Tentativo di connessione a http://192.168.1.224:5002');
 
     socket.on('connect', () => {
       setStatus(t('test.connected'));

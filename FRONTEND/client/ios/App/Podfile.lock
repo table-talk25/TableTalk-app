@@ -20,8 +20,6 @@ PODS:
     - Capacitor
     - Google-Maps-iOS-Utils (~> 5.0)
     - GoogleMaps (~> 8.4)
-  - CapacitorHttp (0.0.1):
-    - Capacitor
   - CapacitorLocalNotifications (7.0.1):
     - Capacitor
   - CapacitorNetwork (7.0.1):
@@ -54,7 +52,6 @@ DEPENDENCIES:
   - "CapacitorFilesystem (from `../../node_modules/@capacitor/filesystem`)"
   - "CapacitorGeolocation (from `../../node_modules/@capacitor/geolocation`)"
   - "CapacitorGoogleMaps (from `../../node_modules/@capacitor/google-maps`)"
-  - "CapacitorHttp (from `../../node_modules/@capacitor/http`)"
   - "CapacitorLocalNotifications (from `../../node_modules/@capacitor/local-notifications`)"
   - "CapacitorNetwork (from `../../node_modules/@capacitor/network`)"
   - "CapacitorPreferences (from `../../node_modules/@capacitor/preferences`)"
@@ -88,8 +85,6 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/geolocation"
   CapacitorGoogleMaps:
     :path: "../../node_modules/@capacitor/google-maps"
-  CapacitorHttp:
-    :path: "../../node_modules/@capacitor/http"
   CapacitorLocalNotifications:
     :path: "../../node_modules/@capacitor/local-notifications"
   CapacitorNetwork:
@@ -113,7 +108,6 @@ SPEC CHECKSUMS:
   CapacitorFilesystem: 0329ace667c6b971410cab3619dfb98a39cc3b86
   CapacitorGeolocation: 32a1f849c38c72b5071de36a28ebc548ef3bb611
   CapacitorGoogleMaps: e47edf88a38d1e91b98d48a6f4d01ae590a5f0a6
-  CapacitorHttp: 90d76cad4972b7e5abb13e163fea84ffa48d31af
   CapacitorLocalNotifications: c2212755b33d2513b8bb325096ce3a64d4039ae3
   CapacitorNetwork: 15cb4385f0913a8ceb5e9a4d7af1ec554bdb8de8
   CapacitorPreferences: 6c98117d4d7508034a4af9db64d6b26fc75d7b94
@@ -125,6 +119,6 @@ SPEC CHECKSUMS:
   IONFilesystemLib: ceacae793975039530458eabab0c495c70515a0d
   IONGeolocationLib: 81f33f88d025846946de2cf63b0c7628e7c6bc9d
 
-PODFILE CHECKSUM: 9750bd300a9a8a8c9386dfffe2489ef8bbaa67b3
+PODFILE CHECKSUM: f0c736372b41ba55896ab17197a955df2ae01f49
 
 COCOAPODS: 1.16.2
