@@ -104,3 +104,8 @@ app/src/main/res/xml/config.xml
 .project
 .classpath
 .settings/
+
+# Signing files (SECURITY: Never commit these!)
+key.properties
+*.keystore
+*.jks
