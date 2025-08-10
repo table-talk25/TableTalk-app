@@ -6,11 +6,13 @@ Questo repository contiene le pagine legali per l'app TableTalk Social, pubblica
 
 - **`index.html`** - Privacy Policy completa
 - **`delete-account.html`** - Pagina per la cancellazione account
+- **`child-protection-policy.html`** - Politica di protezione dei minori
 
 ## 🌐 URL Pubblici
 
 - **Privacy Policy**: https://table-talk25.github.io/tabletalk-privacy/
 - **Cancellazione Account**: https://table-talk25.github.io/tabletalk-privacy/delete-account.html
+- **Protezione Minori**: https://table-talk25.github.io/tabletalk-privacy/child-protection-policy.html
 
 ## 📧 Contatti
 
