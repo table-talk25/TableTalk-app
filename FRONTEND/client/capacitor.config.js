@@ -1,7 +1,7 @@
 // Configurazione Capacitor diretta
 const config = {
-  appId: 'com.TableTalkApp.tabletalk',
-  appName: 'TableTalk',
+  appId: 'com.tabletalk.socialapp',
+  appName: 'TableTalk Social',
   webDir: 'build',
   server: {
     androidScheme: 'https'

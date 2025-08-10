@@ -22,7 +22,7 @@ const DeleteAccountPage = () => {
       <hr />
       <p>
         Se riscontri problemi o non riesci più ad accedere al tuo account, per favore
-        contattaci all'indirizzo <strong>privacy@tabletalkapp.com</strong> per ricevere assistenza.
+        contattaci all'indirizzo <strong>infotabletalk.app@gmail.com</strong> per ricevere assistenza.
       </p>
     </div>
   );

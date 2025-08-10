@@ -5,15 +5,27 @@ def keystoreProperties = new Properties()
 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 android {
-    namespace "com.TableTalkApp.tabletalk"
+    namespace "com.tabletalk.socialapp"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.TableTalkApp.tabletalk"
+        applicationId "com.tabletalk.socialapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "1.1"
+        versionCode 1
+        versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Performance optimizations
+        multiDexEnabled true
+        vectorDrawables.useSupportLibrary = true
+        
+        // Memory optimizations
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+        }
+        
+        // Stability optimizations
+        resConfigs "en", "it", "de", "es", "fr", "ar", "zh"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
@@ -37,17 +49,37 @@ android {
     
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
+            
+                    // Performance optimizations
+        debuggable false
+        jniDebuggable false
+        renderscriptDebuggable false
+        pseudoLocalesEnabled false
+        zipAlignEnabled true
+        
+        // Security optimizations
+        minifyEnabled true
+        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        
+        debug {
+            minifyEnabled false
+            debuggable true
+            versionNameSuffix "-debug"
         }
     }
 }
 
 repositories {
-    flatDir{
-        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
-    }
+    google()
+    mavenCentral()
+    // Capacitor plugins specific repositories
+    maven { url 'https://maven.google.com' }
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {

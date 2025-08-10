@@ -1,37 +1,26 @@
 {
   "project_info": {
-    "project_number": "123456789000",
-    "firebase_url": "https://tabletalk-test-default-rtdb.firebaseio.com",
-    "project_id": "tabletalk-test",
-    "storage_bucket": "tabletalk-test.appspot.com"
+    "project_number": "925236799140",
+    "project_id": "tabletalk-social",
+    "storage_bucket": "tabletalk-social.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789000:android:abcdef123456",
+        "mobilesdk_app_id": "1:925236799140:android:61ad591d616ab133df6831",
         "android_client_info": {
-          "package_name": "com.TableTalkApp.tabletalk"
+          "package_name": "com.tabletalk.socialapp"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "123456789000-abcdefghijklmnop.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDEFAULT-KEY-FOR-TESTING-ONLY"
+          "current_key": "AIzaSyAqL0dJbb8vP_4vkGn2nl0OXfGL9bDlwcU"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "123456789000-abcdefghijklmnop.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

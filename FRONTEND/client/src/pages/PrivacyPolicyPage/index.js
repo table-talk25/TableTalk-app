@@ -88,9 +88,11 @@ const PrivacyPolicyPage = () => {
 
             <h2 className={styles.sectionTitle}>{t('privacy.minors.title')}</h2>
             <p>{t('privacy.minors.description')}</p>
+            <p><strong>Nota:</strong> La nostra app non è destinata a minori di 18 anni.</p>
 
             <h2 className={styles.sectionTitle}>{t('privacy.contact.title')}</h2>
             <p>{t('privacy.contact.description')}</p>
+        <p><strong>Email:</strong> infotabletalk.app@gmail.com</p>
         </div>
     );
 };
