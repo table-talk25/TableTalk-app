@@ -1,4 +1,4 @@
-name: Deploy Privacy Pages to GitHub Pages
+name: Deploy Privacy Pages to external repo (tabletalk-privacy)
 
 on:
   push:
@@ -13,14 +13,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Deploy to GitHub Pages
+      - name: Deploy to external repository (tabletalk-privacy)
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          personal_token: ${{ secrets.PRIVACY_PAGES_PAT }}
+          external_repository: table-talk25/tabletalk-privacy
           publish_dir: ./FRONTEND/client/src/pages/privacy-pages
-          destination_dir: ./privacy-pages
+          publish_branch: gh-pages
