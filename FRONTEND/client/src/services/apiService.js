@@ -8,6 +8,7 @@ import { authPreferences } from '../utils/preferences';
 
 // Anti-spam per gli alert e regole di filtro
 let lastAlertTimestampMs = 0;
+let suppressAlertsUntilMs = 0;
 const ALERT_COOLDOWN_MS = 10000; // massimo 1 alert ogni 10s
 const STARTUP_GRACE_MS = 5000;   // nei primi 5s sopprimiamo alert non critici
 const appStartTimestampMs = Date.now();
@@ -22,6 +23,7 @@ function shouldSuppressForNoise(url = '') {
 function shouldShowErrorAlert({ method, url, status, code, suppressErrorAlert }) {
   const now = Date.now();
   if (suppressErrorAlert) return false;
+  if (now < suppressAlertsUntilMs) return false;
   if (now - lastAlertTimestampMs < ALERT_COOLDOWN_MS) return false;
 
   const upperMethod = (method || '').toUpperCase();
@@ -205,3 +207,11 @@ export const isUserBlocked = async (userId) => {
 };
 
 export default apiClient;
+
+// Utilità per silenziare temporaneamente gli alert globalmente (es. subito dopo il login)
+export function suppressAlertsFor(ms) {
+  const duration = typeof ms === 'number' && ms > 0 ? ms : 0;
+  if (duration > 0) {
+    suppressAlertsUntilMs = Date.now() + duration;
+  }
+}

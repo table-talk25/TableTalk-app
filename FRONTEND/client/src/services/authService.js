@@ -1,6 +1,6 @@
 // File: /services/authService.js (Versione Definitiva)
 
-import apiClient from './apiService';
+import apiClient, { suppressAlertsFor } from './apiService';
 import { API_URL } from '../config/capacitorConfig';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { authPreferences } from '../utils/preferences';
@@ -48,6 +48,8 @@ export const login = async (credentials) => {
       if (nativeResp && nativeResp.data) {
         await authPreferences.saveToken(nativeResp.data.token);
         await authPreferences.saveUser(nativeResp.data.user);
+        // Silenzia gli alert per i prossimi 4s mentre partono le richieste di bootstrap (meals/profile/notifiche)
+        suppressAlertsFor(4000);
         return nativeResp.data;
       }
     }
