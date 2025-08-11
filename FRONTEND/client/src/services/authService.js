@@ -1,6 +1,8 @@
 // File: /services/authService.js (Versione Definitiva)
 
 import apiClient from './apiService';
+import { API_URL } from '../config/capacitorConfig';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { authPreferences } from '../utils/preferences';
 
 // NOTA: Ogni funzione accetta un singolo oggetto 'data' per coerenza
@@ -22,11 +24,35 @@ export const register = async (registrationData) => {
  * @param {object} credentials - Oggetto con { email, password }
  */
 export const login = async (credentials) => {
-  // Percorso corretto: /auth/login
-  const response = await apiClient.post('/auth/login', credentials);
-  await authPreferences.saveToken(response.data.token);
-  await authPreferences.saveUser(response.data.user);
-  return response.data;
+  try {
+    // Tentativo 1: Axios (Web)
+    const response = await apiClient.post('/auth/login', credentials);
+    await authPreferences.saveToken(response.data.token);
+    await authPreferences.saveUser(response.data.user);
+    return response.data;
+  } catch (error) {
+    const isNetworkError = (error && (error.code === 'ERR_NETWORK' || !error.response));
+    const isNative = Capacitor.getPlatform() === 'android' || Capacitor.getPlatform() === 'ios';
+
+    if (isNetworkError && isNative) {
+      // Tentativo 2: CapacitorHttp (nativo) – bypass CORS/WebView
+      const url = `${API_URL}/auth/login`;
+      const nativeResp = await CapacitorHttp.post({
+        url,
+        data: credentials,
+        headers: { 'Content-Type': 'application/json' },
+        connectTimeout: 30000,
+        readTimeout: 30000,
+      });
+
+      if (nativeResp && nativeResp.data) {
+        await authPreferences.saveToken(nativeResp.data.token);
+        await authPreferences.saveUser(nativeResp.data.user);
+        return nativeResp.data;
+      }
+    }
+    throw error;
+  }
 };
 
 /**
