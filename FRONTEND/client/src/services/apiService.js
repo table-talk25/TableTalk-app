@@ -5,6 +5,34 @@ import { API_URL } from '../config/capacitorConfig';
 import { Dialog } from '@capacitor/dialog';
 import { authPreferences } from '../utils/preferences';
 
+// Anti-spam per gli alert e regole di filtro
+let lastAlertTimestampMs = 0;
+const ALERT_COOLDOWN_MS = 10000; // massimo 1 alert ogni 10s
+const CRITICAL_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password'];
+const NOISY_PATH_KEYWORDS = ['analytics', 'notification', 'notifications', 'push'];
+
+function shouldSuppressForNoise(url = '') {
+  const lowerUrl = url.toLowerCase();
+  return NOISY_PATH_KEYWORDS.some((kw) => lowerUrl.includes(kw));
+}
+
+function shouldShowErrorAlert({ method, url, status, code }) {
+  const now = Date.now();
+  if (now - lastAlertTimestampMs < ALERT_COOLDOWN_MS) return false;
+
+  const upperMethod = (method || '').toUpperCase();
+  const isAuthFlow = CRITICAL_PATHS.some((p) => (url || '').includes(p));
+  const isWriteOperation = upperMethod && upperMethod !== 'GET';
+  const isServerError = typeof status === 'number' && status >= 500;
+  const isNetworkLevel = code === 'ERR_NETWORK' || typeof status !== 'number';
+
+  // Sopprimi richieste notoriamente rumorose (es. analytics/notifications)
+  if (shouldSuppressForNoise(url)) return false;
+
+  // Mostra alert solo in questi casi (riduce falsi positivi):
+  return isAuthFlow || isWriteOperation || isServerError || isNetworkLevel;
+}
+
 const apiClient = axios.create({
   // 2. Usiamo direttamente la nuova variabile API_URL
   // (che contiene già /api alla fine, grazie alla nostra nuova logica)
@@ -42,41 +70,36 @@ apiClient.interceptors.response.use(
       error?.response?.data?.message ||
       error?.response?.data?.error ||
       (typeof error?.response?.data === 'string' ? error.response.data : undefined);
-    const code = error?.code; // es. ECONNABORTED (timeout)
+    const code = error?.code; // es. ECONNABORTED (timeout), ERR_NETWORK
     const method = (error?.config?.method || '').toUpperCase();
     const url = error?.config?.url;
 
-    const friendlyMessage = [
-      status ? `Stato: ${status} ${statusText || ''}`.trim() : undefined,
-      code ? `Codice: ${code}` : undefined,
-      method || url ? `Richiesta: ${[method, url].filter(Boolean).join(' ')}` : undefined,
-      serverMessage ? `Server: ${serverMessage}` : undefined,
-      !status && !serverMessage && !code ? 'Problema di rete o server non raggiungibile.' : undefined,
-    ]
-      .filter(Boolean)
-      .join('\n');
-
-    try {
-      await Dialog.alert({
-        title: 'Errore di rete',
-        message: friendlyMessage,
-      });
-    } catch (_) {
-      // Ignora eventuali errori del dialog
-    }
-
-    // Log esteso in console per debug via Chrome DevTools
-    // Utile quando si ispeziona l’app con chrome://inspect/#devices
-    // Non visibile all’utente
+    // Log esteso in console per debug via Chrome DevTools (non visibile all’utente)
     // eslint-disable-next-line no-console
-    console.error('[API ERROR]', {
-      status,
-      statusText,
-      code,
-      method,
-      url,
-      serverMessage,
-    });
+    console.error('[API ERROR]', { status, statusText, code, method, url, serverMessage });
+
+    // Mostra alert solo se la regola lo consente (evita spam e falsi positivi)
+    if (shouldShowErrorAlert({ method, url, status, code })) {
+      const friendlyMessage = [
+        status ? `Stato: ${status} ${statusText || ''}`.trim() : undefined,
+        code ? `Codice: ${code}` : undefined,
+        method || url ? `Richiesta: ${[method, url].filter(Boolean).join(' ')}` : undefined,
+        serverMessage ? `Server: ${serverMessage}` : undefined,
+        !status && !serverMessage && !code ? 'Possibile problema di rete o server non raggiungibile.' : undefined,
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      try {
+        await Dialog.alert({
+          title: 'Errore di rete',
+          message: friendlyMessage,
+        });
+        lastAlertTimestampMs = Date.now();
+      } catch (_) {
+        // Ignora eventuali errori del dialog
+      }
+    }
 
     return Promise.reject(error);
   }
