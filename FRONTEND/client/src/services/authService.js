@@ -29,6 +29,8 @@ export const login = async (credentials) => {
     const response = await apiClient.post('/auth/login', credentials);
     await authPreferences.saveToken(response.data.token);
     await authPreferences.saveUser(response.data.user);
+    // Silenzia gli alert per i prossimi 4s mentre partono le richieste di bootstrap
+    suppressAlertsFor(4000);
     return response.data;
   } catch (error) {
     const isNetworkError = (error && (error.code === 'ERR_NETWORK' || !error.response));
