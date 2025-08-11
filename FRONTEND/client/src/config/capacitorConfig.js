@@ -3,22 +3,8 @@
 // Calcola e esporta l'URL del backend che la tua app deve contattare.
 // ====================================================================
 
-const isProduction = !!process.env.REACT_APP_API_URL;
-let apiUrl;
-
-if (isProduction) {
-  // Se la variabile esiste, siamo in produzione (su Render)
-  apiUrl = process.env.REACT_APP_API_URL;
-} else {
-  // Altrimenti, siamo in sviluppo locale
-  // Per ora usiamo localhost, la logica nativa sarà gestita a runtime
-  apiUrl = 'http://localhost:5001/api';
-}
-
-// Fallback per produzione se la variabile d'ambiente non è impostata
-if (!apiUrl || apiUrl === 'undefined') {
-  apiUrl = 'https://tabletalk-app-backend.onrender.com/api';
-}
+// Usa l'URL di produzione per default, a meno che non venga passato REACT_APP_API_URL a build-time
+const apiUrl = process.env.REACT_APP_API_URL || 'https://tabletalk-app-backend.onrender.com/api';
 
 /**
  * Esportazioni NOMINALI per essere usate nel resto della tua app (es. nel tuo ApiService).
