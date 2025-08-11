@@ -35,11 +35,47 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error) => { 
-     // 3. MOSTRIAMO L'ERRORE IN UN ALERT NATIVO
-     await Dialog.alert({
-      title: 'ERRORE DI RETE DETTAGLIATO',
-      message: `Errore: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`
+  async (error) => {
+    const status = error?.response?.status;
+    const statusText = error?.response?.statusText;
+    const serverMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      (typeof error?.response?.data === 'string' ? error.response.data : undefined);
+    const code = error?.code; // es. ECONNABORTED (timeout)
+    const method = (error?.config?.method || '').toUpperCase();
+    const url = error?.config?.url;
+
+    const friendlyMessage = [
+      status ? `Stato: ${status} ${statusText || ''}`.trim() : undefined,
+      code ? `Codice: ${code}` : undefined,
+      method || url ? `Richiesta: ${[method, url].filter(Boolean).join(' ')}` : undefined,
+      serverMessage ? `Server: ${serverMessage}` : undefined,
+      !status && !serverMessage && !code ? 'Problema di rete o server non raggiungibile.' : undefined,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    try {
+      await Dialog.alert({
+        title: 'Errore di rete',
+        message: friendlyMessage,
+      });
+    } catch (_) {
+      // Ignora eventuali errori del dialog
+    }
+
+    // Log esteso in console per debug via Chrome DevTools
+    // Utile quando si ispeziona l’app con chrome://inspect/#devices
+    // Non visibile all’utente
+    // eslint-disable-next-line no-console
+    console.error('[API ERROR]', {
+      status,
+      statusText,
+      code,
+      method,
+      url,
+      serverMessage,
     });
 
     return Promise.reject(error);
