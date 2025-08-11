@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_URL } from '../config/capacitorConfig';
 
 import { Dialog } from '@capacitor/dialog';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { authPreferences } from '../utils/preferences';
 
 // Anti-spam per gli alert e regole di filtro
@@ -31,6 +32,14 @@ function shouldShowErrorAlert({ method, url, status, code }) {
 
   // Mostra alert solo in questi casi (riduce falsi positivi):
   return isAuthFlow || isWriteOperation || isServerError || isNetworkLevel;
+}
+
+function buildFullUrl(config = {}) {
+  const rawUrl = config.url || '';
+  if (/^https?:/i.test(rawUrl)) return rawUrl;
+  const base = (config.baseURL || API_URL || '').replace(/\/+$/, '');
+  const path = rawUrl.replace(/^\/+/, '');
+  return `${base}/${path}`;
 }
 
 const apiClient = axios.create({
@@ -77,6 +86,33 @@ apiClient.interceptors.response.use(
     // Log esteso in console per debug via Chrome DevTools (non visibile all’utente)
     // eslint-disable-next-line no-console
     console.error('[API ERROR]', { status, statusText, code, method, url, serverMessage });
+
+    // Retry nativo su ERR_NETWORK/ECONNABORTED (bypass WebView/CORS) per GET
+    const isNetworkLike = code === 'ERR_NETWORK' || code === 'ECONNABORTED' || (!status && !error.response);
+    const isGet = method === 'GET';
+    if (isNetworkLike && isGet && Capacitor.isNativePlatform()) {
+      try {
+        const fullUrl = buildFullUrl(error.config || {});
+        const nativeResp = await CapacitorHttp.get({
+          url: fullUrl,
+          headers: error?.config?.headers || { 'Content-Type': 'application/json' },
+          params: error?.config?.params || undefined,
+          connectTimeout: 30000,
+          readTimeout: 30000,
+        });
+        // Adatta la risposta nativa al formato Axios
+        return Promise.resolve({
+          data: nativeResp.data,
+          status: nativeResp.status,
+          statusText: nativeResp.statusText || '',
+          headers: nativeResp.headers || {},
+          config: error.config,
+          request: null,
+        });
+      } catch (nativeErr) {
+        // Continua con la gestione standard se anche il nativo fallisce
+      }
+    }
 
     // Mostra alert solo se la regola lo consente (evita spam e falsi positivi)
     if (shouldShowErrorAlert({ method, url, status, code })) {
