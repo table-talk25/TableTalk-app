@@ -17,8 +17,9 @@ export const API_URL = apiUrl;
 export const isNative = false;
 
 // Manteniamo anche i vecchi export per compatibilità
-export const DEV_SERVER_URL = isProduction ? 'https://tabletalk-app-backend.onrender.com' : 'http://192.168.1.224:5001';
-export const SERVER_URL = isProduction ? 'https://tabletalk-app-backend.onrender.com' : 'http://192.168.1.224:5001';
+const stripApiSuffix = (url) => (url ? url.replace(/\/api\/?$/, '') : url);
+export const SERVER_URL = stripApiSuffix(API_URL);
+export const DEV_SERVER_URL = SERVER_URL;
 
 
 // ====================================================================
