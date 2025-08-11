@@ -9,7 +9,7 @@ const apiClient = axios.create({
   // 2. Usiamo direttamente la nuova variabile API_URL
   // (che contiene già /api alla fine, grazie alla nostra nuova logica)
   baseURL: API_URL, 
-  timeout: 15000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   }
