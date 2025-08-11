@@ -60,7 +60,7 @@ export const login = async (credentials) => {
  */
 export const logout = async () => {
   try {
-    await apiClient.post('/auth/logout');
+    await apiClient.post('/auth/logout', undefined, { suppressErrorAlert: true });
   } catch (error) {
     console.error('Logout fallito sul server, ma il logout locale verrà eseguito:', error);
   } finally {

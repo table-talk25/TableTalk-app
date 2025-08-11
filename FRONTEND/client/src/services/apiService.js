@@ -9,6 +9,8 @@ import { authPreferences } from '../utils/preferences';
 // Anti-spam per gli alert e regole di filtro
 let lastAlertTimestampMs = 0;
 const ALERT_COOLDOWN_MS = 10000; // massimo 1 alert ogni 10s
+const STARTUP_GRACE_MS = 5000;   // nei primi 5s sopprimiamo alert non critici
+const appStartTimestampMs = Date.now();
 const CRITICAL_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password'];
 const NOISY_PATH_KEYWORDS = ['analytics', 'notification', 'notifications', 'push'];
 
@@ -17,8 +19,9 @@ function shouldSuppressForNoise(url = '') {
   return NOISY_PATH_KEYWORDS.some((kw) => lowerUrl.includes(kw));
 }
 
-function shouldShowErrorAlert({ method, url, status, code }) {
+function shouldShowErrorAlert({ method, url, status, code, suppressErrorAlert }) {
   const now = Date.now();
+  if (suppressErrorAlert) return false;
   if (now - lastAlertTimestampMs < ALERT_COOLDOWN_MS) return false;
 
   const upperMethod = (method || '').toUpperCase();
@@ -29,6 +32,10 @@ function shouldShowErrorAlert({ method, url, status, code }) {
 
   // Sopprimi richieste notoriamente rumorose (es. analytics/notifications)
   if (shouldSuppressForNoise(url)) return false;
+
+  // Durante la fase di bootstrap (primi secondi), evita alert se non auth o 5xx
+  const isWithinGrace = now - appStartTimestampMs < STARTUP_GRACE_MS;
+  if (isWithinGrace && !isAuthFlow && !isServerError) return false;
 
   // Mostra alert solo in questi casi (riduce falsi positivi):
   return isAuthFlow || isWriteOperation || isServerError || isNetworkLevel;
@@ -115,7 +122,8 @@ apiClient.interceptors.response.use(
     }
 
     // Mostra alert solo se la regola lo consente (evita spam e falsi positivi)
-    if (shouldShowErrorAlert({ method, url, status, code })) {
+    const suppress = Boolean(error?.config?.suppressErrorAlert);
+    if (shouldShowErrorAlert({ method, url, status, code, suppressErrorAlert: suppress })) {
       const friendlyMessage = [
         status ? `Stato: ${status} ${statusText || ''}`.trim() : undefined,
         code ? `Codice: ${code}` : undefined,
