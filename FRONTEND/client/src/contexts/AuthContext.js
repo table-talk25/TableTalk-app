@@ -25,12 +25,26 @@ export const AuthProvider = ({ children }) => {
                     setToken(storedToken); 
                     setIsAuthenticated(true);
 
-                    const freshUser = await authService.verifyToken();
-                    setUser(freshUser);
+                    try {
+                      const freshUser = await authService.verifyToken();
+                      setUser(freshUser);
+                    } catch (err) {
+                      // Non slogghiamo su errori di rete temporanei; solo su 401
+                      const status = err?.response?.status;
+                      if (status === 401) {
+                        await logout();
+                      } else {
+                        console.warn('[Auth] verifyToken fallito, continuo offline/soft-fail:', err?.message || err);
+                      }
+                    }
                 }
             } catch (error) {
                 console.error('Verifica iniziale del token fallita, eseguo logout:', error);
-                await logout(); // Se il token non è valido, puliamo tutto
+                // Evita logout aggressivo: sloggare solo se 401, altrimenti continuiamo
+                const status = error?.response?.status;
+                if (status === 401) {
+                  await logout();
+                }
             } finally {
                 setLoading(false);
             }
