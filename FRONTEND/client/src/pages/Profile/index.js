@@ -78,7 +78,7 @@ const ProfilePage = () => {
   };
 
   if (authLoading || loading) {
-    return <Container className="text-center mt-5"><Spinner animation="border" /></Container>;
+    return <Spinner fullscreen label={t('common.loadingProfile') || 'Caricamento profilo...'} />;
   }
   if (error) {
     return <Container><Alert variant="danger">{error}</Alert></Container>;
