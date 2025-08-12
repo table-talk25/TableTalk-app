@@ -3,7 +3,8 @@
 import apiClient from './apiService'; // <-- USA L'API CLIENT UNIFICATO
 
 const getMeals = async (params = {}) => {
-  const response = await apiClient.get('/meals', { params });
+  const { suppressErrorAlert, ...rest } = params || {};
+  const response = await apiClient.get('/meals', { params: rest, suppressErrorAlert });
   return response.data;
 };
 
@@ -64,7 +65,8 @@ const searchMeals = async (searchTerm) => {
 };
 
 const getUserMeals = async (params = {}) => {
-  const response = await apiClient.get('/meals/user/all', { params });
+  const { suppressErrorAlert, ...rest } = params || {};
+  const response = await apiClient.get('/meals/user/all', { params: rest, suppressErrorAlert });
   return response.data;
 };
 

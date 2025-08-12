@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { io } from 'socket.io-client';
+import { API_URL } from '../config/capacitorConfig';
 import { toast } from 'react-toastify';
 
 const NotificationContext = createContext();
@@ -16,9 +17,8 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     if (!token) return; // Non connettere se non c'è token
 
-    // Usa esattamente lo stesso indirizzo IP delle API HTTP
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://192.168.1.224:5001/api';
-    const socketUrl = apiUrl.replace('/api', '');
+    // Usa la stessa base delle API (Render), rimuovendo il suffisso /api
+    const socketUrl = (API_URL || '').replace(/\/?api\/?$/, '');
     console.log(`[NotificationContext] Socket URL: ${socketUrl}`);
     const socket = io(socketUrl, { 
       auth: { token },

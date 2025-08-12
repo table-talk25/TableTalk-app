@@ -4,7 +4,7 @@ import apiClient from './apiService';
 
 const getProfile = async () => {
   // CORRETTO: Rimosso /api dall'inizio
-  const response = await apiClient.get('/profile/me');
+  const response = await apiClient.get('/profile/me', { suppressErrorAlert: true });
   return response.data.data;
 };
 

@@ -98,7 +98,7 @@ export const AuthProvider = ({ children }) => {
         logout,
         register,
         deleteAccount
-      }), [user, token, loading, error]); // Le dipendenze che fanno ricreare l'oggetto
+      }), [user, token, isAuthenticated, loading, error, login, logout, register, deleteAccount]); // dipendenze corrette
   
   
       // 3. Usiamo la costante 'value' nel Provider

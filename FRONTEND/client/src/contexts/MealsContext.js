@@ -38,7 +38,7 @@ export const MealsProvider = ({ children }) => {
     const fetchMeals = useCallback(async (params = {}) => {
         setLoading(true);
         try {
-            const response = await mealService.getMeals({ status: 'upcoming', limit: 100, ...params });
+            const response = await mealService.getMeals({ status: 'upcoming', limit: 100, ...params, suppressErrorAlert: true });
             setMeals(response.data);
             setError('');
         } catch (err) {
