@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
                 const storedToken = await authPreferences.getToken();
 
                 if (storedUser && storedToken) {
-                    setUser(JSON.parse(storedUser));
+                    setUser(storedUser);
                     setToken(storedToken); 
                     setIsAuthenticated(true);
 
@@ -47,6 +47,8 @@ export const AuthProvider = ({ children }) => {
         setUser(data.user);
         setToken(data.token); 
         setIsAuthenticated(true);
+        // Non verificare subito il token per evitare race conditions sul logout immediato
+        // La verifica avverrà al prossimo render o alla prima richiesta protetta
       } catch (err) {
         setError(err.response?.data?.message || err.message || 'Errore di login');
       } finally {

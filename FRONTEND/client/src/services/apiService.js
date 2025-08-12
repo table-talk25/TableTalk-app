@@ -136,15 +136,18 @@ apiClient.interceptors.response.use(
         .filter(Boolean)
         .join('\n');
 
-      try {
+    try {
+      // Non disturbare durante l'autenticazione/redirect immediatamente dopo login
+      if (!CRITICAL_PATHS.some((p) => (url || '').includes(p))) {
         await Dialog.alert({
           title: 'Errore di rete',
           message: friendlyMessage,
         });
         lastAlertTimestampMs = Date.now();
-      } catch (_) {
-        // Ignora eventuali errori del dialog
       }
+    } catch (_) {
+      // Ignora eventuali errori del dialog
+    }
     }
 
     return Promise.reject(error);
