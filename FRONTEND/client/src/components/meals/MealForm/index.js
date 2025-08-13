@@ -13,7 +13,7 @@ import LocationPicker from '../../Map/LocationPicker';
         // Opzioni per la durata del TableTalk®
 const languageOptions = ['Italiano', 'English', 'Español', 'Français', 'Deutsch', '中文', 'العربية'];
 
-const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButtonText }) => {
+const MealForm = ({ initialData, onSubmit, onCancel, isLoading, isSubmitting, submitButtonText }) => {
   const { t } = useTranslation();
   
   // Opzioni di durata tradotte
@@ -44,6 +44,7 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
   const [formData, setFormData] = useState(getInitialState());
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [imageBase64, setImageBase64] = useState('');
   const [errors, setErrors] = useState({});
 
   // Funzione di validazione
@@ -51,7 +52,7 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
     switch (name) {
       case 'title':
         if (!value.trim()) return t('meals.form.titleRequired');
-        if (value.trim().length < 10) return t('meals.form.titleMinLength');
+        if (value.trim().length < 5) return t('meals.form.titleMinLength');
         if (value.trim().length > 50) return t('meals.form.titleMaxLength');
         break;
       case 'description':
@@ -61,15 +62,16 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
         break;
       case 'date':
         if (!value) return t('meals.form.dateRequired');
-        if (new Date(value) <= new Date()) return t('meals.form.dateFuture');
+        // Permettiamo anche date prossime (tolleranza), evitiamo blocchi su dispositivi che formattano diversamente
+        if (new Date(value).getTime() <= Date.now() - 60 * 1000) return t('meals.form.dateFuture');
         break;
       case 'maxParticipants':
         if (!value || value < 2) return t('meals.form.maxParticipantsMin');
         if (value > 10) return t('meals.form.maxParticipantsMax');
         break;
       case 'topics':
-        if (!value || value.length === 0) return t('meals.form.topicsRequired');
-        break;
+        // Opzionale: niente errore se vuoto
+        return '';
       case 'location':
         if (formData.mealType === 'physical' && !value) return t('meals.form.locationRequired');
         break;
@@ -81,7 +83,17 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'location') {
+      // Mantieni 'location' come oggetto con chiave 'address' per evitare crash
+      setFormData(prev => ({
+        ...prev,
+        location: prev && typeof prev.location === 'object' && prev.location !== null
+          ? { ...prev.location, address: value }
+          : { address: value }
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
     
     // Validazione in tempo reale
     const error = validateField(name, value);
@@ -114,22 +126,64 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
   const handlePhotoSelect = async () => {
     try {
       const photo = await Camera.getPhoto({
-        quality: 90,
+        quality: 70,
         allowEditing: false,
         resultType: CameraResultType.Uri,
         source: CameraSource.Photos,
+        width: 1600, // suggerisci una dimensione massima per ridurre peso
       });
       
       if (photo.webPath) {
         setImagePreview(photo.webPath);
         const response = await fetch(photo.webPath);
-        const blob = await response.blob();
-        setImageFile(blob);
+        let blob = await response.blob();
+        const type = 'image/jpeg';
+        // comprimi se > 4MB
+        if (blob.size > 4 * 1024 * 1024) {
+          blob = await compressImageBlob(blob, { maxWidth: 1600, quality: 0.7 });
+        }
+        const file = new File([blob], `cover_${Date.now()}.jpg`, { type });
+        setImageFile(file);
+        // genera anche un base64 da usare come fallback
+        try {
+          const base64 = await blobToBase64(blob);
+          if (typeof base64 === 'string') setImageBase64(base64);
+        } catch (_) {}
       }
     } catch (error) {
       console.error("Errore selezione foto", error);
     }
   };
+
+  // Comprimi immagine usando canvas
+  const compressImageBlob = async (blob, { maxWidth = 1600, quality = 0.7 } = {}) => {
+    try {
+      const imageBitmap = await createImageBitmap(blob);
+      const scale = Math.min(1, maxWidth / imageBitmap.width);
+      const targetWidth = Math.round(imageBitmap.width * scale);
+      const targetHeight = Math.round(imageBitmap.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(imageBitmap, 0, 0, targetWidth, targetHeight);
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      const res = await fetch(dataUrl);
+      return await res.blob();
+    } catch (e) {
+      // in caso di fallimento, restituisci l'originale
+      return blob;
+    }
+  };
+
+  const blobToBase64 = (blob) => new Promise((resolve, reject) => {
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    } catch (e) { reject(e); }
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -166,7 +220,13 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
     }
     
     if (imageFile) {
-      formDataToSend.append('coverImage', imageFile, `photo_${Date.now()}.jpg`);
+      formDataToSend.append('coverImage', imageFile);
+      if (imageBase64) {
+        formDataToSend.append('coverImageBase64', imageBase64);
+      }
+      if (imagePreview) {
+        formDataToSend.append('coverLocalUri', imagePreview);
+      }
     }
     
     onSubmit(formDataToSend);
@@ -362,7 +422,11 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
           <div className={styles.mapContainer}>
             <LocationPicker
               onLocationSelect={(location) => setFormData({ ...formData, location })}
-              initialCenter={formData.location ? { lat: formData.location.coordinates[1], lng: formData.location.coordinates[0] } : undefined}
+              initialCenter={
+                formData.location && typeof formData.location === 'object' && Array.isArray(formData.location.coordinates) && formData.location.coordinates.length >= 2
+                  ? { lat: formData.location.coordinates[1], lng: formData.location.coordinates[0] }
+                  : undefined
+              }
             />
           </div>
         </div>
@@ -381,21 +445,23 @@ const MealForm = ({ initialData, onSubmit, isLoading, isSubmitting, submitButton
         <Button variant="secondary" onClick={handlePhotoSelect} className="d-block w-100 mt-2">{t('meals.form.chooseFromGallery')}</Button>
       </Form.Group>
       
-      <Button 
-        variant="primary" 
-        type="submit" 
-        className={styles.submitButton} 
-        disabled={isLoading || isSubmitting}
-      >
-        {isLoading || isSubmitting ? (
-          <>
-            <Spinner as="span" animation="border" size="sm" />
-            <span> {isSubmitting ? t('meals.form.saving') : t('meals.form.loading')}</span>
-          </>
-        ) : (
-          submitButtonText || t('forms.save')
-        )}
-      </Button>
+      <div className={styles.stickyActions}>
+        <Button 
+          variant="primary" 
+          type="submit" 
+          className={styles.submitButton} 
+          disabled={isLoading || isSubmitting}
+        >
+          {isLoading || isSubmitting ? (
+            <>
+              <Spinner as="span" animation="border" size="sm" />
+              <span> {isSubmitting ? t('meals.form.saving') : t('meals.form.loading')}</span>
+            </>
+          ) : (
+            submitButtonText || t('forms.save')
+          )}
+        </Button>
+      </div>
     </Form>
   );
 };

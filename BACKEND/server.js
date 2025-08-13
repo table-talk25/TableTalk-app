@@ -48,6 +48,18 @@ connectDB();
 // Legge le origini permesse dalla variabile d'ambiente e le divide in un array
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
 
+// Origini di default per app mobile (Capacitor) e sviluppo locale
+const defaultMobileOrigins = [
+  'capacitor://localhost',
+  'ionic://localhost',
+  'http://localhost',
+  'https://localhost',
+  'http://localhost:3000'
+];
+
+// Costruisci la lista effettiva includendo sempre le origini mobile
+const effectiveAllowedOrigins = Array.from(new Set([...(allowedOrigins || []), ...defaultMobileOrigins]));
+
 // Debug delle variabili d'ambiente
 console.log('🔧 [ENV] CORS_ORIGIN:', process.env.CORS_ORIGIN);
 console.log('🔧 [ENV] FRONTEND_URL:', process.env.FRONTEND_URL);
@@ -55,8 +67,9 @@ console.log('🔧 [ENV] NODE_ENV:', process.env.NODE_ENV);
 console.log('🔧 [ENV] PORT:', process.env.PORT);
 
 // Aggiungiamo un log per vedere quali origini vengono caricate all'avvio
-console.log('🛡️ [CORS] Origini permesse caricate:', allowedOrigins);
-console.log('🛡️ [CORS] Numero di origini:', allowedOrigins.length);
+console.log('🛡️ [CORS] Origini permesse caricate (ENV):', allowedOrigins);
+console.log('🛡️ [CORS] Origini permesse effettive (ENV + default mobile):', effectiveAllowedOrigins);
+console.log('🛡️ [CORS] Numero di origini effettive:', effectiveAllowedOrigins.length);
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -71,18 +84,18 @@ const corsOptions = {
       return callback(null, true);
     }
     
-    // Controlla se l'origin è nella lista permessa
+    // Controlla se l'origin è nella lista permessa (inclusi i default mobile)
     console.log('🔍 [CORS] Controllo origin nella lista...');
-    console.log('🔍 [CORS] allowedOrigins:', allowedOrigins);
-    console.log('🔍 [CORS] indexOf result:', allowedOrigins.indexOf(origin));
+    console.log('🔍 [CORS] effectiveAllowedOrigins:', effectiveAllowedOrigins);
+    console.log('🔍 [CORS] indexOf result:', effectiveAllowedOrigins.indexOf(origin));
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (effectiveAllowedOrigins.indexOf(origin) !== -1) {
       console.log(`✅ [CORS] Origin permesso: ${origin}`);
       callback(null, true);
     } else {
       console.error(`❌ [CORS] ERRORE: Origine Rifiutata -> ${origin}`);
-      console.error(`❌ [CORS] Origini permesse:`, allowedOrigins);
-      console.error(`❌ [CORS] Lunghezza allowedOrigins:`, allowedOrigins.length);
+      console.error(`❌ [CORS] Origini permesse effettive:`, effectiveAllowedOrigins);
+      console.error(`❌ [CORS] Lunghezza effectiveAllowedOrigins:`, effectiveAllowedOrigins.length);
       callback(new Error('Origine non permessa dalla policy CORS'));
     }
   },
@@ -113,8 +126,9 @@ app.use((req, res, next) => {
 });
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Aumentiamo i limiti del body parser per supportare payload JSON più grandi (es. base64)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));

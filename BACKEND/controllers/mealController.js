@@ -5,6 +5,24 @@ const Meal = require('../models/Meal');
 const User = require('../models/User');
 const Chat = require('../models/Chat');
 const twilio = require('twilio');
+const fs = require('fs');
+const path = require('path');
+// Salva un'immagine base64 nella cartella uploads/meal-images e restituisce il path relativo
+function saveBase64Cover(base64String, userId) {
+  if (!base64String) return null;
+  // Supporta sia data URL (data:image/jpeg;base64,...) che puro base64
+  const matches = base64String.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  const mime = matches ? matches[1] : 'image/jpeg';
+  const data = matches ? matches[2] : base64String;
+  const extMap = { 'image/jpeg': '.jpg', 'image/jpg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
+  const ext = extMap[mime] || '.jpg';
+  const uploadsDir = path.join(__dirname, '..', 'uploads', 'meal-images');
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+  const filename = `coverImage-${userId}-${Date.now()}${ext}`;
+  const filePath = path.join(uploadsDir, filename);
+  fs.writeFileSync(filePath, Buffer.from(data, 'base64'));
+  return `uploads/meal-images/${filename}`;
+}
 const notificationService = require('../services/notificationService');
 const sendEmail = require('../utils/sendEmail');
 
@@ -62,10 +80,13 @@ exports.getMeals = asyncHandler(async (req, res) => {
   const currentUser = await require('../models/User').findById(req.user.id);
   const usersWhoBlockedMe = await require('../models/User').find({ blockedUsers: req.user.id }).select('_id');
   const usersWhoBlockedMeIds = usersWhoBlockedMe.map(user => user._id);
-  const excludedIds = [...currentUser.blockedUsers, ...usersWhoBlockedMeIds, req.user.id];
+  // Escludi solo utenti bloccati (miei e che mi hanno bloccato), NON me stesso
+  const excludedIds = [...currentUser.blockedUsers, ...usersWhoBlockedMeIds];
 
-  // Aggiungi filtro per escludere pasti di utenti bloccati
-  query.host = { $nin: excludedIds };
+  // Aggiungi filtro per escludere pasti di utenti bloccati, ma includi i miei
+  if (excludedIds.length > 0) {
+    query.host = { $nin: excludedIds };
+  }
 
   const mealsQuery = Meal.find(query)
     .sort({ date: 1 })
@@ -146,18 +167,73 @@ exports.getMeal = asyncHandler(async (req, res, next) => {
 
 // POST /api/meals (Crea pasto, chat E stanza video)
 exports.createMeal = asyncHandler(async (req, res, next) => {
+  // Log diagnostici di autenticazione e payload
+  const authHeader = req.get('authorization') || '';
+  const maskedAuth = authHeader ? `${authHeader.slice(0, 12)}...${authHeader.slice(-4)}` : '(nessuno)';
+  console.log('--- [CreateMeal] Nuova richiesta di creazione pasto ---');
+  console.log('[CreateMeal] Utente autenticato:', req.user ? req.user.id : '(nessuno)');
+  console.log('[CreateMeal] Authorization:', maskedAuth);
+  console.log('[CreateMeal] Content-Type:', req.get('content-type'));
+  console.log('[CreateMeal] Headers keys:', Object.keys(req.headers || {}));
+  console.log('[CreateMeal] Body keys:', Object.keys(req.body || {}));
+  console.log('[CreateMeal] File present?:', Boolean(req.file));
+
   const mealData = { ...req.body, host: req.user.id };
+  // Normalizza numerici/booleani da FormData JSON fallback
+  if (typeof mealData.duration === 'string') mealData.duration = parseInt(mealData.duration, 10);
+  if (typeof mealData.maxParticipants === 'string') mealData.maxParticipants = parseInt(mealData.maxParticipants, 10);
+  if (typeof mealData.isPublic === 'string') mealData.isPublic = mealData.isPublic === 'true';
+  if (typeof mealData.date === 'string') {
+    try { mealData.date = new Date(mealData.date); } catch (_) {}
+  }
   if (req.file) mealData.coverImage = req.file.path;
+  if (!mealData.coverImage && req.body.coverImageBase64) {
+    try { mealData.coverImage = saveBase64Cover(req.body.coverImageBase64, req.user.id); } catch (e) { /* ignore */ }
+  }
+  // Se il client invia anche un'anteprima locale, salvala come campo di comodo (non usata come immagine finale)
+  if (req.body.coverLocalUri && !mealData.coverImage) {
+    mealData.coverLocalUri = req.body.coverLocalUri;
+  }
   
-  // Gestione del campo location dal FormData
+  // Gestione del campo location dal FormData: estrai una stringa indirizzo se viene passato un JSON
+  let rawLocationReceived = req.body.location;
   if (req.body.location) {
     try {
-      mealData.location = JSON.parse(req.body.location);
+      const parsedLocation = JSON.parse(req.body.location);
+      if (parsedLocation && typeof parsedLocation === 'object') {
+        mealData.location = parsedLocation.address || parsedLocation.formattedAddress || parsedLocation.label || '';
+        if (!mealData.location && typeof req.body.location === 'string') {
+          // Fallback: limita la stringa JSON a 200 caratteri per rispettare la validazione dello schema
+          mealData.location = req.body.location.slice(0, 200);
+        }
+      } else {
+        mealData.location = String(req.body.location);
+      }
     } catch (error) {
       // Se non è JSON valido, usa il valore come stringa
-      mealData.location = req.body.location;
+      mealData.location = String(req.body.location);
     }
   }
+
+  // Log dei principali campi ricevuti per aiutare il debug di validazione
+  try {
+    console.log('[CreateMeal] Campi ricevuti:', {
+      title: req.body?.title,
+      titleLen: (req.body?.title || '').length,
+      descriptionLen: (req.body?.description || '').length,
+      type: req.body?.type,
+      mealType: req.body?.mealType,
+      dateRaw: req.body?.date,
+      duration: req.body?.duration,
+      maxParticipants: req.body?.maxParticipants,
+      language: req.body?.language,
+      topicsCount: Array.isArray(req.body?.topics) ? req.body.topics.length : (req.body?.['topics[]'] ? 1 : 0),
+      hasCoverImageFile: Boolean(req.file),
+      hasCoverImageBase64: typeof req.body?.coverImageBase64 === 'string' && req.body.coverImageBase64.startsWith('data:image/'),
+      locationRaw: rawLocationReceived,
+      locationNormalized: mealData?.location,
+    });
+  } catch (_e) {}
   
   let meal, chat;
   try {
@@ -169,13 +245,25 @@ exports.createMeal = asyncHandler(async (req, res, next) => {
       });
       meal.chatId = chat._id;
 
-      // Logica Twilio - solo per pasti virtuali
+      // Logica Twilio - solo per pasti virtuali (graceful + timeout)
       if (meal.mealType === 'virtual') {
-        const room = await twilioClient.video.v1.rooms.create({
-            uniqueName: meal._id.toString(),
-            type: 'group'
+        const withTimeout = (promise, ms) => new Promise((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error('Twilio timeout')), ms);
+          promise.then((v) => { clearTimeout(timer); resolve(v); })
+                 .catch((e) => { clearTimeout(timer); reject(e); });
         });
-        meal.twilioRoomSid = room.sid;
+        try {
+          const room = await withTimeout(
+            twilioClient.video.v1.rooms.create({
+              uniqueName: meal._id.toString(),
+              type: 'group'
+            }),
+            3000
+          );
+          meal.twilioRoomSid = room.sid;
+        } catch (twilioError) {
+          console.warn('Twilio non disponibile o lento: continuo senza creare la stanza video.', twilioError?.message || twilioError);
+        }
       }
 
       await meal.save();
@@ -186,7 +274,14 @@ exports.createMeal = asyncHandler(async (req, res, next) => {
   } catch (error) {
       if (meal) await Meal.findByIdAndDelete(meal._id);
       if (chat) await Chat.findByIdAndDelete(chat._id);
-      console.error("ERRORE DURANTE LA CREAZIONE DEL PASTO:", error);
+      // Gestione specifica degli errori di validazione Mongoose
+      if (error && error.name === 'ValidationError') {
+        const messages = Object.values(error.errors || {}).map(e => e.message);
+        const message = messages.length ? messages.join(' | ') : error.message;
+        console.warn('[CreateMeal] Errore di validazione:', message);
+        return next(new ErrorResponse(message, 400));
+      }
+      console.error('ERRORE DURANTE LA CREAZIONE DEL PASTO:', error);
       return next(new ErrorResponse('Errore nella creazione del pasto o dei servizi associati.', 500));
   }
 });
@@ -203,13 +298,21 @@ exports.updateMeal = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Non puoi modificare un pasto già terminato o cancellato.', 403));
   }
 
-  // Gestione del campo location dal FormData
+  // Gestione del campo location dal FormData: normalizza a stringa indirizzo
   if (req.body.location) {
     try {
-      req.body.location = JSON.parse(req.body.location);
+      const parsedLocation = JSON.parse(req.body.location);
+      if (parsedLocation && typeof parsedLocation === 'object') {
+        req.body.location = parsedLocation.address || parsedLocation.formattedAddress || parsedLocation.label || '';
+        if (!req.body.location && typeof req.body.location === 'string') {
+          req.body.location = req.body.location.slice(0, 200);
+        }
+      } else {
+        req.body.location = String(req.body.location);
+      }
     } catch (error) {
       // Se non è JSON valido, usa il valore come stringa
-      req.body.location = req.body.location;
+      req.body.location = String(req.body.location);
     }
   }
 
@@ -235,6 +338,13 @@ exports.updateMeal = asyncHandler(async (req, res, next) => {
   }
 
   if (req.file) req.body.coverImage = req.file.path;
+  if (!req.body.coverImage && req.body.coverImageBase64) {
+    try { req.body.coverImage = saveBase64Cover(req.body.coverImageBase64, req.user.id); } catch (e) { /* ignore */ }
+  }
+  if (req.body.coverLocalUri && !req.body.coverImage) {
+    // Mantieni l'URI locale come metadato (opzionale)
+    req.body.coverLocalUri = req.body.coverLocalUri;
+  }
 
   const updatedMeal = await Meal.findByIdAndUpdate(req.params.id, req.body, {
     new: true,

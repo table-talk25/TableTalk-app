@@ -3,8 +3,9 @@
 // Calcola e esporta l'URL del backend che la tua app deve contattare.
 // ====================================================================
 
-// Usa l'URL di produzione per default, a meno che non venga passato REACT_APP_API_URL a build-time
-const apiUrl = process.env.REACT_APP_API_URL || 'https://tabletalk-app-backend.onrender.com/api';
+// Scegli API_URL: priorità a REACT_APP_API_URL, poi localhost in dev, altrimenti produzione
+const apiUrl = process.env.REACT_APP_API_URL
+  || (process.env.NODE_ENV === 'development' ? 'http://localhost:5001/api' : 'https://tabletalk-app-backend.onrender.com/api');
 
 /**
  * Esportazioni NOMINALI per essere usate nel resto della tua app (es. nel tuo ApiService).
@@ -28,7 +29,7 @@ export const DEV_SERVER_URL = SERVER_URL;
 // ====================================================================
 
 const config = {
-  appId: 'com.TableTalkApp.tabletalk',
+  appId: 'com.tabletalk.socialapp',
   appName: 'TableTalk',
   webDir: 'build',
   server: {
@@ -39,7 +40,8 @@ const config = {
       apiKey: process.env.MAPS_API_KEY || '' // Usa la variabile d'ambiente per la chiave
     },
     SplashScreen: {
-      launchShowDuration: 2000,
+      launchShowDuration: 600,
+      launchAutoHide: true,
       backgroundColor: '#ffffff',
       showSpinner: false
     },

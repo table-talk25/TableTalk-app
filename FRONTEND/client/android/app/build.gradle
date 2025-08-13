@@ -4,6 +4,12 @@ def keystorePropertiesFile = rootProject.file("key.properties")
 def keystoreProperties = new Properties()
 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
+def localProps = new Properties()
+def localPropsFile = rootProject.file("local.properties")
+if (localPropsFile.exists()) {
+    localProps.load(new FileInputStream(localPropsFile))
+}
+
 android {
     namespace "com.tabletalk.socialapp"
     compileSdk rootProject.ext.compileSdkVersion
@@ -11,8 +17,8 @@ android {
         applicationId "com.tabletalk.socialapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 5
-        versionName "1.0"
+        versionCode 6
+        versionName "1.0.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
         // Performance optimizations
@@ -34,7 +40,7 @@ android {
         
         // Configura le variabili per il manifest
         manifestPlaceholders = [
-            MAPS_API_KEY: System.getenv("MAPS_API_KEY") ?: ""
+            MAPS_API_KEY: (localProps.getProperty("MAPS_API_KEY") ?: System.getenv("MAPS_API_KEY") ?: "")
         ]
     }
     
