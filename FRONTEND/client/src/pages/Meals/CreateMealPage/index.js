@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 import MealForm from '../../../components/meals/MealForm'; 
 import styles from './CreateMealPage.module.css';
 import BackButton from '../../../components/common/BackButton';
-import { Keyboard } from '@capacitor/keyboard';
+import { Capacitor } from '@capacitor/core';
 
 const CreateMealPage = () => {
   const { t } = useTranslation();
@@ -104,9 +104,20 @@ const CreateMealPage = () => {
   const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardWillShow', () => setKeyboardOpen(true));
-    const hideSub = Keyboard.addListener('keyboardWillHide', () => setKeyboardOpen(false));
-    return () => { showSub.remove(); hideSub.remove(); };
+    let subscriptions = [];
+    (async () => {
+      try {
+        if (Capacitor.isNativePlatform()) {
+          const { Keyboard } = await import('@capacitor/keyboard');
+          const showSub = Keyboard.addListener('keyboardWillShow', () => setKeyboardOpen(true));
+          const hideSub = Keyboard.addListener('keyboardWillHide', () => setKeyboardOpen(false));
+          subscriptions.push(showSub, hideSub);
+        }
+      } catch (_) {}
+    })();
+    return () => {
+      subscriptions.forEach(sub => { try { sub.remove(); } catch (_) {} });
+    };
   }, []);
 
   return (
