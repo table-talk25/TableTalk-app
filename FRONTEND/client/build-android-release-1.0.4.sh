@@ -21,7 +21,7 @@ if ! command -v npx &> /dev/null; then
 fi
 
 echo "🧹 Pulizia build precedenti..."
-./gradlew clean
+cd android && ./gradlew clean && cd ..
 
 if [ $? -ne 0 ]; then
     echo "❌ Errore durante la pulizia Gradle"
@@ -61,7 +61,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "🏗️ Build Android App Bundle (AAB)..."
-./gradlew bundleRelease
+cd android && ./gradlew bundleRelease && cd ..
 
 if [ $? -ne 0 ]; then
     echo "❌ Errore durante il build AAB"
