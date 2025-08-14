@@ -8,11 +8,12 @@ const { protect } = require('../middleware/auth');
 const {
   getChat,
   getMealChat,
-  sendMessage, // <-- Ora questa funzione esiste e viene importata
+  sendMessage,
   markAsRead,
   getUnreadMessages,
   getMyChats,
-  leaveChat
+  leaveChat,
+  closeChat
 } = require('../controllers/chatController');
 
 // Ottieni le chat dell'utente e i messaggi non letti
@@ -30,5 +31,8 @@ router.route('/:chatId/read').put(protect, markAsRead);
 
 // Lascia una chat
 router.route('/:chatId/participants').delete(protect, leaveChat);
+
+// Chiudi una chat (solo host del pasto)
+router.route('/:chatId/close').put(protect, closeChat);
 
 module.exports = router;

@@ -5,7 +5,7 @@ import { availableCuisines, availableInterests, availableLanguages } from '../..
 import styles from './InterestsSection.module.css';
 
 const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [interests, setInterests] = useState(profileData?.interests || []);
   const [languages, setLanguages] = useState(profileData?.languages || []);
@@ -109,10 +109,30 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
     setIsEditing(false);
   };
 
+  // Costruisce il titolo con a capo prima di "preferenze" in italiano
+  const rawTitle = t('profile.interests.title');
+  let titleNode = rawTitle;
+  try {
+    if (i18n?.language?.startsWith('it')) {
+      const lower = rawTitle.toLowerCase();
+      const target = ' preferenze';
+      const idx = lower.lastIndexOf(target);
+      if (idx > -1) {
+        titleNode = (
+          <>
+            {rawTitle.slice(0, idx)}
+            <br />
+            {rawTitle.slice(idx + 1)}
+          </>
+        );
+      }
+    }
+  } catch {}
+
   return (
     <div className={styles.interestsContainer}>
       <div className={styles.sectionHeader}>
-        <h2>{t('profile.interests.title')}</h2>
+        <h2>{titleNode}</h2>
         {!isPublicView && !isEditing && (
           <button className={styles.editButton} onClick={() => setIsEditing(true)}><FaEdit /> {t('profile.interests.edit')}</button>
         )}

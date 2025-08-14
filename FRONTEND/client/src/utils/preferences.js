@@ -10,7 +10,8 @@ export const PREFERENCE_KEYS = {
   SESSION: 'session',
   SETTINGS: 'settings',
   THEME: 'theme',
-  LANGUAGE: 'language'
+  LANGUAGE: 'language',
+  LAST_LOGIN_EMAIL: 'lastLoginEmail'
 };
 
 /**

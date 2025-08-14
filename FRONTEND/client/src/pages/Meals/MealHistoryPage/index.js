@@ -109,6 +109,9 @@ const MealHistoryPage = () => {
 
     return (
         <div className={styles.mealHistoryPage}>
+            <div className={styles.topBar}>
+                <BackButton className={styles.backButton} />
+            </div>
             <div className={styles.mealHistoryHeader}>
                 <h1>{t('history.pageTitle')}</h1>
                 <div className={styles.totalMealsCounter}>
@@ -168,7 +171,7 @@ const MealHistoryPage = () => {
                     ) : <p className={styles.noMealsMessage}>{t('history.noPastParticipated')}</p>}
                 </section>
             </div>
-            <BackButton className="mb-4" /> 
+            {/* Back già in alto per coerenza di stile */}
         </div>
     );
 };

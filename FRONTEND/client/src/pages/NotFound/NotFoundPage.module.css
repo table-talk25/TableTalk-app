@@ -17,7 +17,7 @@
 .not-found-title {
   font-size: 8rem;
   font-weight: bold;
-  color: #ff6b6b;
+  color: var(--primary-color);
   margin: 0;
   line-height: 1;
 }
@@ -38,7 +38,7 @@
 .not-found-button {
   display: inline-block;
   padding: 1rem 2rem;
-  background: #ff6b6b;
+  background: var(--primary-color);
   color: white;
   text-decoration: none;
   border-radius: 0.5rem;
@@ -47,7 +47,7 @@
 }
 
 .not-found-button:hover {
-  background: #ff5252;
+  background: var(--primary-dark);
   transform: translateY(-2px);
 }
 

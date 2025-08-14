@@ -9,32 +9,41 @@
 
 .sectionHeader {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
     margin-bottom: 20px;
 }
 
 .sectionHeader h2 {
-    font-size: 1.5rem;
+    font-size: clamp(1.1rem, 3.5vw, 1.4rem);
     color: #333;
     margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .editButton, .saveButton, .cancelButton {
-    background: none;
     border: none;
     cursor: pointer;
-    padding: 8px;
-    border-radius: 50%;
-    transition: all 0.2s ease;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-.editButton { color: #666; }
-.editButton:hover { background: #f5f5f5; color: #333; }
-.saveButton { color: #4CAF50; }
-.saveButton:hover { background: #e8f5e9; }
-.cancelButton { color: #f44336; margin-right: 8px; }
-.cancelButton:hover { background: #ffebee; }
+.editButton { background-color: #f0f0f0; color: #333; }
+.editButton:hover { background: #e9ecef; }
+.saveButton { background-color: #e8f5e9; color: #2e7d32; }
+.saveButton:hover { background: #d9f0db; }
+.cancelButton { background-color: #ffebee; color: #c62828; }
+.cancelButton:hover { background: #ffd9de; }
 .editButtons { display: flex; gap: 8px; }
 
 /* Sezioni Interessi e Lingue */

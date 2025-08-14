@@ -99,14 +99,35 @@ exports.getMeals = asyncHandler(async (req, res) => {
     Meal.countDocuments(query)
   ]);
 
+  // Normalizza la location: se è una stringa "lat,lng", esponi anche le coordinates
+  const normalizeMealLocation = (mealDoc) => {
+    // Usa plain object per evitare effetti collaterali su Mongoose docs
+    const meal = mealDoc && typeof mealDoc.toObject === 'function' ? mealDoc.toObject() : mealDoc;
+    if (meal && typeof meal.location === 'string') {
+      const match = meal.location.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+      if (match) {
+        const latNum = parseFloat(match[1]);
+        const lngNum = parseFloat(match[2]);
+        if (!Number.isNaN(latNum) && !Number.isNaN(lngNum)) {
+          meal.location = {
+            address: meal.location,
+            coordinates: [lngNum, latNum]
+          };
+        }
+      }
+    }
+    return meal;
+  };
+  const normalizedMeals = Array.isArray(meals) ? meals.map(normalizeMealLocation) : [];
+
   // Se è richiesto un filtro geografico, filtra i risultati per distanza
-  let filteredMeals = meals;
+  let filteredMeals = normalizedMeals;
   if (nearFilter) {
     try {
       const [lat, lng] = nearFilter.split(',').map(coord => parseFloat(coord.trim()));
       
       // Filtra i pasti che hanno coordinate valide
-      filteredMeals = meals.filter(meal => {
+      filteredMeals = normalizedMeals.filter(meal => {
         if (!meal.location || typeof meal.location !== 'object' || !meal.location.coordinates) {
           return false;
         }
@@ -195,15 +216,28 @@ exports.createMeal = asyncHandler(async (req, res, next) => {
     mealData.coverLocalUri = req.body.coverLocalUri;
   }
   
-  // Gestione del campo location dal FormData: estrai una stringa indirizzo se viene passato un JSON
+  // Gestione del campo location dal FormData.
+  // Se arriva un JSON con coordinates [lng, lat], salviamo come stringa "lat,lng" per compatibilità
+  // così le API di listing possono riconvertirla in oggetto con coordinates.
   let rawLocationReceived = req.body.location;
   if (req.body.location) {
     try {
       const parsedLocation = JSON.parse(req.body.location);
       if (parsedLocation && typeof parsedLocation === 'object') {
-        mealData.location = parsedLocation.address || parsedLocation.formattedAddress || parsedLocation.label || '';
+        const hasCoords = Array.isArray(parsedLocation.coordinates) && parsedLocation.coordinates.length >= 2;
+        if (hasCoords) {
+          const lngNum = Number(parsedLocation.coordinates[0]);
+          const latNum = Number(parsedLocation.coordinates[1]);
+          if (!Number.isNaN(latNum) && !Number.isNaN(lngNum)) {
+            mealData.location = `${latNum},${lngNum}`; // es. "41.90,12.49"
+          }
+        }
+        // Se non abbiamo coords valide, prova a usare un address/label come stringa
+        if (!mealData.location) {
+          mealData.location = parsedLocation.address || parsedLocation.formattedAddress || parsedLocation.label || '';
+        }
         if (!mealData.location && typeof req.body.location === 'string') {
-          // Fallback: limita la stringa JSON a 200 caratteri per rispettare la validazione dello schema
+          // Fallback: limita la stringa a 200 caratteri per rispettare la validazione dello schema
           mealData.location = req.body.location.slice(0, 200);
         }
       } else {

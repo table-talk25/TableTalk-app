@@ -1,8 +1,10 @@
 import React from 'react';
+import BackButton from '../../components/common/BackButton';
 
 const DeleteAccountPage = () => {
   return (
     <div style={{ padding: '40px', maxWidth: '800px', margin: 'auto' }}>
+      <BackButton className="mb-3" />
       <h1>Eliminazione dell'Account TableTalk</h1>
       <p>
         Puoi eliminare il tuo account e tutti i dati associati in qualsiasi momento

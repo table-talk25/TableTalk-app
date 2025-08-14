@@ -1,10 +1,10 @@
 // File: src/components/meals/MealFilters/index.js (Versione Corretta)
 
 import React, { useState } from 'react';
-import { Form, Row, Col } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import styles from './MealFilters.module.css';
-import { MEAL_TYPES, MEAL_MODES } from '../../../constants/mealConstants';
+import { MEAL_MODES } from '../../../constants/mealConstants';
 import { useMealTranslations } from '../../../hooks/useMealTranslations';
 
 // Il componente ora riceve i filtri e la funzione onFilterChange come props
@@ -32,13 +32,43 @@ const MealFilters = ({ filters, onFilterChange }) => {
     }));
   };
 
+  const [expanded, setExpanded] = useState(true);
+
   return (
-    <div className={styles.filtersCard}>
-      <h4>{t('meals.filters.title')}</h4>
+    <div className={styles.filtersCard}> 
+      <div className={styles.filtersHeader}>
+        <h4>{t('meals.filters.title')}</h4>
+        <div>
+          <button
+            type="button"
+            className={styles.toggleBtn}
+            onClick={() => setExpanded(prev => !prev)}
+            aria-expanded={expanded}
+          >
+            {expanded ? 'Nascondi' : 'Mostra filtri'}
+          </button>
+          <button type="button" className={styles.resetButton} onClick={handleReset}>
+            {t('meals.filters.resetFilters')}
+          </button>
+        </div>
+      </div>
+
+      {/* Mostra la barra compatta solo quando i filtri sono chiusi */}
+      {!expanded && (
+        <div className={styles.compactBar}>
+          <span className={styles.chip}>{t('meals.filters.mealType')}: <span className={styles.chipValue}>{filters.type || t('meals.filters.allTypes')}</span></span>
+          <span className={styles.chip}>{t('meals.filters.mode')}: <span className={styles.chipValue}>{filters.mealType || t('meals.filters.allModes')}</span></span>
+          <span className={styles.chip}>{t('meals.filters.status')}: <span className={styles.chipValue}>{filters.status || t('meals.filters.allStatus')}</span></span>
+          <span className={styles.chip}>{t('meals.filters.sortBy')}: <span className={styles.chipValue}>{filters.sortBy === 'participants' ? t('meals.filters.participantsMost') : t('meals.filters.dateClosest')}</span></span>
+        </div>
+      )}
+
+      {expanded && (
       <Form>
-        <Form.Group className="mb-3">
+        <div className={styles.filtersGrid}>
+        <Form.Group>
           <Form.Label>{t('meals.filters.mealType')}</Form.Label>
-          <Form.Select name="type" value={filters.type} onChange={handleChange}>
+          <Form.Select className={styles.select} name="type" value={filters.type} onChange={handleChange}>
             <option value="">{t('meals.filters.allTypes')}</option>
             {getMealTypeOptions().map(option => (
               <option key={option.value} value={option.value}>
@@ -48,9 +78,9 @@ const MealFilters = ({ filters, onFilterChange }) => {
           </Form.Select>
         </Form.Group>
 
-        <Form.Group className="mb-3">
+        <Form.Group>
           <Form.Label>{t('meals.filters.mode')}</Form.Label>
-          <Form.Select name="mealType" value={filters.mealType} onChange={handleChange}>
+          <Form.Select className={styles.select} name="mealType" value={filters.mealType} onChange={handleChange}>
             <option value="">{t('meals.filters.allModes')}</option>
             {getMealModeOptions().map(option => (
               <option key={option.value} value={option.value}>
@@ -60,9 +90,9 @@ const MealFilters = ({ filters, onFilterChange }) => {
           </Form.Select>
         </Form.Group>
 
-        <Form.Group className="mb-3">
+        <Form.Group>
           <Form.Label>{t('meals.filters.status')}</Form.Label>
-          <Form.Select name="status" value={filters.status} onChange={handleChange}>
+          <Form.Select className={styles.select} name="status" value={filters.status} onChange={handleChange}>
             <option value="">{t('meals.filters.allStatus')}</option>
             <option value="upcoming">{t('meals.mealStatus.upcoming')}</option>
             <option value="ongoing">{t('meals.mealStatus.ongoing')}</option>
@@ -71,15 +101,14 @@ const MealFilters = ({ filters, onFilterChange }) => {
 
         <Form.Group>
           <Form.Label>{t('meals.filters.sortBy')}</Form.Label>
-          <Form.Select name="sortBy" value={filters.sortBy} onChange={handleChange}>
+          <Form.Select className={styles.select} name="sortBy" value={filters.sortBy} onChange={handleChange}>
             <option value="date">{t('meals.filters.dateClosest')}</option>
             <option value="participants">{t('meals.filters.participantsMost')}</option>
           </Form.Select>
         </Form.Group>
+        </div>
       </Form>
-      <button type="button" className={styles.resetButton} onClick={handleReset} style={{marginTop: '1rem'}}>
-        {t('meals.filters.resetFilters')}
-      </button>
+      )}
     </div>
   );
 };

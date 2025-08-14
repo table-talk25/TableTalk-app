@@ -18,7 +18,12 @@ const getChatById = async (chatId) => {
  * @returns {Promise<Object>} La risposta dall'API
  */
 const leaveChat = async (chatId) => {
-  const response = await apiClient.delete(`/chats/${chatId}/participants`);
+  const response = await apiClient.delete(`/chats/${chatId}/participants`, { suppressErrorAlert: true });
+  return response.data;
+};
+
+const closeChat = async (chatId) => {
+  const response = await apiClient.put(`/chats/${chatId}/close`, {}, { suppressErrorAlert: true });
   return response.data;
 };
 
@@ -26,5 +31,7 @@ const chatService = {
   getChatById,
   leaveChat
 };
+// Esporta anche closeChat per gli host
+chatService.closeChat = closeChat;
 
 export default chatService;

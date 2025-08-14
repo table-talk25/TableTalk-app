@@ -247,6 +247,8 @@ class EmailService {
    * @param {Object} meal - Oggetto pasto (title, date, host)
    */
   async sendMealReminderEmail(email, name, meal) {
+    const mealId = meal.mealId || meal._id || meal.id;
+    const mealUrl = mealId ? `${process.env.FRONTEND_URL}/meals/${mealId}` : `${process.env.FRONTEND_URL}/meals`;
     return this.sendEmail({
       to: email,
       subject: `Il tuo TableTalk® sta per iniziare!`,
@@ -255,7 +257,8 @@ class EmailService {
         name,
         mealTitle: meal.title,
         mealDate: meal.date,
-        hostName: meal.hostName
+        hostName: meal.hostName,
+        mealUrl
       }
     });
   }
@@ -267,6 +270,8 @@ class EmailService {
    * @param {Object} meal - { title, date, participantCount, participantNicknames }
    */
   async sendHostMealReminderEmail(email, hostName, meal) {
+    const mealId = meal.mealId || meal._id || meal.id;
+    const mealUrl = mealId ? `${process.env.FRONTEND_URL}/meals/${mealId}` : `${process.env.FRONTEND_URL}/meals`;
     return this.sendEmail({
       to: email,
       subject: `Il tuo TableTalk® sta per iniziare!`,
@@ -276,7 +281,8 @@ class EmailService {
         mealTitle: meal.title,
         mealDate: meal.date,
         participantCount: meal.participantCount,
-        participantNicknames: meal.participantNicknames
+        participantNicknames: meal.participantNicknames,
+        mealUrl
       }
     });
   }

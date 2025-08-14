@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import authService from '../../../services/authService';
 import Logo from '../../../components/common/Logo';
 import styles from './ResetPassword.module.css';
+import BackButton from '../../../components/common/BackButton';
 
 const ResetPasswordPage = () => {
     const { t } = useTranslation();
@@ -39,6 +40,9 @@ const ResetPasswordPage = () => {
 
     return (
         <div className={styles.container}>
+            <div style={{ padding: '12px 16px' }}>
+                <BackButton />
+            </div>
             <div className={styles.card}>
                 <div className={styles.logoContainer}>
                     <Link to="/" className={styles.logoLink}>

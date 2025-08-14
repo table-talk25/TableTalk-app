@@ -41,7 +41,7 @@
 
 /* Focus state per accessibilità */
 .logo:focus {
-    outline: 3px solid #ff6b6b;
+  outline: 3px solid var(--primary-color);
     outline-offset: 2px;
     border-radius: 4px;
 }

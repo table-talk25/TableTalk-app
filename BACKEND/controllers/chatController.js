@@ -19,15 +19,15 @@ exports.getChat = asyncHandler(async (req, res, next) => {
   }
 
   const chat = await Chat.findById(chatId)
-    .populate({ path: 'mealId', select: 'date duration' })
+    .populate({ path: 'mealId', select: 'host title date duration' })
     .populate({ path: 'participants', select: 'nickname profileImage' })
     .populate({ path: 'messages.sender', select: 'nickname profileImage' });
 
   if (!chat) {
     return next(new ErrorResponse('Chat non trovata', 404));
   }
-  if (chat.isExpired) {
-    return next(new ErrorResponse('Questa chat è terminata.', 403));
+  if (chat.isExpired || chat.isClosed) {
+    return next(new ErrorResponse('Questa chat è terminata o chiusa.', 403));
   }
   if (!chat.participants.some(p => p.equals(req.user._id))) {
     return next(new ErrorResponse('Non sei autorizzato ad accedere a questa chat', 403));
@@ -228,6 +228,30 @@ exports.leaveChat = asyncHandler(async (req, res, next) => {
     success: true,
     message: 'Hai lasciato la chat con successo.'
   });
+});
+
+/**
+ * @desc    Chiudi una chat (solo organizzatore del pasto)
+ * @route   PUT /api/chats/:chatId/close
+ * @access  Private
+ */
+exports.closeChat = asyncHandler(async (req, res, next) => {
+  const { chatId } = req.params;
+  const userId = req.user.id;
+  const chat = await Chat.findById(chatId).populate('mealId', 'host title');
+  if (!chat || !chat.mealId) {
+    return next(new ErrorResponse('Chat o pasto associato non trovato', 404));
+  }
+  if (chat.mealId.host.toString() !== userId) {
+    return next(new ErrorResponse('Solo l’organizzatore può chiudere la chat', 403));
+  }
+  if (chat.isClosed) {
+    return res.status(200).json({ success: true, message: 'Chat già chiusa' });
+  }
+  chat.isClosed = true;
+  await chat.save();
+
+  return res.status(200).json({ success: true, message: 'Chat chiusa con successo' });
 });
 
 // GET /api/chats/:chatId/messages?page=1&limit=20

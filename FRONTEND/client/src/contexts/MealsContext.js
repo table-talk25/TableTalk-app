@@ -25,8 +25,10 @@ export const MealsProvider = ({ children }) => {
     const createMeal = useCallback(async (formData) => {
         setLoading(true);
         try {
-            const response = await mealService.createMeal(formData);
-            return response;
+            const created = await mealService.createMeal(formData);
+            // Inserisci subito in cima al feed locale
+            setMeals(current => Array.isArray(current) ? [created, ...current] : [created]);
+            return created;
         } catch (error) {
             console.error("Errore durante la creazione del TableTalk® nel context:", error);
             throw error;
@@ -38,8 +40,20 @@ export const MealsProvider = ({ children }) => {
     const fetchMeals = useCallback(async (params = {}) => {
         setLoading(true);
         try {
-            const response = await mealService.getMeals({ status: 'upcoming', limit: 100, ...params, suppressErrorAlert: true });
-            setMeals(response.data);
+            const baseParams = { status: 'upcoming,ongoing', limit: 100, suppressErrorAlert: true, ...params };
+            const globalResp = await mealService.getMeals(baseParams);
+            const globalMeals = Array.isArray(globalResp) ? globalResp : (globalResp?.data || []);
+            // Unione con i miei futuri (per garantire visibilità immediata dei creati da me)
+            let myMeals = [];
+            try {
+                const myResp = await mealService.getUserMeals({ status: 'upcoming,ongoing', suppressErrorAlert: true });
+                myMeals = Array.isArray(myResp?.data) ? myResp.data : (Array.isArray(myResp) ? myResp : []);
+            } catch (_) { /* opzionale */ }
+            const mapById = new Map();
+            // Metti prima i globali, poi i miei: i miei (appena creati/aggiornati) sovrascrivono i globali
+            [...globalMeals, ...myMeals].forEach(m => { if (m && m._id) mapById.set(m._id, m); });
+            const merged = Array.from(mapById.values()).sort((a, b) => new Date(a?.date || 0) - new Date(b?.date || 0));
+            setMeals(merged);
             setError('');
         } catch (err) {
             setError('Errore nel caricamento dei TableTalk®. Riprova più tardi.');
@@ -53,6 +67,15 @@ export const MealsProvider = ({ children }) => {
         setMeals(currentMeals => currentMeals.filter(meal => meal._id !== mealId));
     };
 
+    const upsertMeal = (updatedMeal) => {
+        if (!updatedMeal || !updatedMeal._id) return;
+        setMeals(current => {
+            const exists = Array.isArray(current) && current.some(m => m._id === updatedMeal._id);
+            if (!exists) return [updatedMeal, ...(current || [])];
+            return current.map(m => (m._id === updatedMeal._id ? { ...m, ...updatedMeal } : m));
+        });
+    };
+
     // 4. Prepariamo l'oggetto 'value' che il provider condividerà.
     // Ho rimosso 'updateMeal' perché non era definito, causando un altro potenziale errore.
     const value = {
@@ -61,6 +84,7 @@ export const MealsProvider = ({ children }) => {
         error,
         fetchMeals,
         removeMealFromState,
+        upsertMeal,
         createMeal,
     };
 

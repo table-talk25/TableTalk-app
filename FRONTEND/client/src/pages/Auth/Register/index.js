@@ -8,10 +8,11 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import Logo from '../../../components/common/Logo';
 import styles from './RegisterPage.module.css';
+import BackButton from '../../../components/common/BackButton';
 
 const RegisterPage = () => {
     const navigate = useNavigate();
-    const { register } = useAuth();
+    const { register, isAuthenticated } = useAuth();
     const { t } = useTranslation();
     const [formData, setFormData] = useState({ 
         name: '', 
@@ -25,6 +26,13 @@ const RegisterPage = () => {
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    // Se già autenticato, evita la pagina e vai ai pasti
+    React.useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/meals', { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     const validateAge = (dateOfBirth) => {
         if (!dateOfBirth) return t('auth.dateOfBirthRequired');
@@ -79,7 +87,7 @@ const RegisterPage = () => {
         try {
             await register({ ...formData });
             toast.success(t('auth.registerSuccess'));
-            navigate('/impostazioni/profilo', { state: { message: t('auth.welcomeCompleteProfile') } });
+            navigate('/meals', { replace: true });
         } catch (err) {
             if (err.errors && err.errors.length > 0) {
                 const backendErrors = {};
@@ -98,6 +106,9 @@ const RegisterPage = () => {
 
     return (
         <div className={styles.page}>
+            <div style={{ padding: '12px 16px' }}>
+                <BackButton />
+            </div>
             <div className={styles.card}>
                 <div className={styles.logoContainer}>
                     <Link to="/" className={styles.logoLink}>
@@ -108,29 +119,30 @@ const RegisterPage = () => {
                 <Form onSubmit={handleSubmit} noValidate>
                     <Form.Group className="mb-3">
                         <Form.Label className={styles.formLabel}>{t('auth.name')}</Form.Label>
-                        <Form.Control className={styles.formInput} type="text" name="name" value={formData.name} onChange={handleChange} isInvalid={!!errors.name} required />
+                        <Form.Control className={styles.formInput} type="text" name="name" value={formData.name} onChange={handleChange} isInvalid={!!errors.name} autoComplete="given-name" required />
                         <Form.Control.Feedback type="invalid">{errors.name}</Form.Control.Feedback>
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label className={styles.formLabel}>{t('auth.surname')}</Form.Label>
-                        <Form.Control className={styles.formInput} type="text" name="surname" value={formData.surname} onChange={handleChange} isInvalid={!!errors.surname} required />
+                        <Form.Control className={styles.formInput} type="text" name="surname" value={formData.surname} onChange={handleChange} isInvalid={!!errors.surname} autoComplete="family-name" required />
                         <Form.Control.Feedback type="invalid">{errors.surname}</Form.Control.Feedback>
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label className={styles.formLabel}>Email</Form.Label>
-                        <Form.Control className={styles.formInput} type="email" name="email" value={formData.email} onChange={handleChange} isInvalid={!!errors.email} required />
+                        <Form.Control className={styles.formInput} type="email" name="email" value={formData.email} onChange={handleChange} isInvalid={!!errors.email} autoComplete="email" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} required />
                         <Form.Control.Feedback type="invalid">{errors.email}</Form.Control.Feedback>
                     </Form.Group>
                     
                     <Form.Group className="mb-3">
                         <Form.Label className={styles.formLabel}>{t('auth.dateOfBirth')}</Form.Label>
-                        <Form.Control 
+                            <Form.Control 
                             className={styles.formInput} 
                             type="date" 
                             name="dateOfBirth" 
                             value={formData.dateOfBirth} 
                             onChange={handleChange} 
                             isInvalid={!!errors.dateOfBirth} 
+                             autoComplete="bday"
                             required 
                         />
                         <Form.Control.Feedback type="invalid">{errors.dateOfBirth}</Form.Control.Feedback>
@@ -139,8 +151,8 @@ const RegisterPage = () => {
     
                     <Form.Group className="mb-3">
                         <Form.Label className={styles.formLabel}>{t('auth.password')}</Form.Label>
-                        <InputGroup hasValidation>
-                            <Form.Control className={styles.formInput} type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} isInvalid={!!errors.password} required />
+                        <InputGroup hasValidation className={styles.inputGroup}>
+                            <Form.Control className={styles.formInput} type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} isInvalid={!!errors.password} autoComplete="new-password" required />
                             <InputGroup.Text onClick={() => setShowPassword(!showPassword)} className={styles.passwordToggle}>{showPassword ? <FaEyeSlash /> : <FaEye />}</InputGroup.Text>
                             <Form.Control.Feedback type="invalid">{errors.password}</Form.Control.Feedback>
                         </InputGroup>
@@ -152,7 +164,7 @@ const RegisterPage = () => {
                     
                     <Form.Group>
                         <Form.Label className={styles.formLabel}>{t('auth.confirmPassword')}</Form.Label>
-                        <Form.Control className={styles.formInput} type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} isInvalid={!!errors.confirmPassword} required />
+                        <Form.Control className={styles.formInput} type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} isInvalid={!!errors.confirmPassword} autoComplete="new-password" required />
                         <Form.Control.Feedback type="invalid">{errors.confirmPassword}</Form.Control.Feedback>
                     </Form.Group>
     

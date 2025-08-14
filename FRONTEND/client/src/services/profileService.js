@@ -15,15 +15,16 @@ const getPublicProfileById = async (userId) => {
 };
 
 const updateProfile = async (profileData) => {
-  // CORRETTO: Rimosso /api dall'inizio
-  const response = await apiClient.put('/profile/me', profileData);
+  // Evita dialog di "errore di rete" globali: gestiamo noi a livello di UI
+  const response = await apiClient.put('/profile/me', profileData, { suppressErrorAlert: true });
   return response.data.data;
 };
 
 const updateProfileImage = async (formData) => {
-  // CORRETTO: Rimosso /api dall'inizio
+  // Evita dialog di "errore di rete" globali su upload immagine
   const response = await apiClient.put('/profile/me/avatar', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    suppressErrorAlert: true,
   });
   return response.data.data;
 };

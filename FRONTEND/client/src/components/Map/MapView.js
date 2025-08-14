@@ -8,6 +8,8 @@ import { sendInvitation } from '../../services/invitationService';
 
 const MapView = ({ userPosition, nearbyUsers, nearbyMeals = [] }) => {
   const mapRef = useRef(null);
+  const [fallbackUrl, setFallbackUrl] = useState(null);
+  const fallbackToastShown = useRef(false);
 
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedMeal, setSelectedMeal] = useState(null);
@@ -23,12 +25,20 @@ const MapView = ({ userPosition, nearbyUsers, nearbyMeals = [] }) => {
         console.log('👥 [MapView] Utenti nelle vicinanze:', nearbyUsers.length);
         console.log('🍽️ [MapView] TableTalk® nelle vicinanze:', nearbyMeals.length);
         
+        const lat = (userPosition && (userPosition.latitude ?? userPosition.lat));
+        const lng = (userPosition && (userPosition.longitude ?? userPosition.lng));
+        if (typeof lat !== 'number' || typeof lng !== 'number' || Number.isNaN(lat) || Number.isNaN(lng)) {
+          throw new Error(`Coordinate non valide: lat=${lat}, lng=${lng}`);
+        }
+
+        const runtimeApiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
         map = await GoogleMap.create({
           id: 'my-map',
           element: mapRef.current,
-          // La chiave API è configurata a livello nativo per sicurezza
+          // La chiave API è configurata a livello nativo; se disponibile anche via env, la passiamo esplicitamente
+          ...(runtimeApiKey ? { apiKey: runtimeApiKey } : {}),
           config: {
-            center: { lat: userPosition.lat, lng: userPosition.lng },
+            center: { lat, lng },
             zoom: 13,
           },
         });
@@ -38,7 +48,7 @@ const MapView = ({ userPosition, nearbyUsers, nearbyMeals = [] }) => {
         // Marker per la posizione dell'utente
         await map.addMarker({ 
           id: 'user-current', 
-          coordinate: { lat: userPosition.lat, lng: userPosition.lng }, 
+          coordinate: { lat, lng }, 
           title: 'Sei qui', 
           iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' 
         });
@@ -125,7 +135,16 @@ const MapView = ({ userPosition, nearbyUsers, nearbyMeals = [] }) => {
           nearbyUsersCount: nearbyUsers.length,
           nearbyMealsCount: nearbyMeals.length
         });
-        toast.error('Errore nel caricamento della mappa. Riprova più tardi.');
+        // Fallback: mappa web embedded senza chiave (degradata ma visibile)
+        const flat = (userPosition && (userPosition.latitude ?? userPosition.lat));
+        const flng = (userPosition && (userPosition.longitude ?? userPosition.lng));
+        if (typeof flat === 'number' && typeof flng === 'number') {
+          setFallbackUrl(`https://maps.google.com/maps?q=${flat},${flng}&z=13&output=embed`);
+        }
+        if (!fallbackToastShown.current) {
+          fallbackToastShown.current = true;
+          toast.info('Modalità mappa alternativa attiva.');
+        }
       }
     };
 
@@ -191,7 +210,7 @@ const MapView = ({ userPosition, nearbyUsers, nearbyMeals = [] }) => {
           </div>
           
           <div style={{ marginBottom: '10px' }}>
-            <strong>📍 Posizione:</strong> {selectedMeal.location}
+            <strong>📍 Posizione:</strong> {typeof selectedMeal.location === 'string' ? selectedMeal.location : (selectedMeal.location?.address || `${selectedMeal.location?.coordinates?.[1]}, ${selectedMeal.location?.coordinates?.[0]}`)}
           </div>
           
           <div style={{ marginBottom: '10px' }}>
@@ -234,7 +253,17 @@ const MapView = ({ userPosition, nearbyUsers, nearbyMeals = [] }) => {
 
   return (
     <div style={{ height: '100vh', width: '100%', position: 'relative' }}>
-      <capacitor-google-map ref={mapRef} style={{ display: 'block', width: '100%', height: '100%' }} />
+      {fallbackUrl ? (
+        <iframe
+          title="Mappa"
+          src={fallbackUrl}
+          style={{ display: 'block', width: '100%', height: '100%', border: 0 }}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      ) : (
+        <capacitor-google-map ref={mapRef} style={{ display: 'block', width: '100%', height: '100%' }} />
+      )}
 
       <div style={{
         position: 'absolute',

@@ -9,6 +9,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { Capacitor } from '@capacitor/core';
 import BackButton from '../../components/common/BackButton';
 import { Button, Alert, Spinner } from 'react-bootstrap';
+import styles from './MapPage.module.css';
 
 const MapPage = () => {
     const { t } = useTranslation();
@@ -62,17 +63,13 @@ const MapPage = () => {
             console.log('🍽️ [MapPage] Cerco TableTalk® fisici nelle vicinanze...');
             console.log('📍 [MapPage] Coordinate:', coords);
 
-            const meals = await mealService.getMeals({
+            const mealsResp = await mealService.getMeals({
                 near: `${coords.latitude},${coords.longitude}`,
                 mealType: 'physical',
                 status: 'upcoming,ongoing'
             });
 
-            if (!Array.isArray(meals)) {
-                console.warn('⚠️ [MapPage] Risposta inattesa da getMeals:', meals);
-                setNearbyMeals([]);
-                return;
-            }
+            const meals = Array.isArray(mealsResp) ? mealsResp : (Array.isArray(mealsResp?.data) ? mealsResp.data : []);
 
             console.log('🔍 [MapPage] Meals ricevuti:', meals);
             const validMeals = meals.filter(meal => meal && meal._id && meal.location && meal.location.coordinates);
@@ -126,11 +123,18 @@ const MapPage = () => {
         }
     };
 
+    const DEFAULT_CENTER = { latitude: 41.9028, longitude: 12.4964 }; // Roma
+    const GEO_TIMEOUT_MS = 8000;
+
     // Funzione per ottenere la posizione corrente
     const getCurrentPosition = async () => {
         try {
             if (Capacitor.isNativePlatform()) {
-                const position = await Geolocation.getCurrentPosition();
+                const position = await Geolocation.getCurrentPosition({
+                    enableHighAccuracy: true,
+                    timeout: GEO_TIMEOUT_MS,
+                    maximumAge: 60000
+                });
                 return {
                     latitude: position.coords.latitude,
                     longitude: position.coords.longitude
@@ -150,7 +154,7 @@ const MapPage = () => {
                         },
                         {
                             enableHighAccuracy: true,
-                            timeout: 10000,
+                            timeout: GEO_TIMEOUT_MS,
                             maximumAge: 60000
                         }
                     );
@@ -211,7 +215,15 @@ const MapPage = () => {
 
         } catch (err) {
             console.error('[MapPage] Errore nell\'inizializzazione:', err);
-            setError(err.message || t('map.locationError'));
+            // Fallback rapido: niente alert invasivo, centro su default e mostro mappa
+            setError('');
+            setCurrentUserPosition(DEFAULT_CENTER);
+            try {
+                await Promise.all([
+                  fetchNearbyUsers(DEFAULT_CENTER),
+                  fetchNearbyMeals(DEFAULT_CENTER)
+                ]);
+            } catch (_) {}
         } finally {
             setLoading(false);
         }
@@ -248,8 +260,19 @@ const MapPage = () => {
 
     if (loading) {
         return (
-            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
+            <div className={styles.container}>
+              <div className={styles.topBar}>
+                <BackButton className={styles.backButton} />
+              </div>
+              <div className={styles.header}>
+                <div className={styles.titleWrap}>
+                  <h1 className={styles.title}>{t('map.title')}</h1>
+                  <p className={styles.subtitle}>{t('map.subtitle')}</p>
+                </div>
+              </div>
+              <div className="d-flex justify-content-center align-items-center" style={{ flex: 1 }}>
                 <Spinner animation="border" />
+              </div>
             </div>
         );
     }
@@ -269,20 +292,33 @@ const MapPage = () => {
     }
 
     return (
-        <div className="map-page">
-            <div className="map-header">
-                <BackButton />
-                <h1>{t('map.title')}</h1>
-                <p>{t('map.subtitle')}</p>
-            </div>
-            
-            <MapView
-                currentUserPosition={currentUserPosition}
-                nearbyUsers={nearbyUsers}
-                nearbyMeals={nearbyMeals}
-                permissionStatus={permissionStatus}
-            />
+      <div className={styles.container}>
+        <div className={styles.topBar}>
+          <BackButton className={styles.backButton} />
         </div>
+        <div className={styles.header}>
+          <div className={styles.titleWrap}>
+            <h1 className={styles.title}>{t('map.title')}</h1>
+            <p className={styles.subtitle}>{t('map.subtitle')}</p>
+          </div>
+        </div>
+        <div className={styles.mapContainer}>
+          <div className={styles.badge}>{permissionStatus === 'granted' ? 'GPS attivo' : 'GPS non attivo'}</div>
+          <MapView
+            userPosition={currentUserPosition}
+            nearbyUsers={nearbyUsers}
+            nearbyMeals={nearbyMeals}
+            permissionStatus={permissionStatus}
+          />
+          <button
+            type="button"
+            className={styles.fab}
+            onClick={initializeLocation}
+          >
+            Centra mappa
+          </button>
+        </div>
+      </div>
     );
 };
 

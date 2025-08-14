@@ -18,7 +18,7 @@ import EditMealButton from '../EditMealButton';
 import LeaveMealButton from '../LeaveMealButton';
 import styles from './MealCard.module.css';
 
-const MealCard = ({ meal, onLeaveSuccess }) => {
+const MealCard = ({ meal, onLeaveSuccess, compact = false }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { getMealTypeText, getMealModeText } = useMealTranslations();
@@ -45,7 +45,7 @@ const MealCard = ({ meal, onLeaveSuccess }) => {
   return (
     <div className={styles.card}>
       <Link to={`/meals/${meal._id}`} className={styles.cardLink}>
-        <div className={styles.cardImageWrapper}>
+        <div className={compact ? styles.cardImageWrapperCompact : styles.cardImageWrapper}>
           <img src={imageUrl} alt={meal.title} className={styles.cardImage} />
           <div className={styles.cardImageType} style={{ backgroundColor: getMealTypeColor(meal.type) }}>
             {getMealTypeText(meal.type)}
@@ -79,14 +79,19 @@ const MealCard = ({ meal, onLeaveSuccess }) => {
             <span>{formatDate(meal.date)}</span>
           </div>
           {/* Durata e orario di fine */}
-          <div className={styles.cardDetail}>
-            <FaClock />
-            <span>{t('meals.card.duration')}: {meal.duration} {t('meals.card.minutes')}</span>
-          </div>
-          <div className={styles.cardDetail}>
-            <FaClock />
-            <span>{t('meals.card.end')}: {formatDate(new Date(new Date(meal.date).getTime() + meal.duration * 60000), 'HH:mm')}</span>
-          </div>
+          {/* Durata e orario di fine: nascosti nella preview (Meals) */}
+          {!compact && (
+            <>
+              <div className={styles.cardDetail}>
+                <FaClock />
+                <span>{t('meals.card.duration')}: {meal.duration} {t('meals.card.minutes')}</span>
+              </div>
+              <div className={styles.cardDetail}>
+                <FaClock />
+                <span>{t('meals.card.end')}: {formatDate(new Date(new Date(meal.date).getTime() + meal.duration * 60000), 'HH:mm')}</span>
+              </div>
+            </>
+          )}
           
           {/* Mostra la posizione solo per TableTalk® fisici */}
           {meal.mealType === 'physical' && meal.location && (
@@ -100,13 +105,14 @@ const MealCard = ({ meal, onLeaveSuccess }) => {
         </div>
       </Link>
       
-      <div className={styles.cardActions}>
+        <div className={styles.cardActions}>
         <div className={styles.cardDetail}>
             <FaUsers />
             <span>{meal.participants?.length || 0} / {meal.maxParticipants} {t('meals.card.participants')}</span>
         </div>
         <div className={styles.actionButtons}>
-            {isHost && !isPast && <EditMealButton mealId={meal._id} />}
+            {/* Rimuovi Modifica nella preview (Meals); resta nel dettaglio */}
+            {!compact && isHost && !isPast && <EditMealButton mealId={meal._id} />}
             {isParticipant && !isHost && !isPast && <LeaveMealButton mealId={meal._id} onSuccess={onLeaveSuccess} />}
         </div>
       </div>

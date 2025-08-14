@@ -9,6 +9,7 @@ import dayjs from 'dayjs';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import TopicInput from '../TopicInput';
 import LocationPicker from '../../Map/LocationPicker';
+import PlacesAutocompleteInput from '../../Map/PlacesAutocompleteInput';
 
         // Opzioni per la durata del TableTalk®
 const languageOptions = ['Italiano', 'English', 'Español', 'Français', 'Deutsch', '中文', 'العربية'];
@@ -396,15 +397,12 @@ const MealForm = ({ initialData, onSubmit, onCancel, isLoading, isSubmitting, su
             {formData.mealType === 'physical' && (
               <Form.Group>
                 <Form.Label className={styles.formLabel}>{t('meals.form.addressLabel')}</Form.Label>
-                <Form.Control 
-                  className={`${styles.formControl} ${errors.location ? 'is-invalid' : ''}`}
-                  type="text" 
-                  name="location" 
+                <PlacesAutocompleteInput
+                  value={formData.location}
+                  onChange={(text) => setFormData(prev => ({ ...prev, location: { ...(prev.location || {}), address: text } }))}
+                  onSelect={(loc) => setFormData(prev => ({ ...prev, location: loc }))}
                   placeholder={t('meals.form.addressPlaceholder')}
-                  value={formData.location?.address || ''} 
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  required 
+                  className={`${styles.formControl} ${errors.location ? 'is-invalid' : ''}`}
                 />
                 {errors.location && <div className="invalid-feedback">{errors.location}</div>}
                 <Form.Text className="text-muted">

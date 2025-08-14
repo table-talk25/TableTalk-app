@@ -14,7 +14,10 @@
     "close": "Chiudi",
     "yes": "Sì",
     "no": "No",
-    "pleaseCorrectErrors": "Si prega di correggere gli errori nel modulo."
+    "pleaseCorrectErrors": "Si prega di correggere gli errori nel modulo.",
+    "dateNotAvailable": "Data non disponibile",
+    "invalidDate": "Data non valida",
+    "errorFormattingDate": "Errore nella formattazione della data"
   },
   "auth": {
     "login": "Accedi",
@@ -66,7 +69,8 @@
     "sending": "Invio...",
     "requestSent": "Richiesta inviata!",
     "emailSentMessage": "Se l'email è registrata, riceverai un link per il reset.",
-    "backToLogin": "Torna al Login"
+    "backToLogin": "Torna al Login",
+    "rememberEmail": "Ricorda email"
   },
   "meals": {
     "createMeal": "Crea TableTalk®",
@@ -81,7 +85,7 @@
     "createButton": "Crea TableTalk®",
     "loading": "Caricamento...",
     "searchError": "Si è verificato un errore durante la ricerca.",
-    "noMealsFound": "Nessun TableTalk® trovato per \"{searchTerm}\".",
+      "noMealsFound": "Nessun TableTalk® trovato per \"{{searchTerm}}\".",
     "noMealsWithFilters": "Nessun TableTalk® trovato con i filtri applicati.",
     "mealType": {
       "virtual": "Virtuale",
@@ -205,8 +209,11 @@
       "chatNotAvailable": "Chat non disponibile",
       "joinChat": "Unisciti alla Chat",
       "leaveChat": "Lascia Chat",
+      "joinVideo": "Videochiamata",
       "coverImageAlt": "Immagine di copertina del TableTalk®",
-      "participants": "{count} di {max} partecipanti",
+      "participants": "{{count}} di {{max}} partecipanti",
+      "participantsText": "{{current}} di {{max}} partecipanti",
+      "joinPending": "Richiesta inviata, aggiorno...",
       "description": "Descrizione",
       "host": "Organizzatore",
       "hostAvatarAlt": "Avatar organizzatore",
@@ -217,7 +224,7 @@
     },
     "history": {
       "pageTitle": "I Miei TableTalk®",
-      "totalMeals": "Hai {count} TableTalk® totali nella tua cronologia",
+      "totalMeals": "Hai {{count}} TableTalk® totali nella tua cronologia",
       "upcoming": "In Programma",
       "past": "Storico TableTalk® Passati",
       "organized": "TableTalk® che organizzi",
@@ -286,11 +293,6 @@
     "notifications": "Notifiche"
   },
   "profile": {
-    "personalInfo": "Informazioni Personali",
-    "interests": "Interessi",
-    "languages": "Lingue",
-    "mealHistory": "Storico TableTalk®",
-    "settings": "Impostazioni",
     "pageTitle": "Il Mio Profilo",
     "loadError": "Impossibile caricare il profilo. Riprova più tardi.",
     "updateSuccess": "Profilo aggiornato!",
@@ -350,14 +352,14 @@
       "title": "Impostazioni Avanzate",
       "notifications": "Notifiche",
       "emailNotifications": "Ricevi notifiche importanti via email",
-      "notificationUpdated": "Impostazione di notifica aggiornata.",
+      "notificationUpdated": "Impostazione notifiche aggiornata.",
       "privacySecurity": "Privacy e Sicurezza",
-      "enableLocation": "Abilita posizione per match in tempo reale",
-      "locationUpdated": "Impostazione della posizione aggiornata.",
+      "enableLocation": "Abilita posizione per matching in tempo reale",
+      "locationUpdated": "Impostazione posizione aggiornata.",
       "changePassword": "Cambia Password",
       "privacyPolicyInfo": "Per maggiori dettagli, consulta la nostra",
       "account": "Account",
-      "logout": "Esci dall'account",
+      "logout": "Esci",
       "logoutConfirm": "Sei sicuro di voler uscire?",
       "deleteAccount": "Elimina Account",
       "accountDeleted": "Account eliminato con successo",
@@ -365,8 +367,8 @@
     }
   },
   "map": {
-    "title": "Utenti e TableTalk® Fisici Vicino a Te",
-    "subtitle": "Esplora chi è disponibile per un TableTalk® nei dintorni e scopri i TableTalk® fisici in programma!",
+    "title": "TableTalk® vicino a te",
+    "subtitle": "Scopri i TableTalk® fisici in programma nella tua zona.",
     "locationError": "Impossibile ottenere la tua posizione",
     "permissionDenied": "Permesso di posizione negato. Per utilizzare la mappa, abilita il permesso di posizione nelle impostazioni del dispositivo.",
     "errorTitle": "Errore di Posizione",
@@ -400,6 +402,45 @@
     "confirmUnblock": "Sei sicuro di voler sbloccare questo utente?",
     "blockedUserMessage": "Non puoi interagire con questo utente perché è bloccato"
   },
+  "report": {
+    "reportUser": "Segnala Utente",
+    "reportSuccess": "Segnalazione inviata con successo. Grazie per aver contribuito a mantenere TableTalk® un ambiente sicuro.",
+    "userToReport": "Utente da segnalare",
+    "reportReason": "Motivo della segnalazione *",
+    "selectReason": "Seleziona un motivo",
+    "reasons": {
+      "inappropriate": "Comportamento Inappropriato",
+      "spam": "Spam",
+      "fakeProfile": "Profilo Falso",
+      "other": "Altro"
+    },
+    "additionalDetails": "Dettagli aggiuntivi",
+    "detailsPlaceholder": "Fornisci ulteriori dettagli sulla segnalazione (opzionale)",
+    "cancel": "Annulla",
+    "sendReport": "Invia Segnalazione",
+    "sending": "Invio in corso...",
+    "selectReasonError": "Seleziona un motivo per la segnalazione",
+    "sendError": "Errore durante l'invio della segnalazione"
+  },
+  "leaveReport": {
+    "leaveTitle": "Lascia {{subject}}",
+    "whyLeaving": "Perché vuoi lasciare {{subject}}?",
+    "selectReason": "Seleziona un motivo",
+    "reasons": {
+      "personal": "Motivi personali",
+      "uncomfortable": "Non mi sento a mio agio",
+      "technical": "Problemi tecnici",
+      "other": "Altro"
+    },
+    "writeReason": "Scrivi il motivo...",
+    "cancel": "Annulla",
+    "confirm": "Conferma",
+    "subjects": {
+      "meal": "il TableTalk®",
+      "video": "la videochiamata",
+      "chat": "la chat"
+    }
+  },
   "chat": {
     "title": "Chat",
     "subtitle": "Chatta con altri partecipanti",
@@ -408,6 +449,11 @@
     "connectionError": "Errore di connessione. Riprova.",
     "leaveSuccess": "Hai lasciato la chat. Grazie per il tuo feedback!",
     "leaveError": "Impossibile lasciare la chat.",
+    "hostCannotLeave": "Sei l’organizzatore: non puoi lasciare questa chat. Puoi solo chiuderla.",
+    "close": "Chiudi Chat",
+    "leave": "Lascia Chat",
+    "closeSuccess": "Chat chiusa con successo",
+    "closeError": "Impossibile chiudere la chat.",
     "errorTitle": "Errore Chat",
     "notFoundTitle": "Chat Non Trovata",
     "notFoundMessage": "Impossibile trovare la chat richiesta.",
@@ -674,7 +720,7 @@
   },
   "history": {
     "pageTitle": "I Miei TableTalk®",
-    "totalMeals": "Hai {count} TableTalk® totali nel tuo storico",
+    "totalMeals": "Hai {{count}} TableTalk® totali nel tuo storico",
     "upcoming": "Prossimi",
     "past": "Storico TableTalk® Passati",
     "organized": "TableTalk® che Organizzi",

@@ -14,7 +14,10 @@
     "close": "关闭",
     "yes": "是",
     "no": "否",
-    "pleaseCorrectErrors": "请修正表单中的错误。"
+    "pleaseCorrectErrors": "请修正表单中的错误。",
+    "dateNotAvailable": "日期不可用",
+    "invalidDate": "无效日期",
+    "errorFormattingDate": "格式化日期时出错"
   },
   "auth": {
     "login": "登录",
@@ -66,7 +69,8 @@
     "sending": "发送中...",
     "requestSent": "请求已发送！",
     "emailSentMessage": "如果邮箱已注册，您将收到重置链接。",
-    "backToLogin": "返回登录"
+    "backToLogin": "返回登录",
+    "rememberEmail": "记住邮箱"
   },
   "meals": {
     "createMeal": "创建TableTalk®",
@@ -121,6 +125,17 @@
       "dateClosest": "日期（最近）",
       "participantsMost": "参与者（最受欢迎）",
       "resetFilters": "重置筛选"
+    },
+    "emptyState": {
+      "title": "未找到TableTalk®",
+      "description": "没有符合当前筛选条件的TableTalk®。尝试更改筛选条件或自己创建一个！"
+    },
+    "card": {
+      "organizedBy": "组织者",
+      "duration": "时长",
+      "minutes": "分钟",
+      "end": "结束",
+      "participants": "参与者"
     },
     "createNewTitle": "创建新的TableTalk®",
     "createNewSubtitle": "填写字段以组织您的下一次虚拟会议。",
@@ -259,11 +274,6 @@
     "notifications": "通知"
   },
   "profile": {
-    "personalInfo": "个人信息",
-    "interests": "兴趣爱好",
-    "languages": "语言",
-    "mealHistory": "TableTalk®历史",
-    "settings": "设置",
     "pageTitle": "我的个人资料",
     "loadError": "无法加载个人资料。请稍后重试。",
     "updateSuccess": "个人资料已更新！",
@@ -328,7 +338,7 @@
       "enableLocation": "启用位置以进行实时匹配",
       "locationUpdated": "位置设置已更新。",
       "changePassword": "更改密码",
-      "privacyPolicyInfo": "有关更多详细信息，请参阅我们的",
+      "privacyPolicyInfo": "有关更多详情，请参阅我们的",
       "account": "账户",
       "logout": "退出登录",
       "logoutConfirm": "您确定要退出登录吗？",
@@ -372,6 +382,45 @@
     "confirmBlock": "您确定要屏蔽此用户吗？",
     "confirmUnblock": "您确定要取消屏蔽此用户吗？",
     "blockedUserMessage": "您无法与此用户互动，因为他们已被屏蔽"
+  },
+  "report": {
+    "reportUser": "举报用户",
+    "reportSuccess": "举报发送成功。感谢您帮助维护TableTalk®的安全环境。",
+    "userToReport": "要举报的用户",
+    "reportReason": "举报原因 *",
+    "selectReason": "选择原因",
+    "reasons": {
+      "inappropriate": "不当行为",
+      "spam": "垃圾信息",
+      "fakeProfile": "虚假资料",
+      "other": "其他"
+    },
+    "additionalDetails": "其他详情",
+    "detailsPlaceholder": "提供有关举报的其他详情（可选）",
+    "cancel": "取消",
+    "sendReport": "发送举报",
+    "sending": "发送中...",
+    "selectReasonError": "请选择举报原因",
+    "sendError": "发送举报时出错"
+  },
+  "leaveReport": {
+    "leaveTitle": "离开{{subject}}",
+    "whyLeaving": "您为什么要离开{{subject}}？",
+    "selectReason": "选择原因",
+    "reasons": {
+      "personal": "个人原因",
+      "uncomfortable": "我感到不舒服",
+      "technical": "技术问题",
+      "other": "其他"
+    },
+    "writeReason": "写下原因...",
+    "cancel": "取消",
+    "confirm": "确认",
+    "subjects": {
+      "meal": "TableTalk®",
+      "video": "视频通话",
+      "chat": "聊天"
+    }
   },
   "chat": {
     "title": "聊天",

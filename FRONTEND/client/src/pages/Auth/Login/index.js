@@ -1,26 +1,49 @@
 // File: /pages/Auth/Login/index.js (Versione Corretta)
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Form, Button, Alert, InputGroup } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
+import { getPreference, savePreference, removePreference, PREFERENCE_KEYS } from '../../../utils/preferences';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import Logo from '../../../components/common/Logo';
 import styles from './LoginPage.module.css';
+import BackButton from '../../../components/common/BackButton';
 
 const LoginPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+  const [rememberEmail, setRememberEmail] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false); 
+
+  // Precarica l'email salvata in passato, se presente
+  useEffect(() => {
+    (async () => {
+      try {
+        const savedEmail = await getPreference(PREFERENCE_KEYS.LAST_LOGIN_EMAIL, '');
+        if (savedEmail) {
+          setFormData((prev) => ({ ...prev, email: savedEmail }));
+          setRememberEmail(true);
+        }
+      } catch {}
+    })();
+  }, []);
+
+  // Se già autenticato, vai direttamente ai pasti
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/meals', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,11 +61,19 @@ const LoginPage = () => {
     // =======================================================
     // === LA SOLA RIGA DA MODIFICARE È QUESTA:             ===
     // =======================================================
-    const from = location.state?.from?.pathname || '/impostazioni/profilo';
+    const from = location.state?.from?.pathname || '/meals';
 
     try {
       await login(formData); 
-      navigate(from, { replace: true });
+      // Salva o rimuove l'email in base al toggle
+      try {
+        if (rememberEmail) {
+          await savePreference(PREFERENCE_KEYS.LAST_LOGIN_EMAIL, formData.email);
+        } else {
+          await removePreference(PREFERENCE_KEYS.LAST_LOGIN_EMAIL);
+        }
+      } catch {}
+      requestAnimationFrame(() => navigate(from, { replace: true }));
     
     } catch (err) {
       console.error('Errore durante il login:', err);
@@ -54,6 +85,9 @@ const LoginPage = () => {
 
   return (
     <div className={styles.page}>
+        <div style={{ padding: '12px 16px' }}>
+            <BackButton />
+        </div>
         <div className={styles.card}>
             <div className={styles.logoContainer}>
                 <Link to="/" className={styles.logoLink}>
@@ -65,8 +99,8 @@ const LoginPage = () => {
             {location.state?.message && <Alert variant="success">{location.state.message}</Alert>}
             {error && <Alert variant="danger">{error}</Alert>}
             
-            <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3">
+            <Form onSubmit={handleSubmit} autoComplete="on">
+                    <Form.Group className="mb-3">
                     <Form.Label className={styles.formLabel}>{t('auth.email')}</Form.Label>
                     <Form.Control
                         className={styles.formInput}
@@ -75,13 +109,28 @@ const LoginPage = () => {
                         value={formData.email}
                         onChange={handleChange}
                         placeholder={t('auth.emailPlaceholder')}
+                            autoComplete="username"
+                            inputMode="email"
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            spellCheck={false}
                         required
                     />
                 </Form.Group>
 
                 <Form.Group className="mb-3">
+                    <Form.Check
+                      type="checkbox"
+                      id="remember-email"
+                      label={t('auth.rememberEmail') || 'Ricorda email'}
+                      checked={rememberEmail}
+                      onChange={(e) => setRememberEmail(e.target.checked)}
+                    />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
                     <Form.Label className={styles.formLabel}>{t('auth.password')}</Form.Label>
-                    <InputGroup>
+                    <InputGroup className={styles.inputGroup}>
                         <Form.Control
                             className={styles.formInput}
                             type={showPassword ? 'text' : 'password'}
@@ -89,6 +138,7 @@ const LoginPage = () => {
                             value={formData.password}
                             onChange={handleChange}
                             placeholder={t('auth.passwordPlaceholder')}
+                            autoComplete="current-password"
                             required
                         />
                         <InputGroup.Text

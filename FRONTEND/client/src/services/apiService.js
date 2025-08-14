@@ -30,7 +30,7 @@ function shouldShowErrorAlert({ method, url, status, code, suppressErrorAlert })
   const isAuthFlow = CRITICAL_PATHS.some((p) => (url || '').includes(p));
   const isWriteOperation = upperMethod && upperMethod !== 'GET';
   const isServerError = typeof status === 'number' && status >= 500;
-  const isNetworkLevel = code === 'ERR_NETWORK' || typeof status !== 'number';
+  const isNetworkLevel = code === 'ERR_NETWORK' || code === 'ECONNABORTED' || typeof status !== 'number';
 
   // Sopprimi richieste notoriamente rumorose (es. analytics/notifications)
   if (shouldSuppressForNoise(url)) return false;
@@ -40,7 +40,16 @@ function shouldShowErrorAlert({ method, url, status, code, suppressErrorAlert })
   if (isWithinGrace && !isAuthFlow && !isServerError) return false;
 
   // Mostra alert solo in questi casi (riduce falsi positivi):
-  return isAuthFlow || isWriteOperation || isServerError || isNetworkLevel;
+  // - flusso auth sempre
+  // - errori 5xx sempre
+  // - operazioni di scrittura SOLO se non sono errori di rete generici (molti salvataggi vanno a buon fine comunque)
+  // - GET con errori di rete (gestiti anche con retry nativo altrove)
+  const isGet = upperMethod === 'GET';
+  if (isAuthFlow) return true;
+  if (isServerError) return true;
+  if (isWriteOperation && !isNetworkLevel) return true;
+  if (isGet && isNetworkLevel) return true;
+  return false;
 }
 
 function buildFullUrl(config = {}) {
@@ -68,6 +77,10 @@ apiClient.interceptors.request.use(
       const token = await authPreferences.getToken();
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
+      }
+      // Se stiamo inviando FormData, lascia che Axios imposti automaticamente il boundary
+      if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+        try { delete config.headers['Content-Type']; } catch (_) {}
       }
     } catch (error) {
       console.error('Errore nel recuperare il token:', error);

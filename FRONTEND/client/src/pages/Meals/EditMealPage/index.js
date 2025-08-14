@@ -58,6 +58,9 @@ const EditMealPage = () => {
 
   return (
     <div className={styles.editPage}>
+      <div className={styles.topBar}>
+        <BackButton className={styles.backButton} />
+      </div>
       <Card className={styles.card}>
         <Card.Body className="p-4 p-md-5">
           <h2 className={styles.title}>{t('meals.editMeal')}</h2>
@@ -73,8 +76,7 @@ const EditMealPage = () => {
           )}
         </Card.Body>
       </Card>
-      <BackButton className="mb-4" /> 
-                </div>
+    </div>
   );
 };
 

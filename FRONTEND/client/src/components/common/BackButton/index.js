@@ -2,23 +2,22 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from 'react-bootstrap';
 import { FaArrowLeft } from 'react-icons/fa';
+import styles from './BackButton.module.css';
 
-const BackButton = ({ className }) => {
+const BackButton = ({ className = '' }) => {
   const navigate = useNavigate();
 
-  // La magia è qui: navigate(-1) torna indietro di una pagina nella cronologia
   const handleBack = () => {
     navigate(-1);
   };
 
   return (
-    <Button variant="link" onClick={handleBack} className={`text-decoration-none text-secondary p-0 ${className}`}>
-      <FaArrowLeft className="me-2" />
+    <button onClick={handleBack} className={`${styles.backButton} ${className}`}>
+      <FaArrowLeft style={{ marginRight: 8 }} />
       Torna indietro
-    </Button>
+    </button>
   );
 };
 
-export default BackButton; 
+export default BackButton;

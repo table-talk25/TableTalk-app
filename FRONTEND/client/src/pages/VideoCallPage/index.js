@@ -12,6 +12,8 @@ import mealService from '../../services/mealService';
 import { Camera } from '@capacitor/camera';
 import { MediaStream } from '@capacitor/core';
 import BackButton from '../../components/common/BackButton';
+import LeaveReportModal from '../../components/meals/LeaveReportModal';
+import { sendLeaveReport } from '../../services/apiService';
 
 const VideoCallPage = () => {
     const { t } = useTranslation();
@@ -25,6 +27,7 @@ const VideoCallPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [retrying, setRetrying] = useState(false);
+    const [showLeaveModal, setShowLeaveModal] = useState(false);
 
     const localVideoRef = useRef();
     const remoteVideoRef = useRef();
@@ -184,16 +187,19 @@ const VideoCallPage = () => {
         getMeal();
     }, [roomName]);
 
-const handleLeaveCall = () => {
-    // Se siamo connessi a una stanza, avviamo la disconnessione.
-    // Questo avviene in background.
-    if (room) {
-        room.disconnect();
-    }
-    
-    // In ogni caso, reindirizziamo l'utente immediatamente.
-    // Questo garantisce che l'interfaccia utente risponda sempre
-    // all'azione dell'utente.
+const handleLeaveCall = () => setShowLeaveModal(true);
+
+const handleConfirmLeaveWithReport = async ({ reason, customReason }) => {
+    try {
+        // invia report di sicurezza legato al TableTalk®
+        await sendLeaveReport({ type: 'meal', id: roomName, reason, customReason });
+    } catch (_) {}
+    try {
+        // disconnessione sicura dalla stanza
+        if (connectedRoomRef.current) connectedRoomRef.current.disconnect();
+        if (room) room.disconnect();
+    } catch (_) {}
+    setShowLeaveModal(false);
     navigate(`/meals/${roomName}`);
 };
 
@@ -274,6 +280,12 @@ const handleEndCallForEveryone = async () => {
                     </Button>
                 )}
             </div>
+            <LeaveReportModal
+                show={showLeaveModal}
+                onClose={() => setShowLeaveModal(false)}
+                onConfirm={handleConfirmLeaveWithReport}
+                type="video"
+            />
             <BackButton className="mb-4" /> 
         </div>
     );

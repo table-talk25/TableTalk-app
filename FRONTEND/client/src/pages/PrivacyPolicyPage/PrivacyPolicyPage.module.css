@@ -11,10 +11,16 @@
     color: #333;
 }
 
+.topBar {
+    display: flex;
+    justify-content: flex-end;
+}
+
 .mainTitle {
     text-align: center;
     color: #2c3e50;
     margin-bottom: 10px;
+    font-size: 1.75rem; /* ridotto */
 }
 
 .lastUpdated {
@@ -30,6 +36,13 @@
     padding-bottom: 5px;
     margin-top: 30px;
     margin-bottom: 15px;
+    font-size: 1.15rem; /* ridotto */
+}
+
+/* Testo generale più compatto */
+.privacyContainer p,
+.privacyContainer li {
+    font-size: 0.95rem;
 }
 
 .disclaimer {

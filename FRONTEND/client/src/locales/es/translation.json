@@ -14,7 +14,10 @@
     "close": "Cerrar",
     "yes": "Sí",
     "no": "No",
-    "pleaseCorrectErrors": "Por favor, corrija los errores en el formulario."
+    "pleaseCorrectErrors": "Por favor, corrija los errores en el formulario.",
+    "dateNotAvailable": "Fecha no disponible",
+    "invalidDate": "Fecha inválida",
+    "errorFormattingDate": "Error al formatear la fecha"
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -66,7 +69,8 @@
     "sending": "Enviando...",
     "requestSent": "¡Solicitud enviada!",
     "emailSentMessage": "Si el email está registrado, recibirás un enlace de restablecimiento.",
-    "backToLogin": "Volver al inicio de sesión"
+    "backToLogin": "Volver al inicio de sesión",
+    "rememberEmail": "Recordar email"
   },
   "meals": {
     "createMeal": "Crear TableTalk®",
@@ -121,6 +125,17 @@
       "dateClosest": "Fecha (más cercana)",
       "participantsMost": "Participantes (más populares)",
       "resetFilters": "Restablecer filtros"
+    },
+    "emptyState": {
+      "title": "No se encontraron TableTalk®",
+      "description": "No hay TableTalk® que coincidan con los filtros actuales. ¡Intenta cambiarlos o crea uno tú mismo!"
+    },
+    "card": {
+      "organizedBy": "Organizado por",
+      "duration": "Duración",
+      "minutes": "minutos",
+      "end": "Fin",
+      "participants": "participantes"
     },
     "createNewTitle": "Crear un Nuevo TableTalk®",
     "createNewSubtitle": "Complete los campos para organizar su próxima reunión virtual.",
@@ -372,6 +387,45 @@
     "confirmBlock": "¿Estás seguro de que quieres bloquear a este usuario?",
     "confirmUnblock": "¿Estás seguro de que quieres desbloquear a este usuario?",
     "blockedUserMessage": "No puedes interactuar con este usuario porque está bloqueado"
+  },
+  "report": {
+    "reportUser": "Reportar Usuario",
+    "reportSuccess": "Reporte enviado con éxito. Gracias por ayudar a mantener TableTalk® un ambiente seguro.",
+    "userToReport": "Usuario a reportar",
+    "reportReason": "Motivo del reporte *",
+    "selectReason": "Selecciona un motivo",
+    "reasons": {
+      "inappropriate": "Comportamiento Inapropiado",
+      "spam": "Spam",
+      "fakeProfile": "Perfil Falso",
+      "other": "Otro"
+    },
+    "additionalDetails": "Detalles adicionales",
+    "detailsPlaceholder": "Proporciona detalles adicionales sobre el reporte (opcional)",
+    "cancel": "Cancelar",
+    "sendReport": "Enviar Reporte",
+    "sending": "Enviando...",
+    "selectReasonError": "Por favor selecciona un motivo para el reporte",
+    "sendError": "Error al enviar el reporte"
+  },
+  "leaveReport": {
+    "leaveTitle": "Dejar {{subject}}",
+    "whyLeaving": "¿Por qué quieres dejar {{subject}}?",
+    "selectReason": "Selecciona un motivo",
+    "reasons": {
+      "personal": "Motivos personales",
+      "uncomfortable": "No me siento cómodo",
+      "technical": "Problemas técnicos",
+      "other": "Otro"
+    },
+    "writeReason": "Escribe el motivo...",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "subjects": {
+      "meal": "el TableTalk®",
+      "video": "la videollamada",
+      "chat": "el chat"
+    }
   },
   "chat": {
     "title": "Chat",

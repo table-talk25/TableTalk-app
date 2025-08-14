@@ -59,6 +59,11 @@ const PublicProfilePage = () => {
             joinedMeal => !profile.createdMeals?.some(createdMeal => createdMeal._id === joinedMeal._id)
           ) || [];
 
+    // Limita le liste a massimo 3 elementi per sezione
+    const organizedMealsAll = profile.createdMeals || [];
+    const organizedMealsTop3 = organizedMealsAll.slice(0, 3);
+    const participatedTop3 = participatedMeals.slice(0, 3);
+
     return (
         <div className={styles.profilePageBackground}>
             <Container className={styles.profileContainer}>
@@ -134,9 +139,9 @@ const PublicProfilePage = () => {
                                             {t('publicProfile.organizedMeals')} ({profile.createdMeals?.length || 0})
                                         </Accordion.Header>
                                         <Accordion.Body>
-                                            {profile.createdMeals?.length > 0 ? (
+                                        {organizedMealsAll.length > 0 ? (
                                                 <ul className={styles.mealList}>
-                                                    {profile.createdMeals.map(meal => (
+                                                    {organizedMealsTop3.map(meal => (
                                                         <li key={meal._id}>
                                                             <Link to={`/meals/${meal._id}`} className={styles.mealLink}>
                                                                 <span className={styles.mealTitle}>{meal.title}</span>
@@ -144,6 +149,11 @@ const PublicProfilePage = () => {
                                                             </Link>
                                                         </li>
                                                     ))}
+                                                    {organizedMealsAll.length > 3 && (
+                                                      <li className="text-muted small">
+                                                        Mostrati 3 su {organizedMealsAll.length}
+                                                      </li>
+                                                    )}
                                                 </ul>
                                             ) : <p className="text-muted small">{t('publicProfile.noOrganizedMeals')}</p>}
                                         </Accordion.Body>
@@ -155,7 +165,7 @@ const PublicProfilePage = () => {
                                         <Accordion.Body>
                                             {participatedMeals.length > 0 ? (
                                                 <ul className={styles.mealList}>
-                                                    {participatedMeals.map(meal => (
+                                                    {participatedTop3.map(meal => (
                                                         <li key={meal._id}>
                                                             <Link to={`/meals/${meal._id}`} className={styles.mealLink}>
                                                                 <span className={styles.mealTitle}>{meal.title}</span>
@@ -163,6 +173,11 @@ const PublicProfilePage = () => {
                                                             </Link>
                                                         </li>
                                                     ))}
+                                                    {participatedMeals.length > 3 && (
+                                                      <li className="text-muted small">
+                                                        Mostrati 3 su {participatedMeals.length}
+                                                      </li>
+                                                    )}
                                                 </ul>
                                             ) : <p className="text-muted small">{t('publicProfile.noParticipations')}</p>}
                                         </Accordion.Body>

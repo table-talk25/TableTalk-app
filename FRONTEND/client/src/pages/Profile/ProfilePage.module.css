@@ -1,13 +1,39 @@
-/* File: frontend/client/src/pages/Profile/ProfilePage.module.css (Versione Ottimizzata) */
+/* File: frontend/client/src/pages/Profile/ProfilePage.module.css (Versione Ottimizzata + Mobile) */
 
 /* ========================================
    STILI DI BASE (Mobile-First)
    ======================================== */
 
-.profileContainer {
-    width: 100%;
-    max-width: 1200px;
-    padding: 0 1rem;
+.profilePage {
+  padding: 12px 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 12px;
+  position: relative;
+  padding-right: 96px; /* spazio per il bottone in alto a destra */
+  min-height: 32px; /* per dare spazio al back piccolo anche senza titolo */
+}
+
+/* titolo rimosso su richiesta: classe lasciata vuota per compatibilità */
+.pageTitle { display: none; }
+
+/* Back button piccolo in alto a destra */
+.smallBackButton {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 6px 10px !important;
+  font-size: 0.8rem !important;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* Messaggio di benvenuto (Alert) */
@@ -43,10 +69,10 @@
 
 /* La nostra griglia principale: per default è a UNA COLONNA */
 .profileGrid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  width: 100%;
 }
 
 /* Stile base per tutte le card */
@@ -55,12 +81,12 @@
 .profileInterestsCard,
 .profileLanguagesCard,
 .profileSettingsCard {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    text-align: left; /* Allineamo il testo a sinistra per coerenza */
+  background: #fff;
+  border-radius: 12px;
+  padding: clamp(12px, 2.4vw, 16px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-align: left;
 }
 
 .profileHeaderCard:hover,
@@ -108,7 +134,7 @@
     .profileInterestsCard,
     .profileLanguagesCard,
     .profileSettingsCard {
-        padding: 2rem;
+        padding: 24px;
     }
 }
 

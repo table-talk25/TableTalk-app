@@ -4,6 +4,7 @@ import { getReceivedInvitations, acceptInvitation } from '../../services/invitat
 import { Button, Card, Spinner } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
+import BackButton from '../../components/common/BackButton';
 
 const InvitationsPage = () => {
   const { t } = useTranslation();
@@ -31,6 +32,7 @@ const InvitationsPage = () => {
 
   return (
     <div>
+      <BackButton className="mb-3" />
       <h2>{t('invitations.pageTitle')}</h2>
       {invitations.length === 0 && <p>{t('invitations.noInvitations')}</p>}
       {invitations.map(inv => (

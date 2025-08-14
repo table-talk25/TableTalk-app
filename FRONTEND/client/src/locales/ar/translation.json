@@ -14,7 +14,10 @@
     "close": "إغلاق",
     "yes": "نعم",
     "no": "لا",
-    "pleaseCorrectErrors": "يرجى تصحيح الأخطاء في النموذج."
+    "pleaseCorrectErrors": "يرجى تصحيح الأخطاء في النموذج.",
+    "dateNotAvailable": "التاريخ غير متاح",
+    "invalidDate": "تاريخ غير صالح",
+    "errorFormattingDate": "خطأ في تنسيق التاريخ"
   },
   "auth": {
     "login": "تسجيل الدخول",
@@ -66,7 +69,8 @@
     "sending": "جاري الإرسال...",
     "requestSent": "تم إرسال الطلب!",
     "emailSentMessage": "إذا كان البريد الإلكتروني مسجلًا، ستتلقى رابط إعادة التعيين.",
-    "backToLogin": "العودة إلى تسجيل الدخول"
+    "backToLogin": "العودة إلى تسجيل الدخول",
+    "rememberEmail": "تذكر البريد الإلكتروني"
   },
   "meals": {
     "createMeal": "إنشاء TableTalk®",
@@ -121,6 +125,17 @@
       "dateClosest": "التاريخ (الأقرب)",
       "participantsMost": "المشاركون (الأكثر شعبية)",
       "resetFilters": "إعادة تعيين المرشحات"
+    },
+    "emptyState": {
+      "title": "لم يتم العثور على TableTalk®",
+      "description": "لا توجد TableTalk® تطابق المرشحات الحالية. جرب تغييرها أو أنشئ واحدة بنفسك!"
+    },
+    "card": {
+      "organizedBy": "منظم بواسطة",
+      "duration": "المدة",
+      "minutes": "دقائق",
+      "end": "النهاية",
+      "participants": "المشاركون"
     },
     "createNewTitle": "إنشاء TableTalk® جديد",
     "createNewSubtitle": "املأ الحقول لتنظيم اجتماعك الافتراضي القادم.",
@@ -389,6 +404,45 @@
     "confirmBlock": "هل أنت متأكد من أنك تريد حظر هذا المستخدم؟",
     "confirmUnblock": "هل أنت متأكد من أنك تريد إلغاء حظر هذا المستخدم؟",
     "blockedUserMessage": "لا يمكنك التفاعل مع هذا المستخدم لأنه محظور"
+  },
+  "report": {
+    "reportUser": "الإبلاغ عن المستخدم",
+    "reportSuccess": "تم إرسال البلاغ بنجاح. شكرًا لمساعدتك في الحفاظ على TableTalk® بيئة آمنة.",
+    "userToReport": "المستخدم المراد الإبلاغ عنه",
+    "reportReason": "سبب البلاغ *",
+    "selectReason": "اختر سببًا",
+    "reasons": {
+      "inappropriate": "سلوك غير لائق",
+      "spam": "بريد عشوائي",
+      "fakeProfile": "ملف شخصي مزيف",
+      "other": "أخرى"
+    },
+    "additionalDetails": "تفاصيل إضافية",
+    "detailsPlaceholder": "قدم تفاصيل إضافية حول البلاغ (اختياري)",
+    "cancel": "إلغاء",
+    "sendReport": "إرسال البلاغ",
+    "sending": "جاري الإرسال...",
+    "selectReasonError": "يرجى اختيار سبب للبلاغ",
+    "sendError": "خطأ في إرسال البلاغ"
+  },
+  "leaveReport": {
+    "leaveTitle": "مغادرة {{subject}}",
+    "whyLeaving": "لماذا تريد مغادرة {{subject}}؟",
+    "selectReason": "اختر سببًا",
+    "reasons": {
+      "personal": "أسباب شخصية",
+      "uncomfortable": "لا أشعر بالراحة",
+      "technical": "مشاكل تقنية",
+      "other": "أخرى"
+    },
+    "writeReason": "اكتب السبب...",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "subjects": {
+      "meal": "TableTalk®",
+      "video": "مكالمة الفيديو",
+      "chat": "الدردشة"
+    }
   },
   "chat": {
     "title": "الدردشة",

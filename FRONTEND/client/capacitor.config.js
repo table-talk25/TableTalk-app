@@ -1,10 +1,12 @@
 // Configurazione Capacitor diretta
+const devServerUrl = process.env.DEV_SERVER_URL || '';
 const config = {
   appId: 'com.tabletalk.socialapp',
   appName: 'TableTalk Social',
   webDir: 'build',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    ...(devServerUrl ? { url: devServerUrl, cleartext: true } : {})
   },
   plugins: {
     GoogleMaps: {

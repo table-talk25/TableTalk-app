@@ -14,7 +14,7 @@
    ======================================== */
 .heroSection {
   text-align: center;
-  padding: clamp(40px, 8vh, 80px) 20px;
+  padding: clamp(32px, 7vh, 64px) 18px;
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%),
               linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -37,7 +37,7 @@
 }
 
 .heroSection h1 {
-  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-size: clamp(2.0rem, 4.5vw, 3.2rem);
   font-weight: 700;
   margin-bottom: clamp(16px, 3vh, 24px);
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
@@ -45,7 +45,7 @@
 }
 
 .heroSection p {
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
   max-width: min(650px, 90%);
   margin: 0 auto clamp(30px, 5vh, 40px);
   line-height: 1.6;
@@ -64,7 +64,7 @@
 
 .heroButtons .btn {
   padding: clamp(10px, 2vw, 14px) clamp(24px, 4vw, 32px);
-  font-size: clamp(0.9rem, 2vw, 1.1rem);
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
   font-weight: 600;
   border-radius: 50px;
   transition: all 0.3s ease;
@@ -93,13 +93,13 @@
    SEZIONE FEATURES
    ======================================== */
 .featuresSection {
-  padding: clamp(50px, 8vh, 100px) 20px;
+  padding: clamp(40px, 7vh, 80px) 18px;
   background: white;
 }
 
 .featuresSection h2 {
   text-align: center;
-  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-size: clamp(1.6rem, 3.6vw, 2.5rem);
   color: #2d3748;
   margin-bottom: clamp(40px, 6vh, 70px);
 }
@@ -108,14 +108,14 @@
   display: grid;
   /* Questa singola riga gestisce desktop, tablet e mobile in modo fluido. */
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: clamp(25px, 4vw, 40px);
+  gap: clamp(20px, 3.5vw, 36px);
   max-width: 1200px;
   margin: 0 auto;
 }
 
 .featureCard {
   background: #f8f9fa;
-  padding: clamp(25px, 4vw, 35px);
+  padding: clamp(20px, 3.5vw, 30px);
   border-radius: 15px;
   border: 1px solid #e9ecef;
   text-align: center;
@@ -128,13 +128,13 @@
 }
 
 .featureIcon {
-  font-size: clamp(2.2rem, 4vw, 2.8rem);
+  font-size: clamp(2.0rem, 3.6vw, 2.5rem);
   color: var(--primary-color, #FF6B6B);
   margin-bottom: clamp(15px, 3vh, 20px);
 }
 
 .featureCard h3 {
-  font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+  font-size: clamp(1.1rem, 2.2vw, 1.4rem);
   color: #2d3748;
   margin-bottom: clamp(10px, 2vh, 15px);
 }
@@ -142,7 +142,7 @@
 .featureCard p {
   color: #4a5568;
   line-height: 1.6;
-  font-size: clamp(0.9rem, 2vw, 1rem);
+  font-size: clamp(0.85rem, 1.8vw, 0.95rem);
 }
 
 /* ========================================
@@ -150,19 +150,19 @@
    ======================================== */
 .ctaSection {
   text-align: center;
-  padding: clamp(50px, 8vh, 100px) 20px;
+  padding: clamp(40px, 7vh, 80px) 18px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
 
 .ctaSection h2 {
-  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-size: clamp(1.6rem, 3.6vw, 2.3rem);
   margin-bottom: clamp(15px, 3vh, 25px);
   font-weight: 700;
 }
 
 .ctaSection p {
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
   max-width: min(550px, 90%);
   margin: 0 auto clamp(30px, 4vh, 40px);
   line-height: 1.6;
@@ -176,7 +176,7 @@
 
 .ctaButtons .btn {
   padding: clamp(10px, 2vw, 14px) clamp(24px, 4vw, 32px);
-  font-size: clamp(0.9rem, 2vw, 1.1rem);
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
   font-weight: 600;
   border-radius: 50px;
   transition: all 0.3s ease;

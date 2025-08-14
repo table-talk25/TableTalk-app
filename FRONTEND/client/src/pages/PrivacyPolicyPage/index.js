@@ -3,19 +3,18 @@
 // File: FRONTEND/client/src/pages/PrivacyPolicyPage/index.js
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styles from './PrivacyPolicyPage.module.css';
+import BackButton from '../../components/common/BackButton';
 
 const PrivacyPolicyPage = () => {
     const { t } = useTranslation();
-    const navigate = useNavigate();
 
     return (
         <div className={styles.privacyContainer}>
-            <button onClick={() => navigate(-1)} className={styles.backButton}>
-                &larr; {t('common.back')}
-            </button>
+            <div className={styles.topBar}>
+                <BackButton className={styles.backButton} />
+            </div>
             
             <h1 className={styles.mainTitle}>{t('privacy.title')}</h1>
             <p className={styles.lastUpdated}>{t('privacy.lastUpdated')}</p>

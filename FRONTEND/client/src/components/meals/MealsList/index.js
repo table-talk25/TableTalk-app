@@ -23,7 +23,7 @@ const MealsList = ({ meals }) => {
       {meals.map(meal => (
         // Ogni card è un 'carouselItem'
         <div key={meal._id} className={styles.carouselItem}>
-          <MealCard meal={meal} />
+          <MealCard meal={meal} compact />
         </div>
       ))}
     </div>

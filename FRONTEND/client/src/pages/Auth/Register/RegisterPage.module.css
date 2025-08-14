@@ -9,6 +9,7 @@
   justify-content: center; /* Centra la card verticalmente */
   padding: 2rem 1rem;
   background-color: #f8f9fa;
+  overflow-x: hidden; /* Evita overflow orizzontale su mobile */
 }
 
 .card {
@@ -59,6 +60,9 @@
   border: 1px solid #ced4da;
   background-color: #f8f9fa;
   transition: all 0.2s ease;
+  width: 100%;
+  min-width: 0; /* permette di restringersi in container flessibili */
+  box-sizing: border-box;
 }
 
 .formInput:focus {
@@ -77,6 +81,20 @@
   display: grid;
   place-items: center;
   color: #6c757d;
+  flex: 0 0 auto; /* evita che l'icona allarghi il gruppo */
+}
+
+/* Assicura che gruppi di input a destra/sinistra non sforino */
+.inputGroup {
+  width: 100%;
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 380px) {
+  .card {
+    padding: 1.5rem; /* compattiamo su telefoni molto piccoli */
+  }
 }
 
 .passwordRequirements {

@@ -1,7 +1,7 @@
 /* File: src/components/layout/Navbar/Navbar.module.css (Versione Finale Responsive) */
 
 .navbar {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.85);
   height: 80px;
   display: flex;
   justify-content: center;
@@ -15,10 +15,12 @@
   transition: all 0.3s ease;
   border-bottom: 1px solid #e2e8f0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  -webkit-backdrop-filter: saturate(180%) blur(10px);
+  backdrop-filter: saturate(180%) blur(10px);
 }
 .navbar.scrolled {
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  border-bottom: 1px solid #f0f0f0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  border-bottom: 2px solid var(--primary-color);
 }
 
 .navContainer {

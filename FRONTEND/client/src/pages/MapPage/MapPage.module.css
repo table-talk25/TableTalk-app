@@ -1,0 +1,78 @@
+/* File: src/pages/MapPage/MapPage.module.css */
+
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+}
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
+  backdrop-filter: saturate(180%) blur(6px);
+}
+
+.backButton { transform: scale(0.85); }
+
+.header {
+  padding: 10px 12px 6px;
+}
+
+.titleWrap { display: flex; flex-direction: column; }
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.subtitle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.mapContainer {
+  position: relative;
+  flex: 1;
+  min-height: 0; /* per evitare overflow su mobile */
+}
+
+.fab {
+  position: absolute;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+  font-weight: 600;
+}
+
+.badge {
+  position: absolute;
+  left: max(12px, env(safe-area-inset-left));
+  top: max(12px, env(safe-area-inset-top));
+  background: rgba(17,24,39,0.75);
+  color: #fff;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .title { font-size: 0.95rem; }
+  .subtitle { font-size: 0.8rem; }
+  .fab { padding: 9px 12px; }
+}
+

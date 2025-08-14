@@ -13,7 +13,7 @@ import { useMealTranslations } from '../../../hooks/useMealTranslations';
 import styles from './MealsPage.module.css';
 import BackButton from '../../../components/common/BackButton';
 import MealsList from '../../../components/meals/MealsList';
-import MealFilters from '../../../components/meals/MealFilters';
+// import MealFilters from '../../../components/meals/MealFilters';
 
 
 const MealsPage = () => {
@@ -27,12 +27,7 @@ const MealsPage = () => {
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
-  const [filters, setFilters] = useState({
-    type: '',
-    mealType: '', // Nuovo filtro per tipo di TableTalk® (virtuale/fisico)
-    status: '',
-    sortBy: 'date',
-  });
+  // Filtri rimossi dalla pagina Meals: presenti nella pagina di ricerca
 
   useEffect(() => {
     console.log('🔄 MealsPage: Caricamento pasti...');
@@ -68,45 +63,16 @@ const MealsPage = () => {
     return () => clearTimeout(debounceTimeout);
   }, [searchTerm, t]);
 
-  // Effetto per applicare i filtri (solo esempio, puoi adattare la logica)
-  useEffect(() => {
-    // Puoi chiamare fetchMeals con i filtri, oppure filtrare i TableTalk® già caricati
-    // fetchMeals({ ...filters, status: filters.status || 'upcoming,ongoing' });
-    // Per ora non richiama fetchMeals per non sovrascrivere la ricerca
-  }, [filters]);
+  // Nessun effetto filtri su Meals: la pagina è pulita
 
   const groupedMeals = useMemo(() => {
-    if (searchResults) return {}; // Non calcolare se stiamo mostrando la ricerca
-    // Applica i filtri ai TableTalk® caricati
-    let filteredMeals = meals;
-    
-    // Filtro per tipo di TableTalk® (colazione, pranzo, ecc.)
-    if (filters.type) {
-      filteredMeals = filteredMeals.filter(m => m.type === filters.type);
-    }
-    
-    // Filtro per modalità (virtuale/fisico)
-    if (filters.mealType) {
-      filteredMeals = filteredMeals.filter(m => m.mealType === filters.mealType);
-    }
-    
-    // Filtro per stato
-    if (filters.status) {
-      filteredMeals = filteredMeals.filter(m => m.status === filters.status);
-    }
-    
-    // Ordinamento
-    if (filters.sortBy === 'participants') {
-      filteredMeals = [...filteredMeals].sort((a, b) => (b.participants?.length || 0) - (a.participants?.length || 0));
-    } else {
-      filteredMeals = [...filteredMeals].sort((a, b) => new Date(a.date) - new Date(b.date));
-    }
-    
-    return filteredMeals.reduce((acc, meal) => {
+    if (searchResults) return {};
+    const sorted = [...(meals || [])].sort((a, b) => new Date(a.date) - new Date(b.date));
+    return sorted.reduce((acc, meal) => {
       (acc[meal.type] = acc[meal.type] || []).push(meal);
       return acc;
     }, {});
-  }, [meals, searchResults, filters]);
+  }, [meals, searchResults]);
 
   // DOPO: Controlli di autenticazione
   // Se l'utente non è autenticato, reindirizza al login
@@ -165,37 +131,53 @@ const MealsPage = () => {
     ));
   };
 
+  const isEmpty = !isSearching && !searchResults && !loading && !error && (meals?.length || 0) === 0;
+
   return (
     <Container fluid className={styles.mealsPage}>
+      <div className={styles.topBar}><BackButton className={styles.backButton} /></div>
       <div className={styles.header}>
-        <BackButton />
-        <h1 className={styles.pageTitle}>{t('meals.pageTitle')}</h1>
         <Link to="/meals/create" className={styles.createButton}>
           {t('meals.createButton')}
         </Link>
-      </div>
-
-      <div className={styles.searchSection}>
-        <div className={styles.searchContainer}>
-          <FaSearch className={styles.searchIcon} />
-          <input
-            type="text"
-            placeholder={t('meals.searchPlaceholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={styles.searchInput}
-          />
+        {/* Barra di ricerca immediatamente sotto titolo e pulsanti */}
+        <div className={styles.searchInHeader}>
+          <div className={styles.searchContainer} onClick={() => window.location.href = '/meals/search'}>
+            <FaSearch className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder={t('meals.searchPlaceholder')}
+              className={styles.searchInput}
+              readOnly
+            />
+          </div>
         </div>
       </div>
 
-      <div className={styles.content}>
-        <div className={styles.filtersSection}>
-          <MealFilters filters={filters} onFilterChange={setFilters} />
+
+      {isEmpty ? (
+        <div className={styles.emptyFeed}> 
+          <div className={styles.heroCard}>
+            <div className={styles.heroContent}>
+              <h2>{t('meals.emptyState.title')}</h2>
+              <p>{t('meals.emptyState.description')}</p>
+              <Link to="/meals/create" className={styles.ctaPrimary}>{t('meals.createButton')}</Link>
+              <Link to="/map" className={styles.ctaSecondary}>Scopri sulla mappa</Link>
+            </div>
+          </div>
+
+          <div className={styles.suggestedSection}>
+            <h3 className={styles.sectionTitle}>Suggeriti per te</h3>
+            <MealsList meals={[]} />
+          </div>
         </div>
-        <div className={styles.mealsSection}>
-          {renderContent()}
+      ) : (
+        <div className={styles.content}>
+          <div className={styles.mealsSection}>
+            {renderContent()}
+          </div>
         </div>
-      </div>
+      )}
     </Container>
   );
 };

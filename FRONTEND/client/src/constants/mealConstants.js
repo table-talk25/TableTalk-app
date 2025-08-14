@@ -107,21 +107,25 @@ export const getMealCoverImageUrl = (imageName) => {
   if (!imageName || typeof imageName !== 'string' || imageName.includes('default-meal')) {
     return '/assets/images/default-meal-placeholder.jpeg';
   }
+  // Normalizza eventuali backslash in slash (nel caso il server restituisca path Windows)
+  let normalized = imageName.replace(/\\\\/g, '/').replace(/\\/g, '/');
   // Caso Capacitor (foto locale su device)
-  if (typeof imageName === 'string' && imageName.startsWith('capacitor://')) {
-    return imageName;
+  if (normalized.startsWith('capacitor://')) {
+    return normalized;
   }
   // Caso URL assoluto (già pronto)
-  if (typeof imageName === 'string' && imageName.startsWith('http')) {
-    return imageName;
+  if (normalized.startsWith('http')) {
+    return normalized;
   }
-  // Caso path relativo dal backend - usa la configurazione corretta
   const baseUrl = isNative ? DEV_SERVER_URL : SERVER_URL;
-  if (typeof imageName === 'string' && imageName.includes('uploads/')) {
-    return `${baseUrl}/${imageName}`;
-  } else {
-    return `${baseUrl}/uploads/meal-images/${imageName}`;
+  // Rimuovi eventuale slash iniziale duplicato
+  if (normalized.startsWith('/')) normalized = normalized.replace(/^\/+/, '');
+  // Se contiene già la cartella uploads, usa direttamente
+  if (normalized.includes('uploads')) {
+    return `${baseUrl}/${normalized}`;
   }
+  // Altrimenti assume che sia solo il filename nella cartella meal-images
+  return `${baseUrl}/uploads/meal-images/${normalized}`;
 };
 
 /**
@@ -133,7 +137,7 @@ export const getMealCoverImageUrl = (imageName) => {
 export const getHostAvatarUrl = (profileImage) => {
   // Se non c'è un'immagine o è quella di default, usa il placeholder locale
   if (!profileImage || typeof profileImage !== 'string' || profileImage.includes('default')) {
-    return '/assets/images/default-avatar.jpeg';
+    return '/assets/images/default-avatar.jpg';
   }
   // Caso Capacitor (foto locale su device)
   if (typeof profileImage === 'string' && profileImage.startsWith('capacitor://')) {

@@ -14,7 +14,10 @@
     "close": "Schließen",
     "yes": "Ja",
     "no": "Nein",
-    "pleaseCorrectErrors": "Bitte korrigieren Sie die Fehler im Formular."
+    "pleaseCorrectErrors": "Bitte korrigieren Sie die Fehler im Formular.",
+    "dateNotAvailable": "Datum nicht verfügbar",
+    "invalidDate": "Ungültiges Datum",
+    "errorFormattingDate": "Fehler beim Formatieren des Datums"
   },
   "auth": {
     "login": "Anmelden",
@@ -66,7 +69,8 @@
     "sending": "Wird gesendet...",
     "requestSent": "Anfrage gesendet!",
     "emailSentMessage": "Wenn die E-Mail registriert ist, erhalten Sie einen Reset-Link.",
-    "backToLogin": "Zurück zum Login"
+    "backToLogin": "Zurück zum Login",
+    "rememberEmail": "E-Mail merken"
   },
   "meals": {
     "createMeal": "TableTalk® erstellen",
@@ -121,6 +125,17 @@
       "dateClosest": "Datum (nächste)",
       "participantsMost": "Teilnehmer (beliebteste)",
       "resetFilters": "Filter zurücksetzen"
+    },
+    "emptyState": {
+      "title": "Keine TableTalk® gefunden",
+      "description": "Es gibt keine TableTalk®, die den aktuellen Filtern entsprechen. Versuchen Sie, sie zu ändern oder erstellen Sie selbst einen!"
+    },
+    "card": {
+      "organizedBy": "Organisiert von",
+      "duration": "Dauer",
+      "minutes": "Minuten",
+      "end": "Ende",
+      "participants": "Teilnehmer"
     },
     "createNewTitle": "Neuen TableTalk® erstellen",
     "createNewSubtitle": "Füllen Sie die Felder aus, um Ihr nächstes virtuelles Treffen zu organisieren.",
@@ -372,6 +387,45 @@
     "confirmBlock": "Sind Sie sicher, dass Sie diesen Benutzer blockieren möchten?",
     "confirmUnblock": "Sind Sie sicher, dass Sie diesen Benutzer entsperren möchten?",
     "blockedUserMessage": "Sie können nicht mit diesem Benutzer interagieren, da er blockiert ist"
+  },
+  "report": {
+    "reportUser": "Benutzer melden",
+    "reportSuccess": "Meldung erfolgreich gesendet. Danke, dass Sie helfen, TableTalk® zu einer sicheren Umgebung zu machen.",
+    "userToReport": "Zu meldender Benutzer",
+    "reportReason": "Grund der Meldung *",
+    "selectReason": "Wählen Sie einen Grund",
+    "reasons": {
+      "inappropriate": "Unangemessenes Verhalten",
+      "spam": "Spam",
+      "fakeProfile": "Gefälschtes Profil",
+      "other": "Sonstiges"
+    },
+    "additionalDetails": "Zusätzliche Details",
+    "detailsPlaceholder": "Geben Sie zusätzliche Details zur Meldung an (optional)",
+    "cancel": "Abbrechen",
+    "sendReport": "Meldung senden",
+    "sending": "Wird gesendet...",
+    "selectReasonError": "Bitte wählen Sie einen Grund für die Meldung",
+    "sendError": "Fehler beim Senden der Meldung"
+  },
+  "leaveReport": {
+    "leaveTitle": "{{subject}} verlassen",
+    "whyLeaving": "Warum möchten Sie {{subject}} verlassen?",
+    "selectReason": "Wählen Sie einen Grund",
+    "reasons": {
+      "personal": "Persönliche Gründe",
+      "uncomfortable": "Ich fühle mich nicht wohl",
+      "technical": "Technische Probleme",
+      "other": "Sonstiges"
+    },
+    "writeReason": "Grund eingeben...",
+    "cancel": "Abbrechen",
+    "confirm": "Bestätigen",
+    "subjects": {
+      "meal": "das TableTalk®",
+      "video": "den Videoanruf",
+      "chat": "den Chat"
+    }
   },
   "chat": {
     "title": "Chat",

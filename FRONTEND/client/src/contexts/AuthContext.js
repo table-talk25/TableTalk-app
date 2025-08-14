@@ -1,6 +1,7 @@
 // FRONTEND/client/src/contexts/AuthContext.js (Versione Definitiva e Pulita)
 
 import React, { createContext, useState, useEffect, useContext, useMemo } from 'react';
+import Spinner from '../components/common/Spinner';
 import authService from '../services/authService'; 
 import profileService from '../services/profileService';
 import { authPreferences } from '../utils/preferences';
@@ -25,18 +26,18 @@ export const AuthProvider = ({ children }) => {
                     setToken(storedToken); 
                     setIsAuthenticated(true);
 
-                    try {
-                      const freshUser = await authService.verifyToken();
-                      setUser(freshUser);
-                    } catch (err) {
-                      // Non slogghiamo su errori di rete temporanei; solo su 401
-                      const status = err?.response?.status;
-                      if (status === 401) {
-                        await logout();
-                      } else {
-                        console.warn('[Auth] verifyToken fallito, continuo offline/soft-fail:', err?.message || err);
+                    // Deferisci la verifica token dopo il primo paint per evitare ritardi nello startup
+                    setTimeout(async () => {
+                      try {
+                        const freshUser = await authService.verifyToken();
+                        setUser(freshUser);
+                      } catch (err) {
+                        const status = err?.response?.status;
+                        if (status === 401) {
+                          await logout();
+                        }
                       }
-                    }
+                    }, 0);
                 }
             } catch (error) {
                 console.error('Verifica iniziale del token fallita, eseguo logout:', error);
@@ -61,6 +62,7 @@ export const AuthProvider = ({ children }) => {
         setUser(data.user);
         setToken(data.token); 
         setIsAuthenticated(true);
+        try { await authPreferences.saveUser(data.user); await authPreferences.saveToken(data.token); } catch(_) {}
         // Non verificare subito il token per evitare race conditions sul logout immediato
         // La verifica avverrà al prossimo render o alla prima richiesta protetta
       } catch (err) {
@@ -104,6 +106,12 @@ export const AuthProvider = ({ children }) => {
     };
     
     // 2. Creiamo la costante 'value' con useMemo
+    const updateUser = async (newUserData) => {
+      const merged = newUserData ? newUserData : user;
+      setUser(merged);
+      try { await authPreferences.saveUser(merged); } catch (_) {}
+    };
+
     const value = useMemo(() => ({
         user,
         token,
@@ -113,14 +121,15 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         register,
-        deleteAccount
-      }), [user, token, isAuthenticated, loading, error, login, logout, register, deleteAccount]); // dipendenze corrette
+        deleteAccount,
+        updateUser
+      }), [user, token, isAuthenticated, loading, error]);
   
   
       // 3. Usiamo la costante 'value' nel Provider
       return (
           <AuthContext.Provider value={value}>
-              {!loading && children}
+              {loading ? <Spinner fullscreen label="Caricamento..." /> : children}
           </AuthContext.Provider>
       );
   };

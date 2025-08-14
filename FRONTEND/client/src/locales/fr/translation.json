@@ -14,7 +14,10 @@
     "close": "Fermer",
     "yes": "Oui",
     "no": "Non",
-    "pleaseCorrectErrors": "Veuillez corriger les erreurs dans le formulaire."
+    "pleaseCorrectErrors": "Veuillez corriger les erreurs dans le formulaire.",
+    "dateNotAvailable": "Date non disponible",
+    "invalidDate": "Date invalide",
+    "errorFormattingDate": "Erreur lors du formatage de la date"
   },
   "auth": {
     "login": "Se connecter",
@@ -66,7 +69,8 @@
     "sending": "Envoi...",
     "requestSent": "Demande envoyée !",
     "emailSentMessage": "Si l'email est enregistré, vous recevrez un lien de réinitialisation.",
-    "backToLogin": "Retour à la connexion"
+    "backToLogin": "Retour à la connexion",
+    "rememberEmail": "Se souvenir de l'email"
   },
   "meals": {
     "createMeal": "Créer un TableTalk®",
@@ -119,8 +123,19 @@
       "upcoming": "À venir",
       "ongoing": "En cours",
       "dateClosest": "Date (plus proche)",
-      "participantsMost": "Participants (plus populaires)",
+      "participantsMost": "Participants (les plus populaires)",
       "resetFilters": "Réinitialiser les filtres"
+    },
+    "emptyState": {
+      "title": "Aucun TableTalk® trouvé",
+      "description": "Il n'y a pas de TableTalk® correspondant aux filtres actuels. Essayez de les modifier ou créez-en un vous-même !"
+    },
+    "card": {
+      "organizedBy": "Organisé par",
+      "duration": "Durée",
+      "minutes": "minutes",
+      "end": "Fin",
+      "participants": "participants"
     },
     "createNewTitle": "Créer un Nouveau TableTalk®",
     "createNewSubtitle": "Remplissez les champs pour organiser votre prochaine réunion virtuelle.",
@@ -259,11 +274,6 @@
     "notifications": "Notifications"
   },
   "profile": {
-    "personalInfo": "Informations Personnelles",
-    "interests": "Intérêts",
-    "languages": "Langues",
-    "mealHistory": "Historique TableTalk®",
-    "settings": "Paramètres",
     "pageTitle": "Mon Profil",
     "loadError": "Impossible de charger le profil. Veuillez réessayer plus tard.",
     "updateSuccess": "Profil mis à jour !",
@@ -325,14 +335,14 @@
       "emailNotifications": "Recevoir des notifications importantes par email",
       "notificationUpdated": "Paramètre de notification mis à jour.",
       "privacySecurity": "Confidentialité et Sécurité",
-      "enableLocation": "Activer la localisation pour les correspondances en temps réel",
+      "enableLocation": "Activer la localisation pour le matching en temps réel",
       "locationUpdated": "Paramètre de localisation mis à jour.",
-      "changePassword": "Changer le Mot de Passe",
+      "changePassword": "Changer le mot de passe",
       "privacyPolicyInfo": "Pour plus de détails, consultez notre",
       "account": "Compte",
       "logout": "Se déconnecter",
       "logoutConfirm": "Êtes-vous sûr de vouloir vous déconnecter ?",
-      "deleteAccount": "Supprimer le Compte",
+      "deleteAccount": "Supprimer le compte",
       "accountDeleted": "Compte supprimé avec succès",
       "deleteError": "Erreur lors de la suppression du compte"
     }
@@ -372,6 +382,45 @@
     "confirmBlock": "Êtes-vous sûr de vouloir bloquer cet utilisateur ?",
     "confirmUnblock": "Êtes-vous sûr de vouloir débloquer cet utilisateur ?",
     "blockedUserMessage": "Vous ne pouvez pas interagir avec cet utilisateur car il est bloqué"
+  },
+  "report": {
+    "reportUser": "Signaler l'utilisateur",
+    "reportSuccess": "Signalement envoyé avec succès. Merci d'aider à maintenir TableTalk® un environnement sûr.",
+    "userToReport": "Utilisateur à signaler",
+    "reportReason": "Motif du signalement *",
+    "selectReason": "Sélectionnez un motif",
+    "reasons": {
+      "inappropriate": "Comportement inapproprié",
+      "spam": "Spam",
+      "fakeProfile": "Faux profil",
+      "other": "Autre"
+    },
+    "additionalDetails": "Détails supplémentaires",
+    "detailsPlaceholder": "Fournissez des détails supplémentaires sur le signalement (facultatif)",
+    "cancel": "Annuler",
+    "sendReport": "Envoyer le signalement",
+    "sending": "Envoi...",
+    "selectReasonError": "Veuillez sélectionner un motif pour le signalement",
+    "sendError": "Erreur lors de l'envoi du signalement"
+  },
+  "leaveReport": {
+    "leaveTitle": "Quitter {{subject}}",
+    "whyLeaving": "Pourquoi voulez-vous quitter {{subject}} ?",
+    "selectReason": "Sélectionnez un motif",
+    "reasons": {
+      "personal": "Raisons personnelles",
+      "uncomfortable": "Je ne me sens pas à l'aise",
+      "technical": "Problèmes techniques",
+      "other": "Autre"
+    },
+    "writeReason": "Écrivez le motif...",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "subjects": {
+      "meal": "le TableTalk®",
+      "video": "l'appel vidéo",
+      "chat": "le chat"
+    }
   },
   "chat": {
     "title": "Chat",

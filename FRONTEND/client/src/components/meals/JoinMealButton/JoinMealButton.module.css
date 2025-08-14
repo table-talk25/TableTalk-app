@@ -5,7 +5,7 @@
 .joinButton {
   width: 100%;
   padding: 0.75rem;
-  background: #FF6B6B;
+  background: var(--primary-color);
   border: none;
   border-radius: 6px;
   color: white;
@@ -14,7 +14,7 @@
 }
 
 .joinButton:hover:not(:disabled) {
-  background: #FF5252;
+  background: var(--primary-dark);
   transform: translateY(-2px);
 }
 

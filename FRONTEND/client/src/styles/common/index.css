@@ -6,9 +6,10 @@
 
 /* 2. Definizione di TUTTE le variabili globali */
 :root {
-  --primary-color: #FF6B6B;
-  --primary-dark: #ff5252;
-  --secondary-color: #4ECDC4;
+  /* Palette più tenue ispirata alla Home */
+  --primary-color: #FF7F7F;      /* rosso corallo ammorbidito */
+  --primary-dark: #FF5C5C;       /* variante scura coerente */
+  --secondary-color: #86E3DC;    /* turchese più soft */
   --font-primary: 'Poppins', sans-serif;
   --font-secondary: 'Inter', sans-serif;
   --background-primary: #ffffff;

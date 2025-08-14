@@ -14,7 +14,10 @@
     "close": "Close",
     "yes": "Yes",
     "no": "No",
-    "pleaseCorrectErrors": "Please correct the errors in the form."
+    "pleaseCorrectErrors": "Please correct the errors in the form.",
+    "dateNotAvailable": "Date not available",
+    "invalidDate": "Invalid date",
+    "errorFormattingDate": "Error formatting date"
   },
   "auth": {
     "login": "Login",
@@ -66,7 +69,8 @@
     "sending": "Sending...",
     "requestSent": "Request sent!",
     "emailSentMessage": "If the email is registered, you will receive a reset link.",
-    "backToLogin": "Back to Login"
+    "backToLogin": "Back to Login",
+    "rememberEmail": "Remember email"
   },
   "meals": {
     "createMeal": "Create TableTalk®",
@@ -121,6 +125,17 @@
       "dateClosest": "Date (closest)",
       "participantsMost": "Participants (most popular)",
       "resetFilters": "Reset Filters"
+    },
+    "emptyState": {
+      "title": "No TableTalk® found",
+      "description": "There are no TableTalk® matching the current filters. Try changing them or create one yourself!"
+    },
+    "card": {
+      "organizedBy": "Organized by",
+      "duration": "Duration",
+      "minutes": "minutes",
+      "end": "End",
+      "participants": "participants"
     },
     "createNewTitle": "Create a New TableTalk®",
     "createNewSubtitle": "Fill in the fields to organize your next virtual meeting.",
@@ -258,11 +273,6 @@
     "notifications": "Notifications"
   },
   "profile": {
-    "personalInfo": "Personal Information",
-    "interests": "Interests",
-    "languages": "Languages",
-    "mealHistory": "TableTalk® History",
-    "settings": "Settings",
     "pageTitle": "My Profile",
     "loadError": "Unable to load profile. Please try again later.",
     "updateSuccess": "Profile updated!",
@@ -371,6 +381,45 @@
     "confirmBlock": "Are you sure you want to block this user?",
     "confirmUnblock": "Are you sure you want to unblock this user?",
     "blockedUserMessage": "You cannot interact with this user because they are blocked"
+  },
+  "report": {
+    "reportUser": "Report User",
+    "reportSuccess": "Report sent successfully. Thank you for helping keep TableTalk® a safe environment.",
+    "userToReport": "User to report",
+    "reportReason": "Reason for report *",
+    "selectReason": "Select a reason",
+    "reasons": {
+      "inappropriate": "Inappropriate Behavior",
+      "spam": "Spam",
+      "fakeProfile": "Fake Profile",
+      "other": "Other"
+    },
+    "additionalDetails": "Additional details",
+    "detailsPlaceholder": "Provide additional details about the report (optional)",
+    "cancel": "Cancel",
+    "sendReport": "Send Report",
+    "sending": "Sending...",
+    "selectReasonError": "Please select a reason for the report",
+    "sendError": "Error sending report"
+  },
+  "leaveReport": {
+    "leaveTitle": "Leave {{subject}}",
+    "whyLeaving": "Why do you want to leave {{subject}}?",
+    "selectReason": "Select a reason",
+    "reasons": {
+      "personal": "Personal reasons",
+      "uncomfortable": "I don't feel comfortable",
+      "technical": "Technical issues",
+      "other": "Other"
+    },
+    "writeReason": "Write the reason...",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "subjects": {
+      "meal": "the TableTalk®",
+      "video": "the video call",
+      "chat": "the chat"
+    }
   },
   "chat": {
     "title": "Chat",

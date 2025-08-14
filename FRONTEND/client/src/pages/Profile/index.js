@@ -45,20 +45,29 @@ const ProfilePage = () => {
     if (user?.id) loadProfile();
   }, [user?.id, loadProfile]);
 
- const handleProfileUpdate = async (updatedData) => {
+  const handleProfileUpdate = async (updatedData) => {
     setIsUpdating(true);
     try {
       // 1. Invia i dati da salvare al backend
-      await profileService.updateProfile(updatedData);
+      const fresh = await profileService.updateProfile(updatedData);
       
       // 2. Mostra un messaggio di successo
       toast.success(t('profile.updateSuccess'));
       
       // 3. Ricarica da zero tutti i dati dal server per essere sicuro al 100%
-      await loadProfile();
+      setProfileData(fresh);
+      // Propaga anche nel context per evitare che un refetch sovrascriva con i vecchi dati
+      await updateUser(fresh);
 
     } catch (err) {
-      toast.error(err.message || t('profile.updateError'));
+      const status = err?.response?.status;
+      const code = err?.code;
+      // Se è un errore di rete transitorio (es. ECONNABORTED/ERR_NETWORK) non mostriamo errore rosso
+      if (!status && (code === 'ERR_NETWORK' || code === 'ECONNABORTED')) {
+        // opzionale: toast.info(t('common.networkTemporary'));
+      } else {
+        toast.error(err?.response?.data?.message || err?.message || t('profile.updateError'));
+      }
     } finally {
       setIsUpdating(false);
     }
@@ -71,7 +80,13 @@ const ProfilePage = () => {
       toast.success(t('profile.imageUpdateSuccess'));
       await loadProfile(); // Ricarichiamo anche qui
     } catch (err) {
-      toast.error(err.message || t('profile.imageUpdateError'));
+      const status = err?.response?.status;
+      const code = err?.code;
+      if (!status && (code === 'ERR_NETWORK' || code === 'ECONNABORTED')) {
+        // opzionale: toast.info(t('common.networkTemporary'));
+      } else {
+        toast.error(err?.response?.data?.message || err?.message || t('profile.imageUpdateError'));
+      }
     } finally {
       setIsUploading(false);
     }
@@ -115,15 +130,13 @@ const ProfilePage = () => {
   return (
     <Container fluid className={styles.profilePage}>
       <div className={styles.header}>
-        <BackButton />
-        <h1 className={styles.pageTitle}>{t('profile.pageTitle')}</h1>
+        <BackButton className={styles.smallBackButton} />
       </div>
 
       <div className={styles.content}>
         <ProfileHeader 
-          profileData={profileData} 
-          onImageUpdate={handleImageUpdate}
-          isUploading={isUploading}
+          profile={profileData} 
+          onUpdateImage={handleImageUpdate}
         />
         
         <PersonalInfo 

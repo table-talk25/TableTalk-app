@@ -84,12 +84,34 @@ cron.schedule('*/5 * * * *', async () => {
             title: meal.title,
             date: meal.date,
             participantCount: meal.participants.length,
-            participantNicknames: meal.participants.map(p => p.nickname || p.name)
+            participantNicknames: meal.participants.map(p => p.nickname || p.name),
+            mealId: meal._id
           }
         );
         console.log(`[EMAIL] Promemoria host inviato per il pasto "${meal.title}"`);
       } catch (err) {
         console.error('Errore invio email promemoria host:', err.message);
+      }
+    }
+
+    // Invia promemoria anche ai partecipanti che hanno attivato le email
+    for (const participant of meal.participants) {
+      if (participant && participant.settings?.notifications?.email) {
+        try {
+          await sendEmail.sendMealReminderEmail(
+            participant.email,
+            participant.nickname || participant.name,
+            {
+              title: meal.title,
+              date: meal.date,
+              hostName: meal.host?.nickname || meal.host?.name || 'Host',
+              mealId: meal._id
+            }
+          );
+          console.log(`[EMAIL] Promemoria partecipante inviato a ${participant.email} per "${meal.title}"`);
+        } catch (err) {
+          console.error('Errore invio email promemoria partecipante:', err.message);
+        }
       }
     }
   }

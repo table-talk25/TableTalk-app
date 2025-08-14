@@ -15,17 +15,17 @@ const ReportModal = ({ show, onHide, reportedUser, context = 'general' }) => {
   const [success, setSuccess] = useState(false);
 
   const reasons = [
-    'Comportamento Inappropriato',
-    'Spam',
-    'Profilo Falso',
-    'Altro'
+    { value: 'inappropriate', label: t('report.reasons.inappropriate') },
+    { value: 'spam', label: t('report.reasons.spam') },
+    { value: 'fakeProfile', label: t('report.reasons.fakeProfile') },
+    { value: 'other', label: t('report.reasons.other') }
   ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!formData.reason) {
-      setError('Seleziona un motivo per la segnalazione');
+      setError(t('report.selectReasonError'));
       return;
     }
 
@@ -47,7 +47,7 @@ const ReportModal = ({ show, onHide, reportedUser, context = 'general' }) => {
         setFormData({ reason: '', details: '' });
       }, 2000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Errore durante l\'invio della segnalazione');
+      setError(err.response?.data?.message || t('report.sendError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -65,13 +65,13 @@ const ReportModal = ({ show, onHide, reportedUser, context = 'general' }) => {
   return (
     <Modal show={show} onHide={handleClose} centered>
       <Modal.Header closeButton>
-        <Modal.Title>Segnala Utente</Modal.Title>
+        <Modal.Title>{t('report.reportUser')}</Modal.Title>
       </Modal.Header>
       
       <Modal.Body>
         {success ? (
           <Alert variant="success">
-            Segnalazione inviata con successo. Grazie per aver contribuito a mantenere TableTalk® un ambiente sicuro.
+            {t('report.reportSuccess')}
           </Alert>
         ) : (
           <>
@@ -83,7 +83,7 @@ const ReportModal = ({ show, onHide, reportedUser, context = 'general' }) => {
               />
               <div>
                 <h6>{reportedUser?.nickname}</h6>
-                <small className="text-muted">Utente da segnalare</small>
+                <small className="text-muted">{t('report.userToReport')}</small>
               </div>
             </div>
 
@@ -91,27 +91,27 @@ const ReportModal = ({ show, onHide, reportedUser, context = 'general' }) => {
 
             <Form onSubmit={handleSubmit}>
               <Form.Group className="mb-3">
-                <Form.Label>Motivo della segnalazione *</Form.Label>
+                <Form.Label>{t('report.reportReason')}</Form.Label>
                 <Form.Select
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                   required
                 >
-                  <option value="">Seleziona un motivo</option>
+                  <option value="">{t('report.selectReason')}</option>
                   {reasons.map(reason => (
-                    <option key={reason} value={reason}>{reason}</option>
+                    <option key={reason.value} value={reason.value}>{reason.label}</option>
                   ))}
                 </Form.Select>
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Dettagli aggiuntivi</Form.Label>
+                <Form.Label>{t('report.additionalDetails')}</Form.Label>
                 <Form.Control
                   as="textarea"
                   rows={3}
                   value={formData.details}
                   onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                  placeholder="Fornisci ulteriori dettagli sulla segnalazione (opzionale)"
+                  placeholder={t('report.detailsPlaceholder')}
                 />
               </Form.Group>
             </Form>
@@ -123,14 +123,14 @@ const ReportModal = ({ show, onHide, reportedUser, context = 'general' }) => {
         {!success && (
           <>
             <Button variant="secondary" onClick={handleClose} disabled={isSubmitting}>
-              Annulla
+              {t('report.cancel')}
             </Button>
             <Button 
               variant="danger" 
               onClick={handleSubmit} 
               disabled={isSubmitting || !formData.reason}
             >
-              {isSubmitting ? 'Invio in corso...' : 'Invia Segnalazione'}
+              {isSubmitting ? t('report.sending') : t('report.sendReport')}
             </Button>
           </>
         )}

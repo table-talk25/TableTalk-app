@@ -11,6 +11,7 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
   const { user } = useAuth();
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
+  const onSelectRef = useRef(onLocationSelect);
   const [userPosition, setUserPosition] = useState(null);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,16 +54,34 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
   }, []);
 
   useEffect(() => {
+    onSelectRef.current = onLocationSelect;
+  }, [onLocationSelect]);
+
+  useEffect(() => {
     const createMap = async () => {
       try {
-        setLoading(true);
         setError('');
 
+        // Se la mappa esiste già, aggiorna solo la camera senza mostrare loading
+        if (map) {
+          const center = initialCenter || userPosition || { lat: 41.9028, lng: 12.4964 };
+          await map.setCamera({ coordinate: center, zoom: 13 });
+          return;
+        }
+
+        // Se il ref non è ancora montato, esci senza attivare loading
+        if (!mapRef.current) {
+          return;
+        }
+
+        setLoading(true);
+
+        const runtimeApiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
         // Crea la mappa
         const newMap = await GoogleMap.create({
           id: 'location-picker-map',
           element: mapRef.current,
-          apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+          ...(runtimeApiKey ? { apiKey: runtimeApiKey } : {}),
           config: {
             center: initialCenter || userPosition || { lat: 41.9028, lng: 12.4964 }, // Roma di default
             zoom: 13
@@ -97,7 +116,7 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
           };
           
           setSelectedLocation(locationData);
-          onLocationSelect(locationData);
+          if (onSelectRef.current) onSelectRef.current(locationData);
         });
 
       } catch (error) {
@@ -115,7 +134,7 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
         map.destroy();
       }
     };
-  }, [userPosition, initialCenter, onLocationSelect, t]);
+  }, [userPosition, initialCenter]);
 
   const handleUseCurrentLocation = async () => {
     if (!map || !userPosition) return;
@@ -147,7 +166,7 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
         address: t('map.currentLocation')
       };
       setSelectedLocation(locationData);
-      onLocationSelect(locationData);
+      if (onSelectRef.current) onSelectRef.current(locationData);
     } catch (error) {
       console.error('Errore nell\'uso della posizione corrente:', error);
     }

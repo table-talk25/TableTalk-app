@@ -89,7 +89,14 @@ const MealDetailPage = () => {
             toast.success(t('meals.detail.joinSuccess'));
             fetchMealDetails(); 
         } catch (err) {
-            toast.error(err.message || t('meals.detail.joinError'));
+            // Silenzia errori di rete transitori e riprova caricamento
+            const transient = err?.code === 'ERR_NETWORK' || err?.code === 'ECONNABORTED' || !err?.response;
+            if (transient) {
+                toast.info(t('meals.detail.joinPending')); // messaggio soft
+                fetchMealDetails();
+                return;
+            }
+            toast.error(err?.response?.data?.message || err.message || t('meals.detail.joinError'));
         }
     };
 
@@ -127,6 +134,17 @@ const MealDetailPage = () => {
         }
     };
 
+    const getParticipantsText = useCallback(() => {
+        const count = meal?.participants?.length || 0;
+        const max = meal?.maxParticipants || 0;
+        const text = t('meals.detail.participantsCount', {
+            count,
+            max,
+            defaultValue: `${count} di ${max} partecipanti`,
+        });
+        return text;
+    }, [meal, t]);
+
     console.log('🎯 MealDetail: Render state - loading:', loading, 'meal:', !!meal, 'error:', error);
     
     if (loading) {
@@ -163,12 +181,26 @@ const MealDetailPage = () => {
         );
     }
 
-    const isHost = user && meal.host && user.id === meal.host.id;
-    const isParticipant = meal.participants && meal.participants.some(p => p.id === user?.id);
+    const currentUserId = user?._id || user?.id;
+    const hostId = meal?.host?._id || meal?.host?.id;
+    const isHost = !!(currentUserId && hostId && currentUserId.toString() === hostId.toString());
+    const isParticipant = Array.isArray(meal.participants) && meal.participants.some(p => {
+        const pid = p?._id || p?.id;
+        return pid && currentUserId && pid.toString() === currentUserId.toString();
+    });
     const canJoin = !isHost && !isParticipant && meal.status === 'upcoming';
     const canLeave = isParticipant && meal.status === 'upcoming';
     const canJoinChat = isParticipant || isHost;
     const canLeaveChat = canJoinChat && meal.chatId;
+
+    // Videochiamata: mostra da 10 minuti prima dell'inizio e durante l'evento
+    const startTime = new Date(meal.date);
+    const msToStart = startTime - now;
+    const tenMinutesMs = 10 * 60 * 1000;
+    const isVirtual = meal.mealType === 'virtual';
+    const isWithinPreWindow = meal.status === 'upcoming' && msToStart <= tenMinutesMs;
+    const isOngoing = meal.status === 'ongoing';
+    const canJoinVideo = (isParticipant || isHost) && isVirtual && (isWithinPreWindow || isOngoing);
 
     const renderActionButtons = () => {
         return (
@@ -206,6 +238,17 @@ const MealDetailPage = () => {
                     </Button>
                 )}
 
+                {canJoinVideo && (
+                    <Button 
+                        variant="danger" 
+                        size="lg" 
+                        onClick={() => navigate(`/meals/${id}/video`)}
+                        className={styles.chatButton}
+                    >
+                        <FaVideo /> {t('meals.detail.joinVideo', { defaultValue: 'Videochiamata' })}
+                    </Button>
+                )}
+
                 {canLeaveChat && (
                     <Button 
                         variant="outline-secondary" 
@@ -218,7 +261,7 @@ const MealDetailPage = () => {
                 )}
 
                 {isHost && meal.status === 'upcoming' && (
-                    <Link to={`/meals/${id}/edit`}>
+                    <Link to={`/meals/edit/${id}`}>
                         <Button variant="outline-primary" size="lg" className={styles.editButton}>
                             {t('meals.editMeal')}
                         </Button>
@@ -230,15 +273,17 @@ const MealDetailPage = () => {
 
     return (
         <Container fluid className={styles.mealDetailPage}>
+            <div className={styles.topBar}>
+                <BackButton className={styles.backButton} />
+            </div>
             <div className={styles.header}>
-                <BackButton />
                 <h1 className={styles.pageTitle}>{t('meals.mealDetails')}</h1>
             </div>
 
             <div className={styles.content}>
                 <Row>
                     <Col lg={8}>
-                        <Card className={styles.mealCard}>
+                        <Card className={styles.mainContent}>
                             <div className={styles.coverImageContainer}>
                                 <img 
                                     src={(() => {
@@ -276,24 +321,7 @@ const MealDetailPage = () => {
                                     </div>
                                     <div className={styles.infoItem}>
                                         <FaUsers className={styles.infoIcon} />
-                                        <span>{(() => {
-                                            const count = meal.participants?.length || 0;
-                                            const max = meal.maxParticipants || 0;
-                                            console.log('👥 [MealDetail] Participants count:', count);
-                                            console.log('👥 [MealDetail] Max participants:', max);
-                                            
-                                            // Proviamo prima con l'interpolazione normale
-                                            const translated = t('meals.detail.participants', { count, max });
-                                            console.log('👥 [MealDetail] Translated text:', translated);
-                                            
-                                            // Se non funziona, usiamo una stringa template
-                                            if (translated.includes('{count}') || translated.includes('{max}')) {
-                                                console.log('👥 [MealDetail] Interpolation failed, using template');
-                                                return `${count} di ${max} partecipanti`;
-                                            }
-                                            
-                                            return translated;
-                                        })()}</span>
+                                        <span>{t('meals.detail.participantsText', { current: meal?.participants?.length || 0, max: meal?.maxParticipants || 0 })}</span>
                                     </div>
                                     {meal.topic && (
                                         <div className={styles.infoItem}>
@@ -311,6 +339,11 @@ const MealDetailPage = () => {
                                 )}
 
                                 {renderActionButtons()}
+
+                                <div className={styles.participantsCountFooter}>
+                                    <FaUsers className={styles.infoIcon} />
+                                    <span>{t('meals.detail.participantsText', { current: meal?.participants?.length || 0, max: meal?.maxParticipants || 0 })}</span>
+                                </div>
                             </Card.Body>
                         </Card>
                     </Col>
@@ -345,19 +378,19 @@ const MealDetailPage = () => {
                         {meal.participants && meal.participants.length > 0 && (
                             <Card className={styles.participantsCard}>
                                 <Card.Header>
-                                    <h4>{t('meals.detail.participants')}</h4>
+                                    <h4>{t('meals.detail.participantsList')}</h4>
                                 </Card.Header>
                                 <Card.Body>
                                     <div className={styles.participantsList}>
                                         {meal.participants.map((participant, index) => (
-                                            <div key={participant.id || index} className={styles.participant}>
+                                            <Link to={`/public-profile/${participant._id || participant.id}`} key={participant._id || index} className={styles.participant}>
                                                 <img 
-                                                    src={getHostAvatarUrl(participant)} 
+                                                    src={getHostAvatarUrl(participant.profileImage)} 
                                                     alt={t('meals.detail.participantAvatarAlt')}
                                                     className={styles.participantAvatar}
                                                 />
-                                                <span>{participant.name} {participant.surname}</span>
-                                            </div>
+                                                <span>{participant.nickname || `${participant.name || ''} ${participant.surname || ''}`.trim()}</span>
+                                            </Link>
                                         ))}
                                     </div>
                                 </Card.Body>
@@ -369,9 +402,9 @@ const MealDetailPage = () => {
 
             <LeaveReportModal
                 show={showLeaveModal}
-                onHide={() => setShowLeaveModal(false)}
-                onSubmit={handleLeaveMealWithReason}
-                title={t('meals.detail.leaveReportTitle')}
+                onClose={() => setShowLeaveModal(false)}
+                onConfirm={handleLeaveMealWithReason}
+                type="meal"
             />
         </Container>
     );
