@@ -8,6 +8,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { getPreference, savePreference, removePreference, PREFERENCE_KEYS } from '../../../utils/preferences';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import Logo from '../../../components/common/Logo';
+import SocialLoginButtons from '../../../components/common/SocialLoginButtons';
 import styles from './LoginPage.module.css';
 import BackButton from '../../../components/common/BackButton';
 
@@ -158,6 +159,20 @@ const LoginPage = () => {
                     {isLoading ? t('auth.loggingIn') : t('auth.login')}
                 </Button>
             </Form>
+
+            {/* Pulsanti di login social */}
+            <SocialLoginButtons
+                onSuccess={(result) => {
+                    console.log('Login social completato:', result);
+                    // Naviga alla pagina principale dopo il login social
+                    const from = location.state?.from?.pathname || '/meals';
+                    requestAnimationFrame(() => navigate(from, { replace: true }));
+                }}
+                onError={(errorMessage) => {
+                    setError(errorMessage);
+                }}
+                disabled={isLoading}
+            />
 
             <div className={styles.links}>
                 <Link to="/forgot-password" className={styles.link}>

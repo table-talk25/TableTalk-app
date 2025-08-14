@@ -70,7 +70,10 @@
     "requestSent": "Demande envoyée !",
     "emailSentMessage": "Si l'email est enregistré, vous recevrez un lien de réinitialisation.",
     "backToLogin": "Retour à la connexion",
-    "rememberEmail": "Se souvenir de l'email"
+    "rememberEmail": "Se souvenir de l'email",
+    "orContinueWith": "ou continuez avec",
+    "continueWithGoogle": "Continuer avec Google",
+    "continueWithApple": "Continuer avec Apple"
   },
   "meals": {
     "createMeal": "Créer un TableTalk®",

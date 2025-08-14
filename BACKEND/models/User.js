@@ -14,8 +14,14 @@ const UserSchema = new mongoose.Schema(
     name: { type: String, required: [true, 'Il nome è obbligatorio'], trim: true },
     surname: { type: String, required: [true, 'Il cognome è obbligatorio'], trim: true },
     email: { type: String, required: [true, 'L\'email è obbligatoria'], unique: true, lowercase: true, trim: true, match: [/^\S+@\S+\.\S+$/, 'Email non valida'] },
-    password: { type: String, required: [true, 'La password è obbligatoria'], minlength: 8, select: false },
+    password: { type: String, minlength: 8, select: false }, // Rimosso required per permettere login social
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
+
+    // --- CAMPI PER AUTENTICAZIONE SOCIAL ---
+    googleId: { type: String, unique: true, sparse: true },
+    appleId: { type: String, unique: true, sparse: true },
+    authProvider: { type: String, enum: ['local', 'google', 'apple'], default: 'local' },
+    isEmailVerified: { type: Boolean, default: false },
 
     // --- CAMPI DEL PROFILO (Modificabili dall'utente) ---
     nickname: { type: String, unique: true, sparse: true, trim: true, minlength: 3 },
@@ -165,6 +171,10 @@ UserSchema.pre('deleteOne', { document: true, query: false }, async function(nex
 // --- METODI (le "abilità" di ogni utente) ---
 
 UserSchema.methods.comparePassword = function(candidatePassword) {
+  // Se l'utente usa autenticazione social, non ha password
+  if (this.authProvider !== 'local' || !this.password) {
+    return false;
+  }
   return bcrypt.compare(candidatePassword, this.password);
 };
 

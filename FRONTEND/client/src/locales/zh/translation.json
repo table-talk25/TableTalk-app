@@ -70,7 +70,10 @@
     "requestSent": "请求已发送！",
     "emailSentMessage": "如果邮箱已注册，您将收到重置链接。",
     "backToLogin": "返回登录",
-    "rememberEmail": "记住邮箱"
+    "rememberEmail": "记住邮箱",
+    "orContinueWith": "或继续使用",
+    "continueWithGoogle": "使用谷歌继续",
+    "continueWithApple": "使用苹果继续"
   },
   "meals": {
     "createMeal": "创建TableTalk®",

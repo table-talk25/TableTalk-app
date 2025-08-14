@@ -27,6 +27,16 @@ const config = {
     LocalNotifications: {
       smallIcon: "ic_stat_icon_config_sample",
       iconColor: "#488AFF"
+    },
+    GoogleAuth: {
+      scopes: ['profile', 'email'],
+      serverClientId: '534454809499-4vsllugc4jbuft2n20p5sakupvvdcjrb.apps.googleusercontent.com',
+      forceCodeForRefreshToken: true
+    },
+    SignInWithApple: {
+      clientId: 'com.tabletalk.socialapp',
+      redirectURI: 'https://tabletalk.app/auth/apple/callback',
+      scopes: 'email name'
     }
   },
   android: {

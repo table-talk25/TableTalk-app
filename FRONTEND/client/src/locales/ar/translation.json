@@ -70,7 +70,10 @@
     "requestSent": "تم إرسال الطلب!",
     "emailSentMessage": "إذا كان البريد الإلكتروني مسجلًا، ستتلقى رابط إعادة التعيين.",
     "backToLogin": "العودة إلى تسجيل الدخول",
-    "rememberEmail": "تذكر البريد الإلكتروني"
+    "rememberEmail": "تذكر البريد الإلكتروني",
+    "orContinueWith": "أو استمر مع",
+    "continueWithGoogle": "استمر مع جوجل",
+    "continueWithApple": "استمر مع أبل"
   },
   "meals": {
     "createMeal": "إنشاء TableTalk®",

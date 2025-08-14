@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "private": true,
     "dependencies": {
+        "@capacitor-community/apple-sign-in": "^7.0.1",
         "@capacitor/android": "^7.4.2",
         "@capacitor/app": "^7.0.1",
         "@capacitor/camera": "^7.0.1",
@@ -21,6 +22,7 @@
         "@capacitor/push-notifications": "^7.0.1",
         "@capacitor/splash-screen": "^7.0.1",
         "@capacitor/status-bar": "^7.0.1",
+        "@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
         "@fortawesome/fontawesome-free": "^6.7.2",
         "@testing-library/jest-dom": "^5.17.0",
         "@testing-library/react": "^13.4.0",

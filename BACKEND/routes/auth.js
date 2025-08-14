@@ -5,6 +5,7 @@ const router = express.Router();
 const { check } = require('express-validator'); 
 const rateLimit = require('express-rate-limit'); // <-- IMPORT NECESSARIO
 const authController = require('../controllers/authController');
+const socialAuthController = require('../controllers/socialAuthController');
 const { protect } = require('../middleware/auth');
 
 const { 
@@ -44,5 +45,9 @@ router.post('/reset-password/:token', resetPasswordValidation, authController.re
 router.post('/verify-email/:token', authController.verifyEmail);
 
 router.post('/resend-verification', [check('email', 'Email non valida').isEmail()], authController.resendVerification);
+
+// Social Authentication Routes
+router.post('/google', socialAuthController.googleAuth);
+router.post('/apple', socialAuthController.appleAuth);
 
 module.exports = router;

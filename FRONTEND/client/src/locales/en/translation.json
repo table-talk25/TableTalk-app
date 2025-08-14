@@ -70,7 +70,10 @@
     "requestSent": "Request sent!",
     "emailSentMessage": "If the email is registered, you will receive a reset link.",
     "backToLogin": "Back to Login",
-    "rememberEmail": "Remember email"
+    "rememberEmail": "Remember email",
+    "orContinueWith": "or continue with",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithApple": "Continue with Apple"
   },
   "meals": {
     "createMeal": "Create TableTalk®",
