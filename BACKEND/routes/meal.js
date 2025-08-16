@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mealController = require('../controllers/mealController');
-const { protect } = require('../middleware/auth');
+const { protect, requireProfileComplete } = require('../middleware/auth');
 const { check } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 const upload = require('../middleware/upload'); 
@@ -68,18 +68,18 @@ router.route('/:id/participants')
 // ], mealController.getUserMeals);
 
 // Crea un nuovo pasto
-router.post('/', protect, upload.single('coverImage'), mealController.createMeal);
+router.post('/', protect, requireProfileComplete, upload.single('coverImage'), mealController.createMeal);
 
 // Modifica un pasto esistente
-router.put('/:id', protect, upload.single('coverImage'), mealController.updateMeal);
+router.put('/:id', protect, requireProfileComplete, upload.single('coverImage'), mealController.updateMeal);
 
 // Elimina un pasto
-router.delete('/:id', [ protect, check('id', 'ID pasto non valido').isMongoId() ], mealController.deleteMeal);
+router.delete('/:id', [ protect, requireProfileComplete, check('id', 'ID pasto non valido').isMongoId() ], mealController.deleteMeal);
 
 // Gestione partecipanti
-router.post('/:id/participants', protect, joinMealLimiter, mealController.joinMeal);
+router.post('/:id/participants', protect, requireProfileComplete, joinMealLimiter, mealController.joinMeal);
 
-router.delete('/:id/participants', protect, mealController.leaveMeal);
+router.delete('/:id/participants', protect, requireProfileComplete, mealController.leaveMeal);
 
 
 

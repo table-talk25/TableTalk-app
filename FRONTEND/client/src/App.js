@@ -75,6 +75,7 @@ const RegisterPage = lazy(() => import('./pages/Auth/Register'));
 const ForgotPasswordPage = lazy(() => import('./pages/Auth/ForgotPassword'));
 const ResetPasswordPage = lazy(() => import('./pages/Auth/ResetPassword'));
 const ProfilePage = lazy(() => import('./pages/Profile')); // Pagina "Modifica Profilo"
+const CompleteProfilePage = lazy(() => import('./pages/Profile/CompleteProfilePage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfile'));
 const MealsPage = lazy(() => import('./pages/Meals/MealsPage'));
 const SearchMealsPage = lazy(() => import('./pages/Meals/SearchMealsPage'));
@@ -150,26 +151,26 @@ const App = () => {
             <Route path="meals" element={<MealsPage />} />
             <Route path="meals/search" element={<SearchMealsPage />} />
           
-<Route path="/chat/:chatId" element={
-    <PrivateRoute>
+          <Route path="/chat/:chatId" element={
+    <PrivateRoute requireCompleteProfile={true}>
         <ChatPage />
     </PrivateRoute>
 } />
 
           <Route path="/meals/:id/video" element={
-    <PrivateRoute>
+    <PrivateRoute requireCompleteProfile={true}>
         <VideoCallPage />
     </PrivateRoute>
 } />
           <Route path="/video/:id" element={
-    <PrivateRoute>
+    <PrivateRoute requireCompleteProfile={true}>
         <VideoCallPage />
     </PrivateRoute>
 } />
           {/* Rotta profilo pubblico coerente con i link */}
           <Route path="public-profile/:userId" element={<PublicProfilePage />} />
           
-          <Route path="map" element={<PrivateRoute><MapPage /></PrivateRoute>} /> {/* <-- 2. AGGIUNGIAMO LA ROTTA */}
+          <Route path="map" element={<PrivateRoute requireCompleteProfile={true}><MapPage /></PrivateRoute>} /> {/* <-- 2. AGGIUNGIAMO LA ROTTA */}
 
 
           {/* --- Rotte Private --- */}
@@ -178,10 +179,10 @@ const App = () => {
           {/* Ora è chiaro che questa è una pagina di impostazioni privata */}
           <Route path="impostazioni/profilo" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
           
-          <Route path="my-meals" element={<PrivateRoute><MealHistoryPage /></PrivateRoute>} />
-          <Route path="meals/create" element={<PrivateRoute><CreateMealPage /></PrivateRoute>} />
-          <Route path="meals/edit/:id" element={<PrivateRoute><EditMealPage /></PrivateRoute>} />
-          <Route path="meals/:id" element={<PrivateRoute><MealDetailPage /></PrivateRoute>} />
+          <Route path="my-meals" element={<PrivateRoute requireCompleteProfile={true}><MealHistoryPage /></PrivateRoute>} />
+          <Route path="meals/create" element={<PrivateRoute requireCompleteProfile={true}><CreateMealPage /></PrivateRoute>} />
+          <Route path="meals/edit/:id" element={<PrivateRoute requireCompleteProfile={true}><EditMealPage /></PrivateRoute>} />
+          <Route path="meals/:id" element={<PrivateRoute requireCompleteProfile={true}><MealDetailPage /></PrivateRoute>} />
         </Route>
 
         {/* Rotte senza layout */}
@@ -189,6 +190,7 @@ const App = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="/complete-profile" element={<CompleteProfilePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} /> {/* <-- 2. AGGIUNGI LA NUOVA ROTTA */}
         <Route path="/termini-e-condizioni" element={<TermsAndConditionsPage />} />
         <Route path="/test" element={<TestPage />} />

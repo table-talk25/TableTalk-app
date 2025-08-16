@@ -105,8 +105,9 @@ exports.requireCompleteProfile = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Utente non trovato', 404));
   }
 
-  if (!user.isProfileComplete) {
-    return next(new ErrorResponse('Profilo incompleto', 403));
+  // 🔒 SICUREZZA: Verifica il campo corretto per il profilo completo
+  if (!user.profileCompleted) {
+    return next(new ErrorResponse('Profilo incompleto. Completa il tuo profilo per accedere a questa funzionalità.', 403));
   }
 
   next();
@@ -173,6 +174,30 @@ exports.requireVerifiedAccountFlexible = (required = true) => asyncHandler(async
       // Solo avvisa ma permette l'accesso
       req.user.emailVerificationWarning = true;
       console.log(`[AUTH] ⚠️ Utente ${user.email} non verificato ma accesso permesso`);
+    }
+  }
+
+  next();
+});
+
+/**
+ * @desc    Middleware flessibile per verificare il profilo (opzionale)
+ * @param   {boolean} required - Se true, blocca l'accesso. Se false, solo avvisa
+ */
+exports.requireProfileCompleteFlexible = (required = true) => asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  
+  if (!user) {
+    return next(new ErrorResponse('Utente non trovato', 404));
+  }
+
+  if (!user.profileCompleted) {
+    if (required) {
+      return next(new ErrorResponse('Profilo incompleto. Completa il tuo profilo per accedere a questa funzionalità.', 403));
+    } else {
+      // Solo avvisa ma permette l'accesso
+      req.user.profileCompletionWarning = true;
+      console.log(`[AUTH] ⚠️ Utente ${user.email} con profilo incompleto ma accesso permesso`);
     }
   }
 

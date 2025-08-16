@@ -167,6 +167,16 @@ UserSchema.pre('deleteOne', { document: true, query: false }, async function(nex
   }
 });
 
+// 🔄 MIDDLEWARE: Aggiorna automaticamente profileCompleted prima di ogni save
+UserSchema.pre('save', function(next) {
+  // Aggiorna profileCompleted solo se i campi del profilo sono stati modificati
+  if (this.isModified('nickname') || this.isModified('bio') || this.isModified('interests') || 
+      this.isModified('gender') || this.isModified('residence') || this.isModified('preferredCuisine')) {
+    this.profileCompleted = this.checkProfileCompletion();
+    console.log(`[User] Pre-save: profileCompleted aggiornato a ${this.profileCompleted}`);
+  }
+  next();
+});
 
 // --- METODI (le "abilità" di ogni utente) ---
 
@@ -228,7 +238,8 @@ UserSchema.methods.updateProfile = async function(updates) {
     }
   });
 
-  this.profileCompleted = true;
+  // 🔄 CONTROLLO AUTOMATICO: Verifica se il profilo è realmente completo
+  this.profileCompleted = this.checkProfileCompletion();
 
 try {
     console.log('Sto per eseguire .save() sul documento...');
@@ -240,6 +251,42 @@ try {
 
   console.log('--- Fine User.updateProfile ---\n');
   return this;
+};
+
+/**
+ * 🔄 CONTROLLO AUTOMATICO: Verifica se il profilo è completo
+ * @returns {boolean} True se il profilo è completo
+ */
+UserSchema.methods.checkProfileCompletion = function() {
+  // Campi obbligatori per considerare il profilo completo
+  const requiredFields = {
+    nickname: this.nickname && this.nickname.trim().length >= 3,
+    interests: this.interests && this.interests.length >= 1,
+    bio: this.bio && this.bio.trim().length >= 10
+  };
+  
+  // Campi opzionali che migliorano il profilo
+  const optionalFields = {
+    gender: this.gender && this.gender.trim().length > 0,
+    residence: this.residence && this.residence.trim().length > 0,
+    preferredCuisine: this.preferredCuisine && this.preferredCuisine.trim().length > 0
+  };
+  
+  // Il profilo è completo se ha almeno i campi obbligatori
+  const hasRequiredFields = Object.values(requiredFields).every(Boolean);
+  
+  // Bonus: se ha anche campi opzionali, il profilo è ancora migliore
+  const hasOptionalFields = Object.values(optionalFields).filter(Boolean).length >= 2;
+  
+  console.log(`[User] Controllo completamento profilo:`, {
+    required: requiredFields,
+    optional: optionalFields,
+    hasRequired: hasRequiredFields,
+    hasOptional: hasOptionalFields,
+    profileCompleted: hasRequiredFields
+  });
+  
+  return hasRequiredFields;
 };
 
 // Metodi per gestire i blocchi utente
