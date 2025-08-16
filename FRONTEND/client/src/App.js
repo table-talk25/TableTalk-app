@@ -1,7 +1,7 @@
 // File: src/App.js (Versione Aggiornata con Profilo Pubblico/Privato)
 import TestPage from './pages/TestPage'; 
 
-import React, { useEffect, Suspense, lazy, ErrorBoundary } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { NotificationProvider } from './contexts/NotificationContext'; // <-- 1. IMPORTA
