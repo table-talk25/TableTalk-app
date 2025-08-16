@@ -1,4 +1,11 @@
-// File: /services/authService.js (Versione Definitiva)
+// File: /services/authService.js (Versione Definitiva e Sicura)
+
+/**
+ * 🔒 IMPORTANTE: Questo servizio implementa la verifica email obbligatoria
+ * - La registrazione NON logga automaticamente l'utente
+ * - L'utente deve verificare l'email prima di poter accedere
+ * - Solo dopo la verifica email viene generato e salvato il token
+ */
 
 import apiClient, { suppressAlertsFor } from './apiService';
 import { API_URL } from '../config/capacitorConfig';
@@ -10,13 +17,28 @@ import { authPreferences } from '../utils/preferences';
 /**
  * Registra un nuovo utente.
  * @param {object} registrationData - Oggetto con { name, surname, email, password }
+ * @returns {object} Dati di registrazione SENZA token (utente NON loggato)
  */
 export const register = async (registrationData) => {
   // Percorso corretto: /auth/register
   const response = await apiClient.post('/auth/register', registrationData);
-  await authPreferences.saveToken(response.data.token);
-  await authPreferences.saveUser(response.data.user);
-  return response.data;
+  
+  // 🔒 SICUREZZA: NON salviamo token né dati utente
+  // L'utente deve verificare l'email prima di poter accedere
+  
+  // Restituiamo solo i dati essenziali per il frontend
+  const registrationResult = {
+    success: response.data.success,
+    message: 'Registrazione quasi completata! Controlla la tua email per attivare il tuo account.',
+    user: {
+      _id: response.data.user._id,
+      email: response.data.user.email,
+      name: response.data.user.name,
+      surname: response.data.user.surname
+    }
+  };
+  
+  return registrationResult;
 };
 
 /**
@@ -95,6 +117,24 @@ export const forgotPassword = async (data) => {
 };
 
 /**
+ * Reinvia l'email di verifica per un account non verificato.
+ * @param {object} data - Oggetto con { email }
+ */
+export const resendVerification = async (data) => {
+  const response = await apiClient.post('/auth/resend-verification', data);
+  return response.data;
+};
+
+/**
+ * Verifica l'email di un utente tramite token.
+ * @param {string} token - Token di verifica ricevuto via email
+ */
+export const verifyEmail = async (token) => {
+  const response = await apiClient.post(`/auth/verify-email/${token}`);
+  return response.data;
+};
+
+/**
  * Cambia la password dell'utente.
  * @param {object} data - Oggetto con { currentPassword, newPassword }
  */
@@ -111,6 +151,8 @@ const authService = {
   verifyToken,
   forgotPassword,
   changePassword,
+  resendVerification,
+  verifyEmail,
 };
 
 export default authService;
