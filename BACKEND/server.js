@@ -18,6 +18,7 @@ const Meal = require('./models/Meal');
 const notificationService = require('./services/notificationService');
 const pushNotificationService = require('./services/pushNotificationService');
 const startMealStatusUpdater = require('./jobs/mealStatusUpdater');
+const mealStatusService = require('./services/mealStatusService');
 const twilio = require('twilio');
 
 
@@ -279,6 +280,19 @@ cron.schedule('* * * * *', async () => {
 app.use(errorHandler);
 
 startMealStatusUpdater();
+
+// 🕐 INIZIALIZZAZIONE SERVIZIO STATUS PASTI
+mealStatusService.initializeStatusService()
+  .then(result => {
+    if (result.success) {
+      console.log('✅ [SERVER] Servizio status pasti inizializzato:', result.message);
+    } else {
+      console.log('⚠️ [SERVER] Servizio status pasti inizializzato con errori:', result.error);
+    }
+  })
+  .catch(error => {
+    console.error('❌ [SERVER] Errore inizializzazione servizio status pasti:', error);
+  });
 
 // Avvio del server
 const PORT = process.env.PORT || 5001;

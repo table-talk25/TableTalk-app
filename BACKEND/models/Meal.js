@@ -5,6 +5,10 @@ const mongoose = require('mongoose');
  * Gestisce le informazioni sui pasti, i partecipanti e i link per videochiamata
  */
 const MealSchema = new mongoose.Schema({
+  // Configurazione per includere virtuals nelle risposte JSON
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+}, {
   title: {
     type: String,
     required: [true, 'Per favore inserisci un titolo per il pasto virtuale'],
@@ -374,6 +378,130 @@ MealSchema.methods.isParticipant = function(userId) {
   );
 };
 
+// 🕐 STATUS VIRTUALE: Calcola lo stato preciso in tempo reale
+MealSchema.virtual('virtualStatus').get(function() {
+  const now = new Date();
+  const startTime = this.date;
+  const endTime = new Date(startTime.getTime() + (this.duration || 60) * 60 * 1000);
+  
+  // Se il pasto è stato cancellato, mantieni lo stato
+  if (this.status === 'cancelled') {
+    return 'cancelled';
+  }
+  
+  // Calcola lo stato basato su data/ora attuale
+  if (now < startTime) {
+    return 'upcoming';
+  } else if (now >= startTime && now < endTime) {
+    return 'ongoing';
+  } else {
+    return 'completed';
+  }
+});
+
+// 🕐 STATUS DETTAGLIATO: Informazioni aggiuntive sullo stato
+MealSchema.virtual('statusInfo').get(function() {
+  const now = new Date();
+  const startTime = this.date;
+  const endTime = new Date(startTime.getTime() + (this.duration || 60) * 60 * 1000);
+  
+  if (this.status === 'cancelled') {
+    return {
+      status: 'cancelled',
+      message: 'Pasto cancellato',
+      isActive: false,
+      isUpcoming: false,
+      isCompleted: false
+    };
+  }
+  
+  if (now < startTime) {
+    const timeUntilStart = startTime.getTime() - now.getTime();
+    const minutesUntilStart = Math.ceil(timeUntilStart / (1000 * 60));
+    
+    return {
+      status: 'upcoming',
+      message: `Inizia tra ${minutesUntilStart} minuti`,
+      isActive: false,
+      isUpcoming: true,
+      isCompleted: false,
+      timeUntilStart: minutesUntilStart,
+      startTime: startTime,
+      endTime: endTime
+    };
+  } else if (now >= startTime && now < endTime) {
+    const timeElapsed = now.getTime() - startTime.getTime();
+    const timeRemaining = endTime.getTime() - now.getTime();
+    const minutesElapsed = Math.ceil(timeElapsed / (1000 * 60));
+    const minutesRemaining = Math.ceil(timeRemaining / (1000 * 60));
+    
+    return {
+      status: 'ongoing',
+      message: `In corso (${minutesRemaining} minuti rimanenti)`,
+      isActive: true,
+      isUpcoming: false,
+      isCompleted: false,
+      timeElapsed: minutesElapsed,
+      timeRemaining: minutesRemaining,
+      startTime: startTime,
+      endTime: endTime,
+      progress: Math.round((timeElapsed / (this.duration * 60 * 1000)) * 100)
+    };
+  } else {
+    const timeSinceEnd = now.getTime() - endTime.getTime();
+    const minutesSinceEnd = Math.ceil(timeSinceEnd / (1000 * 60));
+    
+    return {
+      status: 'completed',
+      message: `Completato ${minutesSinceEnd} minuti fa`,
+      isActive: false,
+      isUpcoming: false,
+      isCompleted: true,
+      timeSinceEnd: minutesSinceEnd,
+      startTime: startTime,
+      endTime: endTime
+    };
+  }
+});
+
+// 🕐 TEMPO RIMANENTE: Calcola minuti rimanenti per pasti attivi
+MealSchema.virtual('timeRemaining').get(function() {
+  const now = new Date();
+  const startTime = this.date;
+  const endTime = new Date(startTime.getTime() + (this.duration || 60) * 60 * 1000);
+  
+  if (this.status === 'cancelled') {
+    return 0;
+  }
+  
+  if (now < startTime) {
+    return Math.ceil((startTime.getTime() - now.getTime()) / (1000 * 60));
+  } else if (now >= startTime && now < endTime) {
+    return Math.ceil((endTime.getTime() - now.getTime()) / (1000 * 60));
+  } else {
+    return 0;
+  }
+});
+
+// 🕐 PROSSIMO AGGIORNAMENTO: Calcola quando aggiornare lo status
+MealSchema.virtual('nextStatusUpdate').get(function() {
+  const now = new Date();
+  const startTime = this.date;
+  const endTime = new Date(startTime.getTime() + (this.duration || 60) * 60 * 1000);
+  
+  if (this.status === 'cancelled') {
+    return null;
+  }
+  
+  if (now < startTime) {
+    return startTime; // Aggiorna quando inizia
+  } else if (now >= startTime && now < endTime) {
+    return endTime; // Aggiorna quando finisce
+  } else {
+    return null; // Non serve aggiornare
+  }
+});
+
 // Metodo per aggiungere un partecipante
 MealSchema.methods.addParticipant = function(userId) {
   if (this.isFull) {
@@ -463,6 +591,31 @@ MealSchema.methods.markNotificationsAsRead = function(userId) {
     }
   });
   return this.save();
+};
+
+// 🕐 SINCRONIZZAZIONE STATUS: Sincronizza status virtuale con fisico
+MealSchema.methods.syncStatus = function() {
+  const virtualStatus = this.virtualStatus;
+  
+  // Se lo status virtuale è diverso da quello fisico, aggiornalo
+  if (virtualStatus !== this.status && virtualStatus !== 'cancelled') {
+    this.status = virtualStatus;
+    
+    // Log per debugging
+    console.log(`🔄 [Meal] Status sincronizzato: ${this.status} -> ${virtualStatus} (Meal ID: ${this._id})`);
+    
+    // Aggiungi notifica per tutti i partecipanti
+    const notificationMessage = `Il pasto è ora ${virtualStatus}`;
+    this.participants.forEach(participant => {
+      this.notifications.push({
+        type: 'status_update',
+        message: notificationMessage,
+        recipient: participant
+      });
+    });
+  }
+  
+  return this;
 };
 
 // Metodo per aggiornare lo stato del pasto

@@ -26,6 +26,7 @@ function saveBase64Cover(base64String, userId) {
 const notificationService = require('../services/notificationService');
 const sendEmail = require('../utils/sendEmail');
 const { sanitizeMealData } = require('../services/sanitizationService');
+const mealStatusService = require('../services/mealStatusService');
 
 const twilioClient = twilio(
   process.env.TWILIO_API_KEY,
@@ -93,10 +94,84 @@ exports.getMeals = asyncHandler(async (req, res) => {
     .sort({ date: 1 })
     .skip(skip)
     .limit(limit)
-    .populate('host', 'nickname profileImage');
+    .populate('host', 'nickname profileImage')
+    .lean(); // Usa lean() per performance, ma perdiamo i virtuals
 
-  const [meals, total] = await Promise.all([
-    mealsQuery,
+  // 🕐 STATUS VIRTUALE: Aggiungi status virtuale ai risultati
+  const meals = await mealsQuery;
+  
+  // Aggiungi status virtuale e info dettagliate
+  const mealsWithVirtualStatus = meals.map(meal => {
+    const now = new Date();
+    const startTime = new Date(meal.date);
+    const endTime = new Date(startTime.getTime() + (meal.duration || 60) * 60 * 1000);
+    
+    let virtualStatus = meal.status;
+    if (meal.status !== 'cancelled') {
+      if (now < startTime) {
+        virtualStatus = 'upcoming';
+      } else if (now >= startTime && now < endTime) {
+        virtualStatus = 'ongoing';
+      } else {
+        virtualStatus = 'completed';
+      }
+    }
+    
+    // Calcola info aggiuntive
+    let statusInfo = {};
+    if (meal.status === 'cancelled') {
+      statusInfo = {
+        status: 'cancelled',
+        message: 'Pasto cancellato',
+        isActive: false,
+        isUpcoming: false,
+        isCompleted: false
+      };
+    } else if (now < startTime) {
+      const timeUntilStart = startTime.getTime() - now.getTime();
+      const minutesUntilStart = Math.ceil(timeUntilStart / (1000 * 60));
+      statusInfo = {
+        status: 'upcoming',
+        message: `Inizia tra ${minutesUntilStart} minuti`,
+        isActive: false,
+        isUpcoming: true,
+        isCompleted: false,
+        timeUntilStart: minutesUntilStart
+      };
+    } else if (now >= startTime && now < endTime) {
+      const timeRemaining = endTime.getTime() - now.getTime();
+      const minutesRemaining = Math.ceil(timeRemaining / (1000 * 60));
+      statusInfo = {
+        status: 'ongoing',
+        message: `In corso (${minutesRemaining} minuti rimanenti)`,
+        isActive: true,
+        isUpcoming: false,
+        isCompleted: false,
+        timeRemaining: minutesRemaining
+      };
+    } else {
+      const timeSinceEnd = now.getTime() - endTime.getTime();
+      const minutesSinceEnd = Math.ceil(timeSinceEnd / (1000 * 60));
+      statusInfo = {
+        status: 'completed',
+        message: `Completato ${minutesSinceEnd} minuti fa`,
+        isActive: false,
+        isUpcoming: false,
+        isCompleted: true,
+        timeSinceEnd: minutesSinceEnd
+      };
+    }
+    
+    return {
+      ...meal,
+      virtualStatus,
+      statusInfo,
+      timeRemaining: statusInfo.timeRemaining || 0
+    };
+  });
+
+  const [_, total] = await Promise.all([
+    Promise.resolve(), // mealsQuery è già eseguito sopra
     Meal.countDocuments(query)
   ]);
 
@@ -177,7 +252,16 @@ exports.getMealHistory = asyncHandler(async (req, res) => {
   })
   .sort({ date: -1 })
   .populate('host', 'nickname profileImage');
-  res.status(200).json({ success: true, data: meals });
+  res.status(200).json({ 
+    success: true, 
+    data: mealsWithVirtualStatus,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit)
+    }
+  });
 });
 
 // GET /api/meals/:id
@@ -440,6 +524,42 @@ exports.deleteMeal = asyncHandler(async (req, res, next) => {
 
   await meal.remove();
   res.status(200).json({ success: true, data: {} });
+});
+
+// 🕐 GET /api/meals/status/stats - Statistiche status pasti in tempo reale
+exports.getMealStatusStats = asyncHandler(async (req, res, next) => {
+  try {
+    const stats = await mealStatusService.getMealStatusStats();
+    
+    if (stats.success) {
+      res.status(200).json({
+        success: true,
+        data: stats
+      });
+    } else {
+      return next(new ErrorResponse('Errore nel calcolo delle statistiche', 500));
+    }
+  } catch (error) {
+    return next(new ErrorResponse('Errore interno del server', 500));
+  }
+});
+
+// 🕐 POST /api/meals/:id/sync-status - Sincronizza status di un pasto specifico
+exports.syncMealStatus = asyncHandler(async (req, res, next) => {
+  try {
+    const result = await mealStatusService.syncMealStatus(req.params.id);
+    
+    if (result.success) {
+      res.status(200).json({
+        success: true,
+        data: result
+      });
+    } else {
+      return next(new ErrorResponse(result.error || 'Errore nella sincronizzazione', 400));
+    }
+  } catch (error) {
+    return next(new ErrorResponse('Errore interno del server', 500));
+  }
 });
 
 /**

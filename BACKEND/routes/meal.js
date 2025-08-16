@@ -28,11 +28,17 @@ const {
   joinMeal,
   leaveMeal,
   searchMeals,
-  getVideoCallUrl 
+  getVideoCallUrl,
+  getMealStatusStats,
+  syncMealStatus
 } = require('../controllers/mealController');
 
 // ==================== ROTTE PUBBLICHE ====================
 router.get('/', protect, mealController.getMeals);
+
+// 🕐 ROTTE STATUS VIRTUALE
+router.get('/status/stats', protect, mealController.getMealStatusStats);
+router.post('/:id/sync-status', protect, mealController.syncMealStatus);
 
 /**
  * @route   GET /api/meals/search
