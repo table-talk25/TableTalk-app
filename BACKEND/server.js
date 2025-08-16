@@ -1,6 +1,7 @@
 // File: BACKEND/server.js (Versione Finale Stabile)
 
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const express = require('express');
 const http = require('http');
@@ -24,18 +25,56 @@ const twilio = require('twilio');
 const admin = require('firebase-admin');
 
 try {
-  // Assicurati che il percorso del file json sia corretto
-  const serviceAccount = require('./firebase-service-account.json'); 
+  // Prova a caricare il file di configurazione Firebase
+  const serviceAccountPath = path.join(__dirname, 'firebase-service-account.json');
   
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  });
-  
-  console.log('✅ Firebase Admin SDK inizializzato correttamente');
+  if (fs.existsSync(serviceAccountPath)) {
+    const serviceAccount = require('./firebase-service-account.json'); 
+    
+    // Controlla se è il file temporaneo
+    if (serviceAccount.private_key_id === 'TEMP_KEY_ID_FOR_DEPLOY') {
+      console.log('⚠️  File Firebase temporaneo rilevato');
+      console.log('⚠️  Firebase Admin SDK non configurato. Le notifiche push non funzioneranno.');
+      console.log('💡 Per abilitare le notifiche push, sostituisci con il file reale da Firebase Console');
+      
+      // Inizializza Firebase con configurazione vuota per evitare crash
+      admin.initializeApp({
+        projectId: 'tabletalk-social'
+      });
+      console.log('✅ Firebase Admin SDK inizializzato in modalità limitata (temporaneo)');
+    } else {
+      // File reale trovato
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+      console.log('✅ Firebase Admin SDK inizializzato correttamente');
+    }
+  } else {
+    console.log('⚠️  File firebase-service-account.json non trovato');
+    console.log('⚠️  Firebase Admin SDK non configurato. Le notifiche push non funzioneranno.');
+    console.log('💡 Per abilitare le notifiche push, aggiungi il file firebase-service-account.json nella cartella BACKEND');
+    
+    // Inizializza Firebase con configurazione vuota per evitare crash
+    admin.initializeApp({
+      projectId: 'tabletalk-social'
+    });
+    console.log('✅ Firebase Admin SDK inizializzato in modalità limitata');
+  }
 } catch (error) {
   console.error('❌ Errore nell\'inizializzazione di Firebase Admin SDK:', error.message);
   console.log('⚠️  Firebase Admin SDK non configurato. Le notifiche push non funzioneranno.');
-  console.log('Per abilitare le notifiche push, aggiungi il file firebase-service-account.json nella cartella BACKEND');
+  console.log('💡 Per abilitare le notifiche push, aggiungi il file firebase-service-account.json nella cartella BACKEND');
+  
+  // Inizializza Firebase con configurazione vuota per evitare crash
+  try {
+    admin.initializeApp({
+      projectId: 'tabletalk-social'
+    });
+    console.log('✅ Firebase Admin SDK inizializzato in modalità limitata (fallback)');
+  } catch (fallbackError) {
+    console.error('❌ Anche il fallback Firebase è fallito:', fallbackError.message);
+    console.log('⚠️  L\'app continuerà a funzionare senza notifiche push');
+  }
 }
 
 // Inizializza l'app Express e il server HTTP
