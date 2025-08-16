@@ -3,7 +3,7 @@
 
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 const { 
   sendPushNotification,
   sendChatNotification,
@@ -21,7 +21,7 @@ const {
  * POST /api/notifications/register-device
  * Registra un nuovo token di dispositivo per un utente
  */
-router.post('/register-device', auth, async (req, res) => {
+router.post('/register-device', protect, async (req, res) => {
   try {
     const { token, platform, deviceId } = req.body;
     const userId = req.user.id;
@@ -73,7 +73,7 @@ router.post('/register-device', auth, async (req, res) => {
  * POST /api/notifications/send-test
  * Invia una notifica di test (solo per admin)
  */
-router.post('/send-test', auth, async (req, res) => {
+router.post('/send-test', protect, async (req, res) => {
   try {
     // Verifica che l'utente sia admin
     if (!req.user.isAdmin) {
@@ -126,7 +126,7 @@ router.post('/send-test', auth, async (req, res) => {
  * GET /api/notifications/status
  * Ottieni lo stato del servizio notifiche
  */
-router.get('/status', auth, async (req, res) => {
+router.get('/status', protect, async (req, res) => {
   try {
     const status = getFirebaseStatus();
     
@@ -149,7 +149,7 @@ router.get('/status', auth, async (req, res) => {
  * POST /api/notifications/send-chat
  * Invia notifica per nuovo messaggio in chat
  */
-router.post('/send-chat', auth, async (req, res) => {
+router.post('/send-chat', protect, async (req, res) => {
   try {
     const { tokens, senderName, message, chatId } = req.body;
 
@@ -181,7 +181,7 @@ router.post('/send-chat', auth, async (req, res) => {
  * POST /api/notifications/send-invitation
  * Invia notifica per nuovo invito
  */
-router.post('/send-invitation', auth, async (req, res) => {
+router.post('/send-invitation', protect, async (req, res) => {
   try {
     const { tokens, inviterName, mealTitle } = req.body;
 
@@ -213,7 +213,7 @@ router.post('/send-invitation', auth, async (req, res) => {
  * POST /api/notifications/send-meal-reminder
  * Invia notifica promemoria pasto
  */
-router.post('/send-meal-reminder', auth, async (req, res) => {
+router.post('/send-meal-reminder', protect, async (req, res) => {
   try {
     const { tokens, mealTitle, mealTime } = req.body;
 
