@@ -10,6 +10,7 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import TopicInput from '../TopicInput';
 import LocationPicker from '../../Map/LocationPicker';
 import PlacesAutocompleteInput from '../../Map/PlacesAutocompleteInput';
+import { sanitizeMealData, containsDangerousContent } from '../../../services/sanitizationService';
 
         // Opzioni per la durata del TableTalk®
 const languageOptions = ['Italiano', 'English', 'Español', 'Français', 'Deutsch', '中文', 'العربية'];
@@ -85,11 +86,21 @@ const MealForm = ({ initialData, onSubmit, onCancel, isLoading, isSubmitting, su
         if (!value.trim()) return t('meals.form.titleRequired');
         if (value.trim().length < 5) return t('meals.form.titleMinLength');
         if (value.trim().length > 50) return t('meals.form.titleMaxLength');
+        
+        // 🛡️ PROTEZIONE XSS: Controlla contenuto pericoloso
+        if (containsDangerousContent(value)) {
+          return 'Il titolo contiene contenuto non permesso (HTML/JavaScript)';
+        }
         break;
       case 'description':
         if (!value.trim()) return t('meals.form.descriptionRequired');
         if (value.trim().length < 10) return t('meals.form.descriptionMinLength');
         if (value.trim().length > 1000) return t('meals.form.descriptionMaxLength');
+        
+        // 🛡️ PROTEZIONE XSS: Controlla contenuto pericoloso
+        if (containsDangerousContent(value)) {
+          return 'La descrizione contiene contenuto non permesso (HTML/JavaScript)';
+        }
         break;
       case 'date':
         if (!value) return t('meals.form.dateRequired');
@@ -285,8 +296,22 @@ const MealForm = ({ initialData, onSubmit, onCancel, isLoading, isSubmitting, su
       return; // Non procedere se ci sono errori
     }
 
+    // 🛡️ PROTEZIONE XSS: Sanitizza tutti i dati prima dell'invio
+    const sanitizedData = sanitizeMealData(formData);
+    
+    // Log per debugging (solo in development)
+    if (process.env.NODE_ENV === 'development') {
+      const hasChanges = JSON.stringify(sanitizedData) !== JSON.stringify(formData);
+      if (hasChanges) {
+        console.log('🛡️ [MealForm] Dati sanitizzati prima dell\'invio:', {
+          original: formData,
+          sanitized: sanitizedData
+        });
+      }
+    }
+
     const formDataToSend = new FormData();
-    const dataToProcess = { ...formData };
+    const dataToProcess = { ...sanitizedData };
 
     if (dataToProcess.date) {
       dataToProcess.date = new Date(dataToProcess.date).toISOString();

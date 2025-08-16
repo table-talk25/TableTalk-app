@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { FaEye, FaEyeSlash, FaMapMarkerAlt } from 'react-icons/fa';
 import PlacesAutocompleteInput from '../../Map/PlacesAutocompleteInput';
 import ProfileSectionWrapper from '../ProfileSectionWrapper';
+import { sanitizeProfileData, containsDangerousContent } from '../../../services/sanitizationService';
 import styles from './PersonalInfo.module.css';
 
 const PersonalInfo = ({ profileData, onUpdate, isPublicView = false }) => {
@@ -91,6 +92,16 @@ const PersonalInfo = ({ profileData, onUpdate, isPublicView = false }) => {
     if (isPublicView || !onUpdate) return; // Non permettere il salvataggio in modalità pubblica
     
     setError(''); // Pulisci eventuali errori precedenti
+    
+    // 🛡️ PROTEZIONE XSS: Controlla contenuto pericoloso prima del salvataggio
+    const fieldsToCheck = ['nickname', 'bio'];
+    for (const field of fieldsToCheck) {
+      if (formData[field] && containsDangerousContent(formData[field])) {
+        setError(`Il campo ${field === 'nickname' ? 'nickname' : 'bio'} contiene contenuto non permesso (HTML/JavaScript)`);
+        return;
+      }
+    }
+    
     try {
       // 🔄 LOCATION GEOJSON: Invia l'oggetto location completo con address e coordinates
       const dataToUpdate = {
@@ -107,7 +118,22 @@ const PersonalInfo = ({ profileData, onUpdate, isPublicView = false }) => {
         phone: formData.phone,
         settings: { ...profileData.settings, privacy: { ...formData.privacy, showPhone: false } }
       };
-      await onUpdate(dataToUpdate);
+      
+      // 🛡️ PROTEZIONE XSS: Sanitizza i dati prima dell'invio
+      const sanitizedData = sanitizeProfileData(dataToUpdate);
+      
+      // Log per debugging (solo in development)
+      if (process.env.NODE_ENV === 'development') {
+        const hasChanges = JSON.stringify(sanitizedData) !== JSON.stringify(dataToUpdate);
+        if (hasChanges) {
+          console.log('🛡️ [PersonalInfo] Dati sanitizzati prima dell\'invio:', {
+            original: dataToUpdate,
+            sanitized: sanitizedData
+          });
+        }
+      }
+      
+      await onUpdate(sanitizedData);
       setIsEditing(false);
     } catch (err) {
       setError(err.message || t('profile.personalInfo.updateError'));

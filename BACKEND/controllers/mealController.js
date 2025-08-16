@@ -25,6 +25,7 @@ function saveBase64Cover(base64String, userId) {
 }
 const notificationService = require('../services/notificationService');
 const sendEmail = require('../utils/sendEmail');
+const { sanitizeMealData } = require('../services/sanitizationService');
 
 const twilioClient = twilio(
   process.env.TWILIO_API_KEY,
@@ -199,7 +200,21 @@ exports.createMeal = asyncHandler(async (req, res, next) => {
   console.log('[CreateMeal] Body keys:', Object.keys(req.body || {}));
   console.log('[CreateMeal] File present?:', Boolean(req.file));
 
-  const mealData = { ...req.body, host: req.user.id };
+  // 🛡️ PROTEZIONE XSS: Sanitizza tutti i dati prima della creazione
+  const sanitizedBody = sanitizeMealData(req.body);
+  
+  const mealData = { ...sanitizedBody, host: req.user.id };
+  
+  // Log per debugging (solo in development)
+  if (process.env.NODE_ENV === 'development') {
+    const hasChanges = JSON.stringify(sanitizedBody) !== JSON.stringify(req.body);
+    if (hasChanges) {
+      console.log('🛡️ [CreateMeal] Dati sanitizzati:', {
+        original: req.body,
+        sanitized: sanitizedBody
+      });
+    }
+  }
   // Normalizza numerici/booleani da FormData JSON fallback
   if (typeof mealData.duration === 'string') mealData.duration = parseInt(mealData.duration, 10);
   if (typeof mealData.maxParticipants === 'string') mealData.maxParticipants = parseInt(mealData.maxParticipants, 10);
@@ -332,32 +347,46 @@ exports.updateMeal = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Non puoi modificare un pasto già terminato o cancellato.', 403));
   }
 
-  // Gestione del campo location dal FormData: normalizza a stringa indirizzo
-  if (req.body.location) {
-    try {
-      const parsedLocation = JSON.parse(req.body.location);
-      if (parsedLocation && typeof parsedLocation === 'object') {
-        req.body.location = parsedLocation.address || parsedLocation.formattedAddress || parsedLocation.label || '';
-        if (!req.body.location && typeof req.body.location === 'string') {
-          req.body.location = req.body.location.slice(0, 200);
-        }
-      } else {
-        req.body.location = String(req.body.location);
-      }
-    } catch (error) {
-      // Se non è JSON valido, usa il valore come stringa
-      req.body.location = String(req.body.location);
+  // 🛡️ PROTEZIONE XSS: Sanitizza tutti i dati prima dell'aggiornamento
+  const sanitizedBody = sanitizeMealData(req.body);
+  
+  // Log per debugging (solo in development)
+  if (process.env.NODE_ENV === 'development') {
+    const hasChanges = JSON.stringify(sanitizedBody) !== JSON.stringify(req.body);
+    if (hasChanges) {
+      console.log('🛡️ [UpdateMeal] Dati sanitizzati:', {
+        original: req.body,
+        sanitized: sanitizedBody
+      });
     }
   }
 
+  // Gestione del campo location dal FormData: normalizza a stringa indirizzo
+  if (sanitizedBody.location) {
+          try {
+        const parsedLocation = JSON.parse(sanitizedBody.location);
+        if (parsedLocation && typeof parsedLocation === 'object') {
+          sanitizedBody.location = parsedLocation.address || parsedLocation.formattedAddress || parsedLocation.label || '';
+          if (!sanitizedBody.location && typeof sanitizedBody.location === 'string') {
+            sanitizedBody.location = sanitizedBody.location.slice(0, 200);
+          }
+        } else {
+          sanitizedBody.location = String(sanitizedBody.location);
+        }
+      } catch (error) {
+        // Se non è JSON valido, usa il valore come stringa
+        sanitizedBody.location = String(sanitizedBody.location);
+      }
+    }
+
   // Se il pasto diventa fisico da virtuale, rimuovi i dati Twilio
-  if (req.body.mealType === 'physical' && meal.mealType === 'virtual') {
-    req.body.twilioRoomSid = undefined;
-    req.body.videoCallStatus = undefined;
+  if (sanitizedBody.mealType === 'physical' && meal.mealType === 'virtual') {
+    sanitizedBody.twilioRoomSid = undefined;
+    sanitizedBody.videoCallStatus = undefined;
   }
 
   // Se il pasto diventa virtuale da fisico, crea stanza Twilio
-  if (req.body.mealType === 'virtual' && meal.mealType === 'physical') {
+  if (sanitizedBody.mealType === 'virtual' && meal.mealType === 'physical') {
     try {
       const room = await twilioClient.video.v1.rooms.create({
         uniqueName: meal._id.toString(),
@@ -371,16 +400,16 @@ exports.updateMeal = asyncHandler(async (req, res, next) => {
     }
   }
 
-  if (req.file) req.body.coverImage = req.file.path;
-  if (!req.body.coverImage && req.body.coverImageBase64) {
-    try { req.body.coverImage = saveBase64Cover(req.body.coverImageBase64, req.user.id); } catch (e) { /* ignore */ }
+  if (req.file) sanitizedBody.coverImage = req.file.path;
+  if (!sanitizedBody.coverImage && sanitizedBody.coverImageBase64) {
+    try { sanitizedBody.coverImage = saveBase64Cover(sanitizedBody.coverImageBase64, req.user.id); } catch (e) { /* ignore */ }
   }
-  if (req.body.coverLocalUri && !req.body.coverImage) {
+  if (sanitizedBody.coverLocalUri && !sanitizedBody.coverImage) {
     // Mantieni l'URI locale come metadato (opzionale)
-    req.body.coverLocalUri = req.body.coverLocalUri;
+    sanitizedBody.coverLocalUri = sanitizedBody.coverLocalUri;
   }
 
-  const updatedMeal = await Meal.findByIdAndUpdate(req.params.id, req.body, {
+  const updatedMeal = await Meal.findByIdAndUpdate(req.params.id, sanitizedBody, {
     new: true,
     runValidators: true
   }).populate('host', 'nickname profileImage');
