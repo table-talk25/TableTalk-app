@@ -171,7 +171,8 @@ UserSchema.pre('deleteOne', { document: true, query: false }, async function(nex
 UserSchema.pre('save', function(next) {
   // Aggiorna profileCompleted solo se i campi del profilo sono stati modificati
   if (this.isModified('nickname') || this.isModified('bio') || this.isModified('interests') || 
-      this.isModified('gender') || this.isModified('residence') || this.isModified('preferredCuisine')) {
+      this.isModified('gender') || this.isModified('residence') || this.isModified('preferredCuisine') ||
+      this.isModified('location')) {
     this.profileCompleted = this.checkProfileCompletion();
     console.log(`[User] Pre-save: profileCompleted aggiornato a ${this.profileCompleted}`);
   }
@@ -269,7 +270,9 @@ UserSchema.methods.checkProfileCompletion = function() {
   const optionalFields = {
     gender: this.gender && this.gender.trim().length > 0,
     residence: this.residence && this.residence.trim().length > 0,
-    preferredCuisine: this.preferredCuisine && this.preferredCuisine.trim().length > 0
+    preferredCuisine: this.preferredCuisine && this.preferredCuisine.trim().length > 0,
+    // 🔄 LOCATION GEOJSON: Aggiungiamo la location come campo opzionale
+    location: this.location && this.location.address && this.location.address.trim().length > 0
   };
   
   // Il profilo è completo se ha almeno i campi obbligatori
@@ -283,7 +286,12 @@ UserSchema.methods.checkProfileCompletion = function() {
     optional: optionalFields,
     hasRequired: hasRequiredFields,
     hasOptional: hasOptionalFields,
-    profileCompleted: hasRequiredFields
+    profileCompleted: hasRequiredFields,
+    locationInfo: this.location ? {
+      hasAddress: !!this.location.address,
+      hasCoordinates: !!this.location.coordinates,
+      address: this.location.address
+    } : null
   });
   
   return hasRequiredFields;

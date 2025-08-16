@@ -1,8 +1,9 @@
-// File: frontend/client/src/components/profile/PersonalInfo.js (Corretto per la nuova location)
+// File: frontend/client/src/components/profile/PersonalInfo.js (Integrato con PlacesAutocomplete)
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaEdit, FaSave, FaTimes, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEdit, FaSave, FaTimes, FaEye, FaEyeSlash, FaMapMarkerAlt } from 'react-icons/fa';
+import PlacesAutocompleteInput from '../../Map/PlacesAutocompleteInput';
 import styles from './PersonalInfo.module.css';
 
 const PersonalInfo = ({ profileData, onUpdate }) => {
@@ -10,7 +11,8 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    nickname: '', bio: '', dateOfBirth: '', location: '', // <-- 'location' ora conterrà solo la stringa dell'indirizzo
+    nickname: '', bio: '', dateOfBirth: '', 
+    location: { address: '', coordinates: undefined }, // <-- 'location' ora è un oggetto GeoJSON
     gender: '', phone: '',
     privacy: { showAge: true, showLocation: true, showPhone: false }
   });
@@ -21,9 +23,11 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
         nickname: profileData.nickname || '',
         bio: profileData.bio || '',
         dateOfBirth: profileData.dateOfBirth ? new Date(profileData.dateOfBirth).toISOString().split('T')[0] : '',
-        // --- MODIFICA 1 ---
-        // Estraiamo solo la stringa 'address' dall'oggetto location.
-        location: profileData.location?.address || '', 
+        // 🔄 LOCATION GEOJSON: Manteniamo l'oggetto completo con address e coordinates
+        location: {
+          address: profileData.location?.address || '',
+          coordinates: profileData.location?.coordinates || undefined
+        },
         phone: profileData.phone || '',
         gender: profileData.gender || '',
         privacy: {
@@ -51,17 +55,43 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
     }));
   };
 
+  // 🔄 LOCATION GEOJSON: Gestisce la selezione della location dal PlacesAutocompleteInput
+  const handleLocationSelect = (locationData) => {
+    console.log('📍 [PersonalInfo] Location selezionata:', locationData);
+    setFormData(prev => ({
+      ...prev,
+      location: {
+        address: locationData.address || '',
+        coordinates: locationData.coordinates || undefined
+      }
+    }));
+  };
+
+  // 🔄 LOCATION GEOJSON: Gestisce il cambio manuale dell'indirizzo
+  const handleLocationChange = (address) => {
+    setFormData(prev => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        address: address
+      }
+    }));
+  };
+
   const handleSave = async () => {
     setError(''); // Pulisci eventuali errori precedenti
     try {
-      // --- MODIFICA 2 ---
-      // Quando salviamo, ricostruiamo l'oggetto location nel formato corretto per il backend.
+      // 🔄 LOCATION GEOJSON: Invia l'oggetto location completo con address e coordinates
       const dataToUpdate = {
         nickname: formData.nickname,
         bio: formData.bio,
         dateOfBirth: formData.dateOfBirth,
-        // Invia l'indirizzo dentro l'oggetto location
-        location: { address: formData.location },
+        // Invia l'oggetto location completo nel formato GeoJSON
+        location: {
+          type: 'Point',
+          address: formData.location.address,
+          coordinates: formData.location.coordinates
+        },
         gender: formData.gender,
         phone: formData.phone,
         settings: { ...profileData.settings, privacy: { ...formData.privacy, showPhone: false } }
@@ -80,9 +110,11 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
             nickname: profileData.nickname || '',
             bio: profileData.bio || '',
             dateOfBirth: profileData.dateOfBirth ? new Date(profileData.dateOfBirth).toISOString().split('T')[0] : '',
-            // --- MODIFICA 3 ---
-            // Facciamo lo stesso anche nell'annulla
-            location: profileData.location?.address || '',
+            // 🔄 LOCATION GEOJSON: Manteniamo l'oggetto completo anche nell'annulla
+            location: {
+              address: profileData.location?.address || '',
+              coordinates: profileData.location?.coordinates || undefined
+            },
             phone: profileData.phone || '',
             gender: profileData.gender || '',
             privacy: {
@@ -118,10 +150,21 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
 
       {!isEditing ? (
         <div className={styles.infoDisplay}>
-          {/* --- NESSUNA MODIFICA QUI ---
-              Questa parte ora funziona perché formData.location è una stringa */}
+          {/* 🔄 LOCATION GEOJSON: Mostra l'indirizzo e le coordinate se disponibili */}
           {renderInfoField(t('profile.personalInfo.nickname'), formData.nickname)}
-          {renderInfoField(t('profile.personalInfo.location'), formData.location)}
+          <div className={styles.infoRow}>
+            <span className={styles.infoLabel}>{t('profile.personalInfo.location')}:</span>
+            <div className={styles.locationInfo}>
+              <span className={styles.infoValue}>
+                {formData.location.address || t('profile.personalInfo.notSpecified')}
+              </span>
+              {formData.location.coordinates && (
+                <small className={styles.coordinatesInfo}>
+                  📍 {formData.location.coordinates[1]?.toFixed(6)}, {formData.location.coordinates[0]?.toFixed(6)}
+                </small>
+              )}
+            </div>
+          </div>
           {renderInfoField(t('profile.personalInfo.age'), profileData?.age, t('profile.personalInfo.notSpecifiedAge'))}
           {renderInfoField(t('profile.personalInfo.gender'), formData.gender)}
           <div className={styles.infoRow}>
@@ -158,7 +201,29 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
           </select>
 
           <div className={styles.fieldWithPrivacy}>
-            <input name="location" value={formData.location} onChange={handleChange} placeholder={t('profile.personalInfo.locationPlaceholder')} className={styles.input} />
+            <div className={styles.locationInputContainer}>
+              <PlacesAutocompleteInput
+                value={formData.location}
+                onSelect={handleLocationSelect}
+                onChange={handleLocationChange}
+                placeholder={t('profile.personalInfo.locationPlaceholder')}
+                className={styles.input}
+                inputProps={{
+                  'data-testid': 'location-input'
+                }}
+              />
+              <div className={styles.locationStatus}>
+                {formData.location.coordinates ? (
+                  <span className={styles.coordinatesStatus} title="Coordinate disponibili">
+                    📍
+                  </span>
+                ) : (
+                  <span className={styles.noCoordinatesStatus} title="Coordinate non disponibili">
+                    ❓
+                  </span>
+                )}
+              </div>
+            </div>
             <button onClick={() => handlePrivacyToggle('showLocation')} className={styles.privacyBtn} title={t('profile.personalInfo.locationVisibility')}>
                 {formData.privacy.showLocation ? <FaEye /> : <FaEyeSlash />}
             </button>
