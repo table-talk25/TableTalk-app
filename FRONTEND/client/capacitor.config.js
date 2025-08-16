@@ -13,9 +13,10 @@ const config = {
       apiKey: process.env.MAPS_API_KEY || ''
     },
     SplashScreen: {
-      launchShowDuration: 2000,
+      launchShowDuration: 3000, // Aumentato per dare più tempo all'app di caricarsi
       backgroundColor: '#ffffff',
-      showSpinner: false
+      showSpinner: false,
+      launchAutoHide: false // Non nascondere automaticamente per evitare crash
     },
     PushNotifications: {
       presentationOptions: [
@@ -41,11 +42,19 @@ const config = {
   },
   android: {
     allowMixedContent: false,
-    webContentsDebuggingEnabled: false
+    webContentsDebuggingEnabled: false,
+    // Configurazioni aggiuntive per stabilità
+    captureInput: true,
+    webContentsDebuggingEnabled: false,
+    allowMixedContent: false,
+    // Timeout più lunghi per evitare crash
+    initialFocus: false
   },
   ios: {
     contentInset: "automatic",
-    scrollEnabled: true
+    scrollEnabled: true,
+    // Configurazioni aggiuntive per stabilità
+    limitsNavigationsToAppBoundDomains: true
   }
 };
 

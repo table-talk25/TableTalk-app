@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
+import notificationService from '../services/notificationService';
 
 function usePushPermission() {
   useEffect(() => {
@@ -7,41 +8,55 @@ function usePushPermission() {
     const isNativePlatform = Capacitor.isNativePlatform();
     
     if (!isNativePlatform) {
-      console.log('PushNotifications non disponibili su web');
+      console.log('[usePushPermission] Piattaforma non nativa, saltando inizializzazione');
       return;
     }
 
-    const initializePushNotifications = async () => {
-      // TEMPORANEAMENTE DISABILITATO: Firebase non configurato correttamente
-      console.log('Push notifications temporaneamente disabilitate - Firebase non configurato');
-      return;
-      
+    const initializeNotifications = async () => {
       try {
-        const { PushNotifications } = await import('@capacitor/push-notifications');
+        console.log('[usePushPermission] Inizializzazione servizio notifiche...');
         
-        // Controlla se il permesso è già stato concesso
-        const status = await PushNotifications.checkPermissions();
-        if (status.receive !== 'granted') {
-          // Chiedi il permesso
-          const result = await PushNotifications.requestPermissions();
-          if (result.receive === 'granted') {
-            // Permesso concesso, registra il device
-            await PushNotifications.register();
-          } else {
-            // Permesso negato
-            console.log('Notifiche disabilitate dall\'utente');
+        // Usa il servizio di notifiche completo
+        await notificationService.initialize();
+        
+        // Log dello stato finale
+        const status = notificationService.getStatus();
+        console.log('[usePushPermission] Stato notifiche:', status);
+        
+        // Se le notifiche push sono disponibili, mostra un messaggio di successo
+        if (status.pushNotifications) {
+          console.log('[usePushPermission] ✅ Notifiche push abilitate con successo!');
+          
+          // Mostra notifica di test se le notifiche locali sono disponibili
+          if (status.localNotifications) {
+            setTimeout(() => {
+              notificationService.sendImmediateNotification(
+                'TableTalk', 
+                'Notifiche push configurate correttamente! 🎉'
+              );
+            }, 3000);
           }
         } else {
-          // Permesso già concesso, registra il device
-          await PushNotifications.register();
+          console.log('[usePushPermission] ⚠️ Notifiche push non disponibili, usando fallback locale');
         }
+        
       } catch (error) {
-        console.log('PushNotifications non disponibili:', error.message);
+        console.error('[usePushPermission] Errore nell\'inizializzazione notifiche:', error);
+        // Non propagare l'errore per evitare crash dell'app
       }
     };
 
-    initializePushNotifications();
+    // Esegui in modo sicuro
+    try {
+      initializeNotifications();
+    } catch (error) {
+      console.error('[usePushPermission] Errore critico durante l\'inizializzazione:', error);
+      // Non propagare l'errore per evitare crash dell'app
+    }
   }, []);
+
+  // Restituisci il servizio per uso esterno se necessario
+  return notificationService;
 }
 
 export default usePushPermission; 
