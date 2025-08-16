@@ -11,12 +11,14 @@ import Logo from '../../../components/common/Logo';
 import SocialLoginButtons from '../../../components/common/SocialLoginButtons';
 import styles from './LoginPage.module.css';
 import BackButton from '../../../components/common/BackButton';
+import { useRedirectAfterAuth } from '../../../hooks/useRedirectAfterAuth';
 
 const LoginPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated } = useAuth();
+  const { redirectAfterAuth, savedPath } = useRedirectAfterAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -39,12 +41,12 @@ const LoginPage = () => {
     })();
   }, []);
 
-  // Se già autenticato, vai direttamente ai pasti
+  // Se già autenticato, usa il redirect intelligente
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/meals', { replace: true });
+      redirectAfterAuth('/meals');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, redirectAfterAuth]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -59,13 +61,9 @@ const LoginPage = () => {
     setError('');
     setIsLoading(true);
 
-    // =======================================================
-    // === LA SOLA RIGA DA MODIFICARE È QUESTA:             ===
-    // =======================================================
-    const from = location.state?.from?.pathname || '/meals';
-
     try {
       await login(formData); 
+      
       // Salva o rimuove l'email in base al toggle
       try {
         if (rememberEmail) {
@@ -74,7 +72,9 @@ const LoginPage = () => {
           await removePreference(PREFERENCE_KEYS.LAST_LOGIN_EMAIL);
         }
       } catch {}
-      requestAnimationFrame(() => navigate(from, { replace: true }));
+      
+      // 🔄 REDIRECT INTELLIGENTE: Vai alla pagina originale o fallback
+      redirectAfterAuth('/meals');
     
     } catch (err) {
       console.error('Errore durante il login:', err);
@@ -96,6 +96,22 @@ const LoginPage = () => {
                 </Link>
             </div>
             <h2 className={styles.title}>{t('auth.loginToTableTalk')}</h2>
+            
+            {/* 🔄 Indicatore redirect intelligente */}
+            {savedPath && savedPath !== '/login' && (
+              <Alert variant="info" className="mb-3">
+                <small>
+                  <strong>💡 Dopo il login verrai reindirizzato a:</strong><br />
+                  {savedPath === '/meals' ? '🏠 Pagina principale' : 
+                   savedPath.includes('/meals/') ? '🍽️ Dettaglio pasto' :
+                   savedPath === '/map' ? '🗺️ Mappa' :
+                   savedPath === '/impostazioni/profilo' ? '👤 Profilo' :
+                   savedPath === '/my-meals' ? '📋 I miei pasti' :
+                   savedPath === '/chat/' ? '💬 Chat' :
+                   savedPath}
+                </small>
+              </Alert>
+            )}
             
             {location.state?.message && <Alert variant="success">{location.state.message}</Alert>}
             {error && <Alert variant="danger">{error}</Alert>}
@@ -164,9 +180,8 @@ const LoginPage = () => {
             <SocialLoginButtons
                 onSuccess={(result) => {
                     console.log('Login social completato:', result);
-                    // Naviga alla pagina principale dopo il login social
-                    const from = location.state?.from?.pathname || '/meals';
-                    requestAnimationFrame(() => navigate(from, { replace: true }));
+                    // 🔄 REDIRECT INTELLIGENTE: Usa lo stesso sistema del login normale
+                    redirectAfterAuth('/meals');
                 }}
                 onError={(errorMessage) => {
                     setError(errorMessage);
