@@ -18,8 +18,11 @@ const CreateMealPage = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [imageUploadProgress, setImageUploadProgress] = useState(0);
+  const [isImageUploading, setIsImageUploading] = useState(false);
+  const [createdMealId, setCreatedMealId] = useState(null);
 
-  // La logica di submit ora chiama il servizio corretto
+  // 🔄 FLUSSO IN DUE PASSAGGI: Prima crea il pasto, poi carica l'immagine
   const handleCreateSubmit = async (formData) => {
     console.log('🚀 [CreateMeal] Inizio creazione pasto...');
     console.log('🚀 [CreateMeal] FormData ricevuto:', formData);
@@ -34,53 +37,41 @@ const CreateMealPage = () => {
     
     setIsLoading(true);
     setError(''); // Pulisci eventuali errori precedenti
+    
     try {
       console.log('📡 [CreateMeal] Chiamando createMeal (context)...');
-      const newMeal = await createMeal(formData); // aggiorna subito lo stato locale
+      
+      // 🔄 PASSO 1: Crea il pasto SENZA immagine per feedback immediato
+      const formDataWithoutImage = new FormData();
+      
+      // Copia tutti i campi tranne l'immagine
+      for (let [key, value] of formData.entries()) {
+        if (key !== 'coverImage' && key !== 'coverImageBase64' && key !== 'coverLocalUri') {
+          formDataWithoutImage.append(key, value);
+        }
+      }
+      
+      const newMeal = await createMeal(formDataWithoutImage);
       console.log('✅ [CreateMeal] Pasto creato con successo:', newMeal);
       console.log('✅ [CreateMeal] newMeal._id:', newMeal._id);
-      console.log('✅ [CreateMeal] Navigating to:', `/meals/${newMeal._id}`);
       
+      // Salva l'ID del pasto creato per l'upload dell'immagine
+      setCreatedMealId(newMeal._id);
+      
+      // Mostra successo immediato
       toast.success(t('meals.createSuccess'));
       
-      // Se c'è un'immagine, caricala SEMPRE dopo la creazione (copre anche il fallback JSON)
-      try {
-        if (formData instanceof FormData && formData.get('coverImage')) {
-          const original = formData.get('coverImage');
-          const fileToSend = original && typeof original.name !== 'string'
-            ? new File([original], `cover_${Date.now()}.jpg`, { type: original.type || 'image/jpeg' })
-            : original;
-          const onlyImage = new FormData();
-          onlyImage.append('coverImage', fileToSend);
-          // Includi SEMPRE un fallback base64 se disponibile (da coverLocalUri o coverImageBase64)
-          try {
-            const preview = formData.get('coverLocalUri');
-            if (typeof preview === 'string' && preview.startsWith('data:image/')) {
-              onlyImage.append('coverImageBase64', preview);
-            }
-          } catch(_) {}
-          try {
-            const base64 = formData.get('coverImageBase64');
-            if (typeof base64 === 'string' && base64.startsWith('data:image/')) {
-              onlyImage.append('coverImageBase64', base64);
-            }
-          } catch(_) {}
-          const updated = await mealService.updateMeal(newMeal._id, onlyImage);
-          const updatedMeal = updated?.data || updated;
-          // Aggiorna subito sia lo stato locale sia l'oggetto appena creato
-          try { upsertMeal(updatedMeal); } catch (_) {}
-          try { if (updatedMeal?.coverImage) { newMeal.coverImage = updatedMeal.coverImage; } } catch (_) {}
-          try { await fetchMeals({ status: 'upcoming,ongoing', suppressErrorAlert: true }); } catch (_) {}
-        }
-      } catch (imgErr) {
-        console.warn('⚠️ Upload immagine post-creazione non riuscito (puoi aggiungerla dopo):', imgErr?.message || imgErr);
+      // 🔄 PASSO 2: Se c'è un'immagine, caricala separatamente con progress bar
+      if (formData instanceof FormData && formData.get('coverImage')) {
+        await uploadMealImage(newMeal._id, formData);
+      } else {
+        // Nessuna immagine, naviga direttamente
+        setTimeout(() => {
+          console.log('🚀 [CreateMeal] Eseguendo navigazione...');
+          navigate(`/meals/${newMeal._id}`);
+        }, 800);
       }
-
-      // Aggiungiamo un piccolo delay prima della navigazione
-      setTimeout(() => {
-        console.log('🚀 [CreateMeal] Eseguendo navigazione...');
-        navigate(`/meals/${newMeal._id}`);
-      }, 800); 
+      
     } catch (error) {
       console.error('❌ [CreateMeal] Errore nella creazione:', error);
       console.error('❌ [CreateMeal] Error details:', {
@@ -98,6 +89,99 @@ const CreateMealPage = () => {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  /**
+   * 🔄 PASSO 2: Upload separato dell'immagine con progress bar
+   * @param {string} mealId - ID del pasto creato
+   * @param {FormData} formData - Dati del form con l'immagine
+   */
+  const uploadMealImage = async (mealId, formData) => {
+    console.log('🖼️ [CreateMeal] Inizio upload immagine per pasto:', mealId);
+    
+    setIsImageUploading(true);
+    setImageUploadProgress(0);
+    
+    try {
+      // Prepara i dati dell'immagine
+      const original = formData.get('coverImage');
+      const fileToSend = original && typeof original.name !== 'string'
+        ? new File([original], `cover_${Date.now()}.jpg`, { type: original.type || 'image/jpeg' })
+        : original;
+      
+      const onlyImage = new FormData();
+      onlyImage.append('coverImage', fileToSend);
+      
+      // Includi fallback base64 se disponibile
+      try {
+        const preview = formData.get('coverLocalUri');
+        if (typeof preview === 'string' && preview.startsWith('data:image/')) {
+          onlyImage.append('coverImageBase64', preview);
+        }
+      } catch(_) {}
+      
+      try {
+        const base64 = formData.get('coverImageBase64');
+        if (typeof base64 === 'string' && base64.startsWith('data:image/')) {
+          onlyImage.append('coverImageBase64', base64);
+        }
+      } catch(_) {}
+      
+      // Simula progress bar (in un'implementazione reale, usa axios interceptor)
+      const progressInterval = setInterval(() => {
+        setImageUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+      
+      // Upload dell'immagine
+      const updated = await mealService.updateMeal(mealId, onlyImage);
+      const updatedMeal = updated?.data || updated;
+      
+      // Aggiorna lo stato locale
+      try { 
+        upsertMeal(updatedMeal); 
+      } catch (_) {}
+      
+      // Aggiorna la lista dei pasti
+      try { 
+        await fetchMeals({ status: 'upcoming,ongoing', suppressErrorAlert: true }); 
+      } catch (_) {}
+      
+      // Completa la progress bar
+      setImageUploadProgress(100);
+      
+      // Mostra successo
+      toast.success(t('meals.imageUploadSuccess') || 'Immagine caricata con successo!');
+      
+      console.log('✅ [CreateMeal] Immagine caricata con successo');
+      
+      // Naviga alla pagina del pasto dopo un breve delay
+      setTimeout(() => {
+        console.log('🚀 [CreateMeal] Eseguendo navigazione dopo upload immagine...');
+        navigate(`/meals/${mealId}`);
+      }, 1000);
+      
+    } catch (imgErr) {
+      console.warn('⚠️ [CreateMeal] Upload immagine fallito:', imgErr?.message || imgErr);
+      
+      // Mostra warning ma non blocca il flusso
+      toast.warning(t('meals.imageUploadWarning') || 'Pasto creato! Puoi aggiungere l\'immagine dopo.');
+      
+      // Naviga comunque alla pagina del pasto
+      setTimeout(() => {
+        console.log('🚀 [CreateMeal] Eseguendo navigazione nonostante errore immagine...');
+        navigate(`/meals/${mealId}`);
+      }, 1000);
+      
+    } finally {
+      setIsImageUploading(false);
+      setImageUploadProgress(0);
     }
   };
 
@@ -143,11 +227,55 @@ const CreateMealPage = () => {
             {error}
           </div>
         )}
+
+        {/* 🔄 Progress bar per upload immagine */}
+        {isImageUploading && (
+          <div className={styles.imageUploadProgress} style={{
+            backgroundColor: '#f8f9fa',
+            padding: '15px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            border: '1px solid #dee2e6'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ marginRight: '10px' }}>🖼️</div>
+              <div>
+                <strong>Caricamento immagine in corso...</strong>
+                <small style={{ display: 'block', color: '#6c757d' }}>
+                  Pasto creato! Stiamo caricando l'immagine...
+                </small>
+              </div>
+            </div>
+            <div style={{ 
+              width: '100%', 
+              height: '8px', 
+              backgroundColor: '#e9ecef', 
+              borderRadius: '4px',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                width: `${imageUploadProgress}%`,
+                height: '100%',
+                backgroundColor: '#007bff',
+                transition: 'width 0.3s ease',
+                borderRadius: '4px'
+              }} />
+            </div>
+            <small style={{ color: '#6c757d', marginTop: '5px', display: 'block' }}>
+              {imageUploadProgress}% completato
+            </small>
+          </div>
+        )}
+
         <MealForm
           onSubmit={handleCreateSubmit}
-          isLoading={isLoading}
-          isSubmitting={isLoading}
-          submitButtonText={t('meals.createButton')}
+          isLoading={isLoading || isImageUploading}
+          isSubmitting={isLoading || isImageUploading}
+          submitButtonText={
+            isLoading ? t('meals.createButton') :
+            isImageUploading ? 'Pasto creato! Caricando immagine...' :
+            t('meals.createButton')
+          }
         />
       </div>
     </div>

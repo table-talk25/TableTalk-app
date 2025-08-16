@@ -441,6 +441,21 @@ const MealForm = ({ initialData, onSubmit, onCancel, isLoading, isSubmitting, su
         <Form.Label>{t('meals.form.coverImageLabel')}</Form.Label>
         {imagePreview && <img src={imagePreview} alt={t('meals.form.coverImageAlt')} className={styles.imagePreview} />}
         <Button variant="secondary" onClick={handlePhotoSelect} className="d-block w-100 mt-2">{t('meals.form.chooseFromGallery')}</Button>
+        
+        {/* 🔄 Indicatore stato immagine */}
+        {imageFile && (
+          <div className="mt-2 p-2 bg-light rounded" style={{ fontSize: '0.9em' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>📷 Immagine selezionata</span>
+              <small className="text-muted">
+                {imageFile.name} ({(imageFile.size / 1024 / 1024).toFixed(2)} MB)
+              </small>
+            </div>
+            <small className="text-muted d-block mt-1">
+              L'immagine verrà caricata dopo la creazione del pasto
+            </small>
+          </div>
+        )}
       </Form.Group>
       
       <div className={styles.stickyActions}>
