@@ -28,25 +28,55 @@ const MealForm = ({ initialData, onSubmit, onCancel, isLoading, isSubmitting, su
   ];
 
   // Definiamo uno stato di default pulito
-  const getInitialState = () => ({
-    title: '',
-    description: '',
-    mealType: 'virtual', // Aggiungi questo! Iniziamo con 'virtual' come default
-    type: 'lunch',
-    date: '',
-    duration: 60,
-    maxParticipants: 2,
-    language: 'English',
-    topics: [],
-    location: null, // Assicurati che location sia null all'inizio
-            isPublic: true, // Di default i TableTalk® sono pubblici
-  });
+  const getInitialState = () => {
+    // 🔒 VALIDAZIONE DATA: Suggerisci una data valida di default
+    const now = new Date();
+    const suggestedDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 ora da ora
+    
+    // Formatta per input datetime-local
+    const year = suggestedDate.getFullYear();
+    const month = String(suggestedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(suggestedDate.getDate()).padStart(2, '0');
+    const hours = String(suggestedDate.getHours()).padStart(2, '0');
+    const minutes = String(suggestedDate.getMinutes()).padStart(2, '0');
+    
+    return {
+      title: '',
+      description: '',
+      mealType: 'virtual', // Aggiungi questo! Iniziamo con 'virtual' come default
+      type: 'lunch',
+      date: `${year}-${month}-${day}T${hours}:${minutes}`, // 🔒 Data valida di default
+      duration: 60,
+      maxParticipants: 2,
+      language: 'English',
+      topics: [],
+      location: null, // Assicurati che location sia null all'inizio
+      isPublic: true, // Di default i TableTalk® sono pubblici
+    };
+  };
 
   const [formData, setFormData] = useState(getInitialState());
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [imageBase64, setImageBase64] = useState('');
   const [errors, setErrors] = useState({});
+
+  // 🔒 VALIDAZIONE DATA: Calcola la data minima valida per l'input
+  const getMinValidDateTime = () => {
+    const now = new Date();
+    // Tolleranza di 5 minuti per sincronizzazione dispositivi
+    const toleranceMs = 5 * 60 * 1000;
+    const minValidDate = new Date(now.getTime() - toleranceMs);
+    
+    // Formatta per input datetime-local (YYYY-MM-DDTHH:mm)
+    const year = minValidDate.getFullYear();
+    const month = String(minValidDate.getMonth() + 1).padStart(2, '0');
+    const day = String(minValidDate.getDate()).padStart(2, '0');
+    const hours = String(minValidDate.getHours()).padStart(2, '0');
+    const minutes = String(minValidDate.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
 
   // Funzione di validazione
   const validateField = (name, value) => {
@@ -63,8 +93,25 @@ const MealForm = ({ initialData, onSubmit, onCancel, isLoading, isSubmitting, su
         break;
       case 'date':
         if (!value) return t('meals.form.dateRequired');
-        // Permettiamo anche date prossime (tolleranza), evitiamo blocchi su dispositivi che formattano diversamente
-        if (new Date(value).getTime() <= Date.now() - 60 * 1000) return t('meals.form.dateFuture');
+        
+        // 🔒 VALIDAZIONE DATA: Impedisce selezione date passate
+        const selectedDate = new Date(value);
+        const now = new Date();
+        
+        // Tolleranza di 5 minuti per sincronizzazione dispositivi
+        const toleranceMs = 5 * 60 * 1000; // 5 minuti
+        const minValidDate = new Date(now.getTime() - toleranceMs);
+        
+        if (selectedDate < minValidDate) {
+          return t('meals.form.datePast') || 'La data deve essere nel futuro';
+        }
+        
+        // Validazione aggiuntiva: non permettere date troppo lontane nel futuro (es. > 1 anno)
+        const maxFutureDate = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+        if (selectedDate > maxFutureDate) {
+          return t('meals.form.dateTooFar') || 'La data non può essere più di un anno nel futuro';
+        }
+        
         break;
       case 'maxParticipants':
         if (!value || value < 2) return t('meals.form.maxParticipantsMin');
@@ -84,6 +131,26 @@ const MealForm = ({ initialData, onSubmit, onCancel, isLoading, isSubmitting, su
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // 🔒 VALIDAZIONE DATA SPECIALE: Controllo immediato per date non valide
+    if (name === 'date' && value) {
+      const selectedDate = new Date(value);
+      const now = new Date();
+      const toleranceMs = 5 * 60 * 1000; // 5 minuti
+      const minValidDate = new Date(now.getTime() - toleranceMs);
+      
+      // Se la data selezionata è nel passato, resetta il campo
+      if (selectedDate < minValidDate) {
+        console.warn('⚠️ [MealForm] Data nel passato selezionata, reset campo');
+        setFormData(prev => ({ ...prev, date: '' }));
+        setErrors(prev => ({
+          ...prev,
+          date: t('meals.form.datePast') || 'La data deve essere nel futuro'
+        }));
+        return;
+      }
+    }
+    
     if (name === 'location') {
       // Mantieni 'location' come oggetto con chiave 'address' per evitare crash
       setFormData(prev => ({
@@ -188,6 +255,23 @@ const MealForm = ({ initialData, onSubmit, onCancel, isLoading, isSubmitting, su
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // 🔒 VALIDAZIONE DATA FINALE: Controllo aggiuntivo prima del submit
+    if (formData.date) {
+      const selectedDate = new Date(formData.date);
+      const now = new Date();
+      const toleranceMs = 5 * 60 * 1000; // 5 minuti
+      const minValidDate = new Date(now.getTime() - toleranceMs);
+      
+      if (selectedDate < minValidDate) {
+        console.warn('⚠️ [MealForm] Submit bloccato: data nel passato rilevata');
+        setErrors(prev => ({
+          ...prev,
+          date: t('meals.form.datePast') || 'La data deve essere nel futuro'
+        }));
+        return; // Blocca il submit
+      }
+    }
     
     // Validazione completa prima del submit
     const newErrors = {};
@@ -380,16 +464,46 @@ const MealForm = ({ initialData, onSubmit, onCancel, isLoading, isSubmitting, su
         <Col xs={12} md={6}>
             <Form.Group>
                 <Form.Label className={styles.formLabel}>{t('meals.form.dateLabel')}</Form.Label>
-                <Form.Control 
-                  className={`${styles.formControl} ${errors.date ? 'is-invalid' : ''}`}
-                  type="datetime-local" 
-                  name="date" 
-                  value={formData.date} 
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  required 
-                />
+                <div className={styles.dateInputContainer}>
+                  <Form.Control 
+                    className={`${styles.formControl} ${errors.date ? 'is-invalid' : ''}`}
+                    type="datetime-local" 
+                    name="date" 
+                    value={formData.date} 
+                    min={getMinValidDateTime()} // 🔒 Impedisce selezione date passate
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    required 
+                  />
+                  <button
+                    type="button"
+                    className={styles.dateHelperButton}
+                    onClick={() => {
+                      // 🔒 SUGGERIMENTO DATA: Imposta una data valida di default
+                      const now = new Date();
+                      const suggestedDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 ora da ora
+                      
+                      const year = suggestedDate.getFullYear();
+                      const month = String(suggestedDate.getMonth() + 1).padStart(2, '0');
+                      const day = String(suggestedDate.getDate()).padStart(2, '0');
+                      const hours = String(suggestedDate.getHours()).padStart(2, '0');
+                      const minutes = String(suggestedDate.getMinutes()).padStart(2, '0');
+                      
+                      const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+                      setFormData(prev => ({ ...prev, date: formattedDate }));
+                      
+                      // Pulisci eventuali errori
+                      setErrors(prev => ({ ...prev, date: '' }));
+                    }}
+                    title="Suggerisci data valida (1 ora da ora)"
+                  >
+                    🕐
+                  </button>
+                </div>
                 {errors.date && <div className="invalid-feedback">{errors.date}</div>}
+                <Form.Text className="text-muted">
+                  📅 Seleziona una data e ora nel futuro
+                </Form.Text>
             </Form.Group>
         </Col>
         <Col xs={12} md={6}>
