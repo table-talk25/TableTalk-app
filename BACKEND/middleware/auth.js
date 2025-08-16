@@ -38,7 +38,12 @@ exports.protect = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse('Account disattivato', 401));
     }
 
-    console.log(`[PROTECT] ✅ Utente trovato: ${req.user.email}. Passo al controller.`);
+    // 🔒 SICUREZZA: Verifica che l'email sia stata verificata
+    if (!req.user.isEmailVerified) {
+      return next(new ErrorResponse('Account non verificato. Controlla la tua email e clicca sul link di verifica per completare la registrazione.', 403));
+    }
+
+    console.log(`[PROTECT] ✅ Utente trovato: ${req.user.email} (verificato). Passo al controller.`);
     next();
 
   } catch (err) {
@@ -117,8 +122,9 @@ exports.requireVerifiedAccount = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Utente non trovato', 404));
   }
 
-  if (!user.isVerified) { // Corretto qui
-    return next(new ErrorResponse('Account non verificato', 403));
+  // 🔒 SICUREZZA: Verifica il campo corretto per la verifica email
+  if (!user.isEmailVerified) {
+    return next(new ErrorResponse('Account non verificato. Controlla la tua email e clicca sul link di verifica per completare la registrazione.', 403));
   }
 
   next();
@@ -148,6 +154,30 @@ exports.adminOnly = (req, res, next) => {
   }
   return res.status(403).json({ success: false, message: 'Accesso riservato agli amministratori.' });
 };
+
+/**
+ * @desc    Middleware flessibile per verificare l'account (opzionale)
+ * @param   {boolean} required - Se true, blocca l'accesso. Se false, solo avvisa
+ */
+exports.requireVerifiedAccountFlexible = (required = true) => asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  
+  if (!user) {
+    return next(new ErrorResponse('Utente non trovato', 404));
+  }
+
+  if (!user.isEmailVerified) {
+    if (required) {
+      return next(new ErrorResponse('Account non verificato. Controlla la tua email e clicca sul link di verifica per completare la registrazione.', 403));
+    } else {
+      // Solo avvisa ma permette l'accesso
+      req.user.emailVerificationWarning = true;
+      console.log(`[AUTH] ⚠️ Utente ${user.email} non verificato ma accesso permesso`);
+    }
+  }
+
+  next();
+});
 
 // NOTA: Le altre funzioni middleware (requireCompleteProfile, etc.) sono corrette
 // ma assicurati che non siano duplicate e che usino `req.user` in modo sicuro.

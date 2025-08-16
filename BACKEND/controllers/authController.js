@@ -80,6 +80,11 @@ exports.login = asyncHandler(async (req, res, next) => {
         return next(new ErrorResponse('Credenziali non valide', 401));
     }
 
+    // 🔒 SICUREZZA: Verifica che l'email sia stata verificata
+    if (!user.isEmailVerified) {
+        return next(new ErrorResponse('Account non verificato. Controlla la tua email e clicca sul link di verifica per completare la registrazione.', 403));
+    }
+
     if (user.isLocked()) {
         return next(new ErrorResponse('Account bloccato a causa di troppi tentativi falliti. Riprova più tardi.', 403));
     }
@@ -99,6 +104,12 @@ exports.getMe = asyncHandler(async (req, res, next) => {
     if (!user) {
         return next(new ErrorResponse('Utente non trovato', 404));
     }
+    
+    // 🔒 SICUREZZA: Verifica che l'email sia stata verificata
+    if (!user.isEmailVerified) {
+        return next(new ErrorResponse('Account non verificato. Controlla la tua email e clicca sul link di verifica per completare la registrazione.', 403));
+    }
+    
     res.status(200).json({ success: true, data: user });
 });
 
@@ -180,10 +191,13 @@ exports.verifyEmail = asyncHandler(async (req, res, next) => {
     if (!user) {
         return next(new ErrorResponse('Token di verifica non valido o scaduto', 400));
     }
-    user.isVerified = true;
+    
+    // 🔒 SICUREZZA: Aggiorna il campo corretto per la verifica email
+    user.isEmailVerified = true;
     user.verificationToken = undefined;
     user.verificationTokenExpires = undefined;
     await user.save({ validateBeforeSave: false });
+    
     res.status(200).json({ success: true, message: 'Email verificata con successo. Ora puoi accedere a tutte le funzionalità.' });
 });
 
@@ -197,9 +211,12 @@ exports.resendVerification = asyncHandler(async (req, res, next) => {
     if (!user) {
         return next(new ErrorResponse('Utente non trovato', 404));
     }
-    if (user.isVerified) {
+    
+    // 🔒 SICUREZZA: Controlla il campo corretto per la verifica email
+    if (user.isEmailVerified) {
         return res.status(200).json({ success: true, message: 'Account già verificato.' });
     }
+    
     const verificationToken = user.generateVerificationToken();
     await user.save({ validateBeforeSave: false });
     try {
