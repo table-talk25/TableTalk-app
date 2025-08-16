@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaEdit, FaSave, FaTimes, FaPlus, FaChevronDown } from 'react-icons/fa';
+import { FaPlus, FaChevronDown } from 'react-icons/fa';
 import { availableCuisines, availableInterests, availableLanguages } from '../../../constants/profileConstants';
+import ProfileSectionWrapper from '../ProfileSectionWrapper';
 import styles from './InterestsSection.module.css';
 
 const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
@@ -67,6 +68,8 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
   ).slice(0, 8);
 
   const handleAddInterest = (interest) => {
+    if (isPublicView) return; // Non permettere modifiche in modalità pubblica
+    
     if (interest && !interests.includes(interest)) {
       setInterests([...interests, interest]);
       setNewInterest('');
@@ -75,10 +78,14 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
   };
 
   const handleRemoveInterest = (interestToRemove) => {
+    if (isPublicView) return; // Non permettere modifiche in modalità pubblica
+    
     setInterests(interests.filter(interest => interest !== interestToRemove));
   };
 
   const handleAddLanguage = (language) => {
+    if (isPublicView) return; // Non permettere modifiche in modalità pubblica
+    
     if (language && !languages.includes(language)) {
       setLanguages([...languages, language]);
       setNewLanguage('');
@@ -87,10 +94,14 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
   };
 
   const handleRemoveLanguage = (langToRemove) => {
+    if (isPublicView) return; // Non permettere modifiche in modalità pubblica
+    
     setLanguages(languages.filter(lang => lang !== langToRemove));
   };
   
   const handleSave = () => {
+    if (isPublicView || !onUpdate) return; // Non permettere il salvataggio in modalità pubblica
+    
     const dataToUpdate = {
       interests: interests,
       languages: languages,
@@ -101,6 +112,8 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
   };
 
   const handleCancel = () => {
+    if (isPublicView) return; // Non permettere l'annullamento in modalità pubblica
+    
     if (profileData) {
       setInterests(profileData.interests || []);
       setLanguages(profileData.languages || []);
@@ -130,19 +143,16 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
   } catch {}
 
   return (
-    <div className={styles.interestsContainer}>
-      <div className={styles.sectionHeader}>
-        <h2>{titleNode}</h2>
-        {!isPublicView && !isEditing && (
-          <button className={styles.editButton} onClick={() => setIsEditing(true)}><FaEdit /> {t('profile.interests.edit')}</button>
-        )}
-        {isEditing && (
-          <div className={styles.editButtons}>
-            <button className={styles.cancelButton} onClick={handleCancel}><FaTimes /> {t('profile.interests.cancel')}</button>
-            <button className={styles.saveButton} onClick={handleSave}><FaSave /> {t('profile.interests.save')}</button>
-          </div>
-        )}
-      </div>
+    <ProfileSectionWrapper
+      title={titleNode}
+      isPublicView={isPublicView}
+      showEditButton={!isEditing}
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      showSaveCancel={isEditing}
+    >
 
       <div className={styles.interestsSection}>
         <h3>{t('profile.interests.yourInterests')}</h3>
@@ -153,12 +163,17 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
                 type="text" 
                 value={newInterest} 
                 onChange={(e) => {
-                  setNewInterest(e.target.value);
-                  setShowInterestSuggestions(true);
+                  if (!isPublicView) {
+                    setNewInterest(e.target.value);
+                    setShowInterestSuggestions(true);
+                  }
                 }}
-                onFocus={() => setShowInterestSuggestions(true)}
+                onFocus={() => {
+                  if (!isPublicView) setShowInterestSuggestions(true);
+                }}
                 placeholder={t('profile.interests.searchInterest')} 
                 className={styles.autocompleteInput}
+                disabled={isPublicView}
               />
               {showInterestSuggestions && filteredInterestSuggestions.length > 0 && (
                 <div className={styles.suggestionsList}>
@@ -174,7 +189,11 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
                 </div>
               )}
             </div>
-            <button onClick={() => handleAddInterest(newInterest)} disabled={!newInterest.trim() || interests.includes(newInterest.trim())}>
+            <button 
+              onClick={() => handleAddInterest(newInterest)} 
+              disabled={!newInterest.trim() || interests.includes(newInterest.trim()) || isPublicView}
+              className={isPublicView ? styles.disabledButton : ''}
+            >
               <FaPlus />
             </button>
           </div>
@@ -198,12 +217,17 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
                 type="text" 
                 value={newLanguage} 
                 onChange={(e) => {
-                  setNewLanguage(e.target.value);
-                  setShowLanguageSuggestions(true);
+                  if (!isPublicView) {
+                    setNewLanguage(e.target.value);
+                    setShowLanguageSuggestions(true);
+                  }
                 }}
-                onFocus={() => setShowLanguageSuggestions(true)}
+                onFocus={() => {
+                  if (!isPublicView) setShowLanguageSuggestions(true);
+                }}
                 placeholder={t('profile.interests.searchLanguage')} 
                 className={styles.autocompleteInput}
+                disabled={isPublicView}
               />
               {showLanguageSuggestions && filteredLanguageSuggestions.length > 0 && (
                 <div className={styles.suggestionsList}>
@@ -219,7 +243,11 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
                 </div>
               )}
             </div>
-            <button onClick={() => handleAddLanguage(newLanguage)} disabled={!newLanguage.trim() || languages.includes(newLanguage.trim())}>
+            <button 
+              onClick={() => handleAddLanguage(newLanguage)} 
+              disabled={!newLanguage.trim() || languages.includes(newLanguage.trim()) || isPublicView}
+              className={isPublicView ? styles.disabledButton : ''}
+            >
               <FaPlus />
             </button>
           </div>
@@ -241,7 +269,14 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
             {preferredCuisine ? <span className={styles.cuisineTag}>{preferredCuisine}</span> : <p className={styles.noItems}>{t('profile.interests.noCuisine')}</p>}
           </div>
         ) : (
-          <select value={preferredCuisine} onChange={(e) => setPreferredCuisine(e.target.value)} className={styles.cuisineSelect}>
+          <select 
+            value={preferredCuisine} 
+            onChange={(e) => {
+              if (!isPublicView) setPreferredCuisine(e.target.value);
+            }} 
+            className={styles.cuisineSelect}
+            disabled={isPublicView}
+          >
             <option value="">{t('profile.interests.selectCuisine')}</option>
             {availableCuisines.map((cuisine, index) => (
               <option key={index} value={cuisine}>{cuisine}</option>
@@ -249,7 +284,7 @@ const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
           </select>
         )}
       </div>
-    </div>
+    </ProfileSectionWrapper>
   );
 };
 

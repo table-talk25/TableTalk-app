@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaEdit, FaSave, FaTimes, FaEye, FaEyeSlash, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaMapMarkerAlt } from 'react-icons/fa';
 import PlacesAutocompleteInput from '../../Map/PlacesAutocompleteInput';
+import ProfileSectionWrapper from '../ProfileSectionWrapper';
 import styles from './PersonalInfo.module.css';
 
-const PersonalInfo = ({ profileData, onUpdate }) => {
+const PersonalInfo = ({ profileData, onUpdate, isPublicView = false }) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState('');
@@ -44,11 +45,15 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
   }
 
   const handleChange = (e) => {
+    if (isPublicView) return; // Non permettere modifiche in modalità pubblica
+    
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
   const handlePrivacyToggle = (field) => {
+    if (isPublicView) return; // Non permettere modifiche privacy in modalità pubblica
+    
     setFormData(prev => ({
       ...prev,
       privacy: { ...prev.privacy, [field]: !prev.privacy[field] }
@@ -57,6 +62,8 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
 
   // 🔄 LOCATION GEOJSON: Gestisce la selezione della location dal PlacesAutocompleteInput
   const handleLocationSelect = (locationData) => {
+    if (isPublicView) return; // Non permettere modifiche location in modalità pubblica
+    
     console.log('📍 [PersonalInfo] Location selezionata:', locationData);
     setFormData(prev => ({
       ...prev,
@@ -69,6 +76,8 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
 
   // 🔄 LOCATION GEOJSON: Gestisce il cambio manuale dell'indirizzo
   const handleLocationChange = (address) => {
+    if (isPublicView) return; // Non permettere modifiche location in modalità pubblica
+    
     setFormData(prev => ({
       ...prev,
       location: {
@@ -79,6 +88,8 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
   };
 
   const handleSave = async () => {
+    if (isPublicView || !onUpdate) return; // Non permettere il salvataggio in modalità pubblica
+    
     setError(''); // Pulisci eventuali errori precedenti
     try {
       // 🔄 LOCATION GEOJSON: Invia l'oggetto location completo con address e coordinates
@@ -104,6 +115,8 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
   };
 
   const handleCancel = () => {
+    if (isPublicView) return; // Non permettere l'annullamento in modalità pubblica
+    
     setError(''); // Pulisci errori quando si annulla
     if (profileData) {
         setFormData({
@@ -135,18 +148,16 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
   );
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h2>{t('profile.personalInfo.title')}</h2>
-        {!isEditing ? (
-          <button onClick={() => setIsEditing(true)} className={`${styles.btn} ${styles.btnEdit}`}><FaEdit /> {t('profile.personalInfo.edit')}</button>
-        ) : (
-          <div className={styles.editButtons}>
-            <button onClick={handleCancel} className={`${styles.btn} ${styles.btnCancel}`}><FaTimes /> {t('profile.personalInfo.cancel')}</button>
-            <button onClick={handleSave} className={`${styles.btn} ${styles.btnSave}`}><FaSave /> {t('profile.personalInfo.save')}</button>
-          </div>
-        )}
-      </div>
+    <ProfileSectionWrapper
+      title={t('profile.personalInfo.title')}
+      isPublicView={isPublicView}
+      showEditButton={!isEditing}
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      showSaveCancel={isEditing}
+    >
 
       {!isEditing ? (
         <div className={styles.infoDisplay}>
@@ -161,7 +172,7 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
               {formData.location.coordinates && (
                 <small className={styles.coordinatesInfo}>
                   📍 {formData.location.coordinates[1]?.toFixed(6)}, {formData.location.coordinates[0]?.toFixed(6)}
-                </small>
+              </small>
               )}
             </div>
           </div>
@@ -172,7 +183,7 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
             <p className={styles.infoValueBio}>{formData.bio || t('profile.personalInfo.noBio')}</p>
           </div>
         </div>
-      ) : (
+      ) : !isPublicView ? (
         <div className={styles.form}>
           {error && (
             <div className={styles.errorMessage} style={{ 
@@ -236,8 +247,8 @@ const PersonalInfo = ({ profileData, onUpdate }) => {
           </div>
           <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder={t('profile.personalInfo.phonePlaceholder')} className={styles.input} />
         </div>
-      )}
-    </div>
+      ) : null}
+    </ProfileSectionWrapper>
   );
 };
 
