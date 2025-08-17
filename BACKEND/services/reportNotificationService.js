@@ -1,6 +1,6 @@
 // File: BACKEND/services/reportNotificationService.js
 
-const EmailService = require('../utils/sendEmail');
+const emailService = require('../utils/sendEmail');
 const User = require('../models/User');
 
 /**
@@ -8,7 +8,7 @@ const User = require('../models/User');
  */
 class ReportNotificationService {
     constructor() {
-        this.emailService = new EmailService();
+        this.emailService = emailService;
         this.adminEmail = process.env.ADMIN_EMAIL || 'infotabletalk.app@gmail.com';
         this.adminDashboardUrl = process.env.ADMIN_DASHBOARD_URL || 'https://tabletalk.app/admin/reports';
     }

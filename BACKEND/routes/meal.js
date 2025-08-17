@@ -28,6 +28,7 @@ const {
   joinMeal,
   leaveMeal,
   searchMeals,
+  getUserMeals,
   getVideoCallUrl,
   getMealStatusStats,
   syncMealStatus,
@@ -37,16 +38,16 @@ const {
 } = require('../controllers/mealController');
 
 // ==================== ROTTE PUBBLICHE ====================
-router.get('/', protect, mealController.getMeals);
+router.get('/', protect, getMeals);
 
 // 🗺️ ROTTE GEOSPAZIALI OTTIMIZZATE
-router.get('/map', mealController.getMealsForMap); // Ricerca pasti per mappa con coordinate e raggio
-router.get('/geostats', mealController.getMealsGeoStats); // Statistiche geospaziali
-router.get('/search/advanced', mealController.advancedGeospatialSearch); // Ricerca avanzata con filtri multipli
+router.get('/map', getMealsForMap); // Ricerca pasti per mappa con coordinate e raggio
+router.get('/geostats', getMealsGeoStats); // Statistiche geospaziali
+router.get('/search/advanced', advancedGeospatialSearch); // Ricerca avanzata con filtri multipli
 
 // 🕐 ROTTE STATUS VIRTUALE
-router.get('/status/stats', protect, mealController.getMealStatusStats);
-router.post('/:id/sync-status', protect, mealController.syncMealStatus);
+router.get('/status/stats', protect, getMealStatusStats);
+router.post('/:id/sync-status', protect, syncMealStatus);
 
 // 🔄 ROTTE AGGIORNAMENTO (PATCH per modifiche parziali)
 // PATCH è più appropriato per aggiornamenti parziali di una risorsa
@@ -57,11 +58,11 @@ router.post('/:id/sync-status', protect, mealController.syncMealStatus);
  * @desc    Cerca pasti in base a una query testuale
  * @access  Private
  */
-router.get('/search', protect, mealController.searchMeals); 
+router.get('/search', protect, searchMeals); 
 
-router.get('/user/all', protect, mealController.getUserMeals);
+router.get('/user/all', protect, getUserMeals);
 
-router.get('/:id', [ protect, check('id', 'ID pasto non valido').isMongoId() ], mealController.getMeal);
+router.get('/:id', [ protect, check('id', 'ID pasto non valido').isMongoId() ], getMeal);
 
 
 // ==================== ROTTE PROTETTE (Aggiornamenti parziali) ====================
@@ -86,18 +87,18 @@ router.route('/:id/participants')
 // ], mealController.getUserMeals);
 
 // Crea un nuovo pasto
-router.post('/', protect, requireProfileComplete, upload.single('coverImage'), mealController.createMeal);
+// router.post('/', protect, requireProfileComplete, upload.single('coverImage'), createMeal);
 
-// Modifica parziale di un pasto esistente (PATCH per aggiornamenti selettivi)
-router.patch('/:id', protect, requireProfileComplete, upload.single('coverImage'), mealController.updateMeal);
+// Modifica parziale di un pasto esistente (PATCH per aggiornamenti parziali)
+// router.patch('/:id', protect, requireProfileComplete, upload.single('coverImage'), updateMeal);
 
 // Elimina un pasto
-router.delete('/:id', [ protect, requireProfileComplete, check('id', 'ID pasto non valido').isMongoId() ], mealController.deleteMeal);
+// router.delete('/:id', [ protect, requireProfileComplete, check('id', 'ID pasto non valido').isMongoId() ], deleteMeal);
 
 // Gestione partecipanti
-router.post('/:id/participants', protect, requireProfileComplete, joinMealLimiter, mealController.joinMeal);
+// router.post('/:id/participants', protect, requireProfileComplete, joinMealLimiter, joinMeal);
 
-router.delete('/:id/participants', protect, requireProfileComplete, mealController.leaveMeal);
+// router.delete('/:id/participants', protect, requireProfileComplete, leaveMeal);
 
 
 

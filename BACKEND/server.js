@@ -198,7 +198,7 @@ app.use('/api/video', require('./routes/videoCall'));
 app.use('/api/geolocation', require('./routes/geolocation'));
 app.use('/api/notification-preferences', require('./routes/notificationPreferences'));
 app.use('/api/interactive-notifications', require('./routes/interactiveNotifications'));
-app.use('/api/summary-emails', require('./routes/summaryEmails'));
+// app.use('/api/summary-emails', require('./routes/summaryEmails'));
 
 // Importa Twilio per la generazione del token video
 const AccessToken = twilio.jwt.AccessToken;
@@ -304,11 +304,11 @@ dailyReportSummaryJob.start();
 console.log('✅ [SERVER] Job riepilogo giornaliero segnalazioni avviato');
 
 // 📍 INIZIALIZZAZIONE JOB NOTIFICHE GEOLOCALIZZATE
-geolocationNotificationJob.start();
+// geolocationNotificationJob.start();
 console.log('✅ [SERVER] Job notifiche geolocalizzate avviato');
 
 // 🧹 INIZIALIZZAZIONE JOB PULIZIA TOKEN VERIFICA EMAIL
-emailVerificationCleanupJob.start();
+// emailVerificationCleanupJob.start();
 console.log('✅ [SERVER] Job pulizia token verifica email avviato');
 
 // 📧 INIZIALIZZAZIONE JOB EMAIL DI RIEPILOGO
