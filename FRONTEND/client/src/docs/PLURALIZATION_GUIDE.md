@@ -335,6 +335,79 @@ console.log('Risultato pluralizzazione:', t('meals.mealCount', { count: 5 }));
 4. **Analytics**: Tracciare l'utilizzo delle diverse lingue
 5. **A/B Testing**: Testare diverse formulazioni per ogni lingua
 
+## 🐛 Debug e Sviluppo
+
+### **Configurazione Debug**
+```javascript
+// src/i18n.js
+debug: process.env.NODE_ENV === 'development',
+saveMissing: process.env.NODE_ENV === 'development',
+missingKeyHandler: (lng, ns, key, fallbackValue) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.warn(`🚨 [i18n] Traduzione mancante per chiave: "${key}" in lingua: ${lng}`);
+    console.warn(`🔍 [i18n] Fallback utilizzato: "${fallbackValue}"`);
+    console.warn(`💡 [i18n] Aggiungi questa chiave in: src/locales/${lng}/translation.json`);
+  }
+}
+```
+
+### **Hook di Debug**
+```javascript
+// src/hooks/useTranslationDebug.js
+const {
+  tDebug,           // Traduzione con debug
+  hasKey,           // Controlla esistenza chiave
+  validateKeys,     // Valida multiple chiavi
+  getTranslationStats, // Statistiche traduzioni
+  generateMissingKeysReport, // Report completo
+  clearMissingKeys, // Pulisci chiavi mancanti
+  toggleDebugMode   // Abilita/disabilita debug
+} = useTranslationDebug();
+```
+
+### **Pannello di Debug Visivo**
+```javascript
+// src/components/common/TranslationDebugPanel/index.js
+// Pannello interattivo per monitorare traduzioni
+// - Statistiche in tempo reale
+// - Chiavi mancanti con suggerimenti
+// - Test chiavi specifiche
+// - Controlli lingua per test
+// - Azioni rapide per debug
+```
+
+### **Utilizzo in Sviluppo**
+```javascript
+// 1. Abilita debug mode
+const { tDebug } = useTranslationDebug();
+
+// 2. Traduzione con controllo automatico
+const text = tDebug('meals.mealCount', { count: 5 });
+
+// 3. Controlla esistenza chiave
+const { hasKey } = useTranslationDebug();
+if (!hasKey('meals.mealCount')) {
+  console.warn('Chiave mancante: meals.mealCount');
+}
+
+// 4. Valida multiple chiavi
+const { validateKeys } = useTranslationDebug();
+const results = validateKeys(['meals.createMeal', 'auth.login', 'nonexistent.key']);
+```
+
+### **Console Logs Automatici**
+```javascript
+// In modalità sviluppo, i18next logga automaticamente:
+// 🚨 [i18n] Traduzione mancante per chiave: "nonexistent.key" in lingua: it
+// 🔍 [i18n] Fallback utilizzato: "nonexistent.key"
+// 💡 [i18n] Aggiungi questa chiave in: src/locales/it/translation.json
+
+// 📦 [i18n] Risorse caricate: { it: { translation: {...} } }
+// ✅ [i18n] Lingua en caricata con successo
+// 📊 [i18n] Chiavi disponibili: 150
+// 🔢 [i18n] Pluralizzazione: meals.mealCount (it) con count: 5
+```
+
 ## 📚 Risorse
 
 - [Documentazione i18next](https://www.i18next.com/)
