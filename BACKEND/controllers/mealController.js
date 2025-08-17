@@ -27,6 +27,7 @@ const notificationService = require('../services/notificationService');
 const sendEmail = require('../utils/sendEmail');
 const { sanitizeMealData } = require('../services/sanitizationService');
 const mealStatusService = require('../services/mealStatusService');
+const geolocationNotificationService = require('../services/geolocationNotificationService');
 
 const twilioClient = twilio(
   process.env.TWILIO_API_KEY,
@@ -418,6 +419,24 @@ exports.createMeal = asyncHandler(async (req, res, next) => {
       
       await User.findByIdAndUpdate(req.user.id, { $push: { createdMeals: meal._id } });
       const populatedMeal = await Meal.findById(meal._id).populate('host', 'nickname profileImage');
+      
+      // 📍 INVIA NOTIFICHE GEOLOCALIZZATE PER PASTI FISICI
+      if (meal.mealType === 'physical' && meal.isPublic && meal.location && meal.location.coordinates) {
+        try {
+          // Invia notifiche in background (non bloccare la risposta)
+          setImmediate(async () => {
+            try {
+              await geolocationNotificationService.sendNearbyMealNotifications(populatedMeal);
+              console.log(`✅ [CreateMeal] Notifiche geolocalizzate inviate per pasto ${meal._id}`);
+            } catch (geoError) {
+              console.error(`❌ [CreateMeal] Errore nell'invio notifiche geolocalizzate per pasto ${meal._id}:`, geoError);
+            }
+          });
+        } catch (error) {
+          // Non blocchiamo la creazione del pasto se le notifiche geolocalizzate falliscono
+          console.error(`⚠️ [CreateMeal] Errore nell'invio notifiche geolocalizzate per pasto ${meal._id}:`, error);
+        }
+      }
       
       const normalizedMeal = normalizeMealLocation(populatedMeal);
       res.status(201).json({ success: true, data: normalizedMeal });

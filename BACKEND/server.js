@@ -195,6 +195,7 @@ app.use('/api/join-requests', require('./routes/joinRequests'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/video', require('./routes/videoCall'));
+app.use('/api/geolocation', require('./routes/geolocation'));
 
 // Importa Twilio per la generazione del token video
 const AccessToken = twilio.jwt.AccessToken;
@@ -298,6 +299,10 @@ mealStatusService.initializeStatusService()
 // 📧 INIZIALIZZAZIONE JOB RIEPILOGO GIORNALIERO SEGNALAZIONI
 dailyReportSummaryJob.start();
 console.log('✅ [SERVER] Job riepilogo giornaliero segnalazioni avviato');
+
+// 📍 INIZIALIZZAZIONE JOB NOTIFICHE GEOLOCALIZZATE
+geolocationNotificationJob.start();
+console.log('✅ [SERVER] Job notifiche geolocalizzate avviato');
 
 // Avvio del server
 const PORT = process.env.PORT || 5001;

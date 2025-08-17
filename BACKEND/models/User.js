@@ -91,7 +91,16 @@ const UserSchema = new mongoose.Schema(
 
     // --- IMPOSTAZIONI ---
     settings: {
-      notifications: { email: { type: Boolean, default: true }, push: { type: Boolean, default: true } },
+      notifications: { 
+        email: { type: Boolean, default: true }, 
+        push: { type: Boolean, default: true },
+        geolocation: { 
+          enabled: { type: Boolean, default: false }, // Notifiche per pasti vicini
+          radius: { type: Number, default: 10, min: 1, max: 50 }, // Raggio in km
+          mealTypes: { type: [String], default: ['breakfast', 'lunch', 'dinner', 'aperitif'] }, // Tipi di pasto preferiti
+          maxDistance: { type: Number, default: 10, min: 1, max: 50 } // Distanza massima in km
+        }
+      },
       privacy: {
         showLocationOnMap: { type: Boolean, default: false }, // <-- AGGIUNTO (per la mappa)
         showResidence: { type: Boolean, default: true },
