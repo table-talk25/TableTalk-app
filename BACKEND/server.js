@@ -196,6 +196,7 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/video', require('./routes/videoCall'));
 app.use('/api/geolocation', require('./routes/geolocation'));
+app.use('/api/notification-preferences', require('./routes/notificationPreferences'));
 
 // Importa Twilio per la generazione del token video
 const AccessToken = twilio.jwt.AccessToken;

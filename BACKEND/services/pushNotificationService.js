@@ -1,6 +1,7 @@
 // File: BACKEND/services/pushNotificationService.js (VERSIONE AGGIORNATA)
 
 const admin = require('firebase-admin');
+const notificationPreferencesService = require('./notificationPreferencesService');
 
 /**
  * Inizializza Firebase Admin se non è già inizializzato
@@ -208,6 +209,131 @@ const getFirebaseStatus = () => {
   }
 };
 
+/**
+ * Invia notifica push con controllo delle preferenze utente
+ * @param {string} userId - ID dell'utente destinatario
+ * @param {string} title - Titolo della notifica
+ * @param {string} body - Corpo della notifica
+ * @param {object} data - Dati aggiuntivi
+ * @param {string} type - Tipo di notifica per verificare preferenze
+ * @returns {Promise<Object>} Risultato dell'invio
+ */
+const sendPushNotificationWithPreferences = async (userId, title, body, data = {}, type = 'general') => {
+  try {
+    // Verifica se l'utente può ricevere questo tipo di notifica
+    const canReceive = await notificationPreferencesService.canReceiveNotification(userId, type);
+    
+    if (!canReceive) {
+      console.log(`ℹ️ [PushNotification] Utente ${userId} ha disabilitato notifiche di tipo ${type}`);
+      return {
+        success: true,
+        message: 'Notifica non inviata - preferenze utente',
+        skipped: true,
+        userId,
+        type
+      };
+    }
+
+    // Ottieni i token FCM dell'utente
+    const User = require('../models/User');
+    const user = await User.findById(userId).select('fcmTokens');
+    
+    if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
+      console.log(`ℹ️ [PushNotification] Utente ${userId} non ha token FCM registrati`);
+      return {
+        success: true,
+        message: 'Utente senza token FCM',
+        skipped: true,
+        userId,
+        type
+      };
+    }
+
+    // Invia la notifica
+    const result = await sendPushNotification(user.fcmTokens, title, body, data, type);
+    
+    return {
+      success: true,
+      message: 'Notifica inviata con successo',
+      userId,
+      type,
+      tokensCount: user.fcmTokens.length,
+      result
+    };
+
+  } catch (error) {
+    console.error(`❌ [PushNotification] Errore nell'invio notifica con preferenze per utente ${userId}:`, error);
+    return {
+      success: false,
+      message: 'Errore nell\'invio notifica',
+      error: error.message,
+      userId,
+      type
+    };
+  }
+};
+
+/**
+ * Invia notifiche multiple con controllo delle preferenze
+ * @param {Array<Object>} notifications - Array di notifiche da inviare
+ * @returns {Promise<Object>} Risultato dell'invio
+ */
+const sendMultiplePushNotificationsWithPreferences = async (notifications) => {
+  try {
+    const results = [];
+    let successCount = 0;
+    let skippedCount = 0;
+    let errorCount = 0;
+
+    for (const notification of notifications) {
+      const { userId, title, body, data = {}, type = 'general' } = notification;
+      
+      try {
+        const result = await sendPushNotificationWithPreferences(userId, title, body, data, type);
+        results.push(result);
+        
+        if (result.success) {
+          if (result.skipped) {
+            skippedCount++;
+          } else {
+            successCount++;
+          }
+        } else {
+          errorCount++;
+        }
+      } catch (error) {
+        console.error(`❌ [PushNotification] Errore nell'invio notifica per utente ${userId}:`, error);
+        results.push({
+          success: false,
+          message: 'Errore nell\'invio',
+          error: error.message,
+          userId,
+          type
+        });
+        errorCount++;
+      }
+    }
+
+    return {
+      success: true,
+      message: `Processamento completato: ${successCount} inviate, ${skippedCount} saltate, ${errorCount} errori`,
+      total: notifications.length,
+      successCount,
+      skippedCount,
+      errorCount,
+      results
+    };
+
+  } catch (error) {
+    console.error('❌ [PushNotification] Errore nell\'invio notifiche multiple:', error);
+    return {
+      success: false,
+      message: 'Errore nell\'invio notifiche multiple',
+      error: error.message
+    };
+  }
+};
+
 module.exports = { 
   sendPushNotification,
   sendChatNotification,
@@ -215,6 +341,8 @@ module.exports = {
   sendInvitationAcceptedNotification,
   sendMealReminderNotification,
   sendMealUpdateNotification,
+  sendPushNotificationWithPreferences,
+  sendMultiplePushNotificationsWithPreferences,
   isFirebaseConfigured,
   getFirebaseStatus,
   initializeFirebase

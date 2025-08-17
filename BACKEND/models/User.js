@@ -94,6 +94,42 @@ const UserSchema = new mongoose.Schema(
       notifications: { 
         email: { type: Boolean, default: true }, 
         push: { type: Boolean, default: true },
+        // Preferenze granulari per notifiche push
+        pushPreferences: {
+          // Notifiche per pasti
+          meals: {
+            invitations: { type: Boolean, default: true },        // Inviti diretti ai pasti
+            joinRequests: { type: Boolean, default: true },       // Richieste di partecipazione
+            mealUpdates: { type: Boolean, default: true },        // Aggiornamenti pasti (cancellazione, cambio data)
+            mealReminders: { type: Boolean, default: true },      // Promemoria pasti
+            mealCancellations: { type: Boolean, default: true }   // Cancellazioni pasti
+          },
+          // Notifiche per chat
+          chat: {
+            newMessages: { type: Boolean, default: true },        // Nuovi messaggi in chat
+            typingIndicators: { type: Boolean, default: false },  // Indicatori "sta scrivendo"
+            readReceipts: { type: Boolean, default: false }       // Conferme di lettura
+          },
+          // Notifiche per social
+          social: {
+            newFollowers: { type: Boolean, default: true },       // Nuovi follower
+            profileViews: { type: Boolean, default: false },      // Visualizzazioni profilo
+            friendRequests: { type: Boolean, default: true }      // Richieste di amicizia
+          },
+          // Notifiche per sistema
+          system: {
+            accountUpdates: { type: Boolean, default: true },     // Aggiornamenti account
+            securityAlerts: { type: Boolean, default: true },     // Allerte di sicurezza
+            maintenance: { type: Boolean, default: true },        // Manutenzione sistema
+            updates: { type: Boolean, default: true }             // Aggiornamenti app
+          },
+          // Notifiche per moderazione
+          moderation: {
+            reportUpdates: { type: Boolean, default: true },      // Aggiornamenti segnalazioni
+            contentApprovals: { type: Boolean, default: true },   // Approvazioni contenuti
+            policyChanges: { type: Boolean, default: true }       // Cambiamenti policy
+          }
+        },
         geolocation: { 
           enabled: { type: Boolean, default: false }, // Notifiche per pasti vicini
           radius: { type: Number, default: 10, min: 1, max: 50 }, // Raggio in km
