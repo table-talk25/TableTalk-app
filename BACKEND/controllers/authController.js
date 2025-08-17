@@ -7,6 +7,7 @@ const ErrorResponse = require('../utils/errorResponse');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
 const emailVerificationService = require('../services/emailVerificationService');
+const passwordResetService = require('../services/passwordResetService');
 
 /**
  * @desc    Registra un nuovo utente
@@ -134,58 +135,87 @@ exports.logout = asyncHandler(async (req, res, next) => {
 /**
  * @desc    Invia email per il reset della password
  * @route   POST /api/auth/forgot-password
+ * @access  Public
  */
 exports.forgotPassword = asyncHandler(async (req, res, next) => {
     const { email } = req.body;
-    const user = await User.findOne({ email });
-
-    if (!user) {
-        // Per sicurezza, non riveliamo se l'utente esiste.
-        return res.status(200).json({ success: true, message: 'Se l\'email è registrata, riceverai un link per il reset.' });
+    
+    if (!email) {
+        return next(new ErrorResponse('Email richiesta', 400));
     }
-
-    const resetToken = user.generatePasswordResetToken();
-    await user.save({ validateBeforeSave: false });
-
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    
+    console.log(`🔑 [AuthController] Richiesta reset password per: ${email}`);
+    
     try {
-        await sendEmail({
-            to: user.email,
-            subject: 'Reset della tua Password per TableTalk',
-            text: `Hai richiesto di resettare la tua password. Clicca su questo link per procedere: ${resetUrl}`
-        });
-        res.status(200).json({ success: true, message: 'Email di reset inviata.' });
-    } catch (err) {
-        user.resetPasswordToken = undefined;
-        user.resetPasswordExpires = undefined;
-        await user.save({ validateBeforeSave: false });
-        return next(new ErrorResponse('Impossibile inviare l\'email di reset.', 500));
+        const result = await passwordResetService.sendPasswordResetEmail(email);
+        
+        if (result.success) {
+            console.log(`✅ [AuthController] Email reset inviata a: ${email}`);
+            
+            res.status(200).json({
+                success: true,
+                message: result.message,
+                email: email
+            });
+        } else {
+            console.log(`❌ [AuthController] Reset password fallito: ${result.message}`);
+            
+            // Gestisci i diversi tipi di errore
+            if (result.code === 'COOLDOWN_ACTIVE') {
+                return next(new ErrorResponse(result.message, 429, null, 'COOLDOWN_ACTIVE'));
+            } else {
+                return next(new ErrorResponse(result.message, 500));
+            }
+        }
+        
+    } catch (error) {
+        console.error(`❌ [AuthController] Errore nel reset password:`, error);
+        return next(new ErrorResponse('Errore nell\'invio email di reset', 500));
     }
 });
 
 
 /**
  * @desc    Resetta la password usando un token
- * @route   POST /api/auth/reset-password/:token
+ * @route   POST /api/auth/reset-password
+ * @access  Public
  */
 exports.resetPassword = asyncHandler(async (req, res, next) => {
-    // La logica per questa funzione dipende dal metodo generatePasswordResetToken nel modello User
-    // Si assume che il token salvato sia già hash-ato
-    const resetPasswordToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
-
-    const user = await User.findOne({
-      resetPasswordToken,
-      resetPasswordExpires: { $gt: Date.now() }
-    });
-
-    if (!user) { return next(new ErrorResponse('Token non valido o scaduto', 400)); }
-
-    user.password = req.body.password;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
-    await user.save();
-
-    res.status(200).json({ success: true, message: 'Password resettata con successo' });
+    const { token, newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+        return next(new ErrorResponse('Token e nuova password richiesti', 400));
+    }
+    
+    // Validazione password
+    if (newPassword.length < 8) {
+        return next(new ErrorResponse('La password deve essere di almeno 8 caratteri', 400));
+    }
+    
+    console.log(`🔄 [AuthController] Reset password richiesto per token: ${token.substring(0, 8)}...`);
+    
+    try {
+        const result = await passwordResetService.resetPassword(token, newPassword);
+        
+        if (result.success) {
+            console.log(`✅ [AuthController] Password resettata con successo per utente: ${result.userId}`);
+            
+            res.status(200).json({
+                success: true,
+                message: result.message,
+                userId: result.userId,
+                email: result.email
+            });
+        } else {
+            console.log(`❌ [AuthController] Reset password fallito: ${result.message}`);
+            
+            return next(new ErrorResponse(result.message, 400, null, result.code));
+        }
+        
+    } catch (error) {
+        console.error(`❌ [AuthController] Errore nel reset password:`, error);
+        return next(new ErrorResponse('Errore nel reset della password', 500));
+    }
 });
 
 /**
@@ -322,5 +352,92 @@ exports.cleanupExpiredTokens = asyncHandler(async (req, res, next) => {
     } catch (error) {
         console.error(`❌ [AuthController] Errore nella pulizia token:`, error);
         return next(new ErrorResponse('Errore nella pulizia token scaduti', 500));
+    }
+});
+
+/**
+ * @desc    Verifica un token di reset password
+ * @route   GET /api/auth/verify-reset-token
+ * @access  Public
+ */
+exports.verifyResetToken = asyncHandler(async (req, res, next) => {
+    const { token } = req.query;
+    
+    if (!token) {
+        return next(new ErrorResponse('Token di reset richiesto', 400));
+    }
+    
+    console.log(`🔍 [AuthController] Verifica token reset richiesta per: ${token.substring(0, 8)}...`);
+    
+    try {
+        const result = await passwordResetService.verifyResetToken(token);
+        
+        if (result.success) {
+            console.log(`✅ [AuthController] Token reset valido per utente: ${result.userId}`);
+            
+            res.status(200).json({
+                success: true,
+                message: result.message,
+                user: result.user
+            });
+        } else {
+            console.log(`❌ [AuthController] Token reset non valido: ${result.message}`);
+            
+            return next(new ErrorResponse(result.message, 400, null, result.code));
+        }
+        
+    } catch (error) {
+        console.error(`❌ [AuthController] Errore nella verifica token reset:`, error);
+        return next(new ErrorResponse('Errore nella verifica del token', 500));
+    }
+});
+
+/**
+ * @desc    Ottiene statistiche sui reset password (solo admin)
+ * @route   GET /api/auth/password-reset-stats
+ * @access  Private (Admin)
+ */
+exports.getPasswordResetStats = asyncHandler(async (req, res, next) => {
+    try {
+        const stats = await passwordResetService.getResetStats();
+        
+        if (stats.success) {
+            res.status(200).json({
+                success: true,
+                message: 'Statistiche reset password recuperate con successo',
+                stats: stats.stats
+            });
+        } else {
+            return next(new ErrorResponse(stats.message, 500));
+        }
+        
+    } catch (error) {
+        console.error(`❌ [AuthController] Errore nel recupero statistiche reset:`, error);
+        return next(new ErrorResponse('Errore nel recupero statistiche reset password', 500));
+    }
+});
+
+/**
+ * @desc    Pulisce token di reset password scaduti (solo admin)
+ * @route   POST /api/auth/cleanup-expired-reset-tokens
+ * @access  Private (Admin)
+ */
+exports.cleanupExpiredResetTokens = asyncHandler(async (req, res, next) => {
+    try {
+        const result = await passwordResetService.cleanupExpiredTokens();
+        
+        if (result.success) {
+            res.status(200).json({
+                success: true,
+                message: result.message,
+                cleanedCount: result.cleanedCount
+            });
+        } else {
+            return next(new ErrorResponse(result.message, 500));
+        }
+        
+    } catch (error) {
+        console.error(`❌ [AuthController] Errore nella pulizia token reset:`, error);
+        return next(new ErrorResponse('Errore nella pulizia token reset scaduti', 500));
     }
 });

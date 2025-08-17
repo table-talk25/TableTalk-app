@@ -425,5 +425,59 @@ UserSchema.methods.resendEmailVerificationToken = function() {
   return this.generateEmailVerificationToken();
 };
 
+// 🔑 METODI PER RESET PASSWORD
+/**
+ * Genera un token sicuro per il reset della password
+ * @returns {string} Token di reset
+ */
+UserSchema.methods.generatePasswordResetToken = function() {
+  // Genera un token casuale di 32 byte (256 bit)
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  
+  // Hash del token per sicurezza (non salviamo il token in chiaro)
+  this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  
+  // Imposta la scadenza a 1 ora
+  this.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
+  
+  return resetToken; // Ritorniamo il token in chiaro per l'email
+};
+
+/**
+ * Verifica se il token di reset password è valido e non scaduto
+ * @param {string} token - Token da verificare
+ * @returns {boolean} True se il token è valido
+ */
+UserSchema.methods.isPasswordResetTokenValid = function(token) {
+  if (!this.resetPasswordToken || !this.resetPasswordExpires) {
+    return false;
+  }
+  
+  // Hash del token ricevuto per confronto
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+  
+  // Verifica che il token corrisponda
+  if (this.resetPasswordToken !== hashedToken) {
+    return false;
+  }
+  
+  // Verifica che non sia scaduto
+  if (new Date() > this.resetPasswordExpires) {
+    return false;
+  }
+  
+  return true;
+};
+
+/**
+ * Pulisce i token di reset password dopo l'uso
+ */
+UserSchema.methods.clearPasswordResetToken = function() {
+  this.resetPasswordToken = undefined;
+  this.resetPasswordExpires = undefined;
+  
+  return this;
+};
+
 const User = mongoose.model('User', UserSchema);
 module.exports = User;
