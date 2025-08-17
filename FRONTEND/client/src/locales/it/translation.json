@@ -490,7 +490,11 @@
     "leaveReportTitle": "Lascia Chat",
     "messagePlaceholder": "Inserisci un messaggio...",
     "isTyping": "sta scrivendo...",
-    "userAvatarAlt": "Avatar utente"
+    "userAvatarAlt": "Avatar utente",
+    "typing": "{{users}} sta scrivendo",
+    "messageSent": "Messaggio inviato",
+    "messageReadBySome": "Letto da {{count}} di {{total}}",
+    "messageReadByAll": "Letto da tutti"
   },
   "notifications": {
     "loading": "Caricamento...",

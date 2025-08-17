@@ -27,9 +27,53 @@ const closeChat = async (chatId) => {
   return response.data;
 };
 
+/**
+ * Inizia l'indicatore "sta scrivendo"
+ * @param {string} chatId - L'ID della chat
+ * @returns {Promise<Object>} La risposta dall'API
+ */
+const startTyping = async (chatId) => {
+  const response = await apiClient.post(`/chats/${chatId}/typing/start`);
+  return response.data;
+};
+
+/**
+ * Ferma l'indicatore "sta scrivendo"
+ * @param {string} chatId - L'ID della chat
+ * @returns {Promise<Object>} La risposta dall'API
+ */
+const stopTyping = async (chatId) => {
+  const response = await apiClient.post(`/chats/${chatId}/typing/stop`);
+  return response.data;
+};
+
+/**
+ * Marca i messaggi come letti
+ * @param {string} chatId - L'ID della chat
+ * @returns {Promise<Object>} La risposta dall'API
+ */
+const markAsRead = async (chatId) => {
+  const response = await apiClient.post(`/chats/${chatId}/read`);
+  return response.data;
+};
+
+/**
+ * Ottiene lo stato della chat (typing e lettura)
+ * @param {string} chatId - L'ID della chat
+ * @returns {Promise<Object>} La risposta dall'API
+ */
+const getChatStatus = async (chatId) => {
+  const response = await apiClient.get(`/chats/${chatId}/status`);
+  return response.data;
+};
+
 const chatService = {
   getChatById,
-  leaveChat
+  leaveChat,
+  startTyping,
+  stopTyping,
+  markAsRead,
+  getChatStatus
 };
 // Esporta anche closeChat per gli host
 chatService.closeChat = closeChat;

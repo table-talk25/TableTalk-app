@@ -83,6 +83,143 @@ exports.sendMessage = asyncHandler(async (req, res, next) => {
 });
 
 /**
+ * @desc    Inizia a scrivere (typing indicator)
+ * @route   POST /api/chats/:chatId/typing/start
+ * @access  Private
+ */
+exports.startTyping = asyncHandler(async (req, res, next) => {
+  const { chatId } = req.params;
+  const userId = req.user._id;
+
+  if (!mongoose.Types.ObjectId.isValid(chatId)) {
+    return next(new ErrorResponse('ID della chat non valido', 400));
+  }
+
+  const chat = await Chat.findById(chatId);
+  if (!chat) {
+    return next(new ErrorResponse('Chat non trovata', 404));
+  }
+  if (!chat.participants.some(p => p.equals(userId))) {
+    return next(new ErrorResponse('Non sei autorizzato ad accedere a questa chat', 403));
+  }
+
+  await chat.startTyping(userId);
+  
+  res.status(200).json({ 
+    success: true, 
+    message: 'Typing indicator attivato',
+    typingUsers: chat.typingUsers
+  });
+});
+
+/**
+ * @desc    Smetti di scrivere (typing indicator)
+ * @route   POST /api/chats/:chatId/typing/stop
+ * @access  Private
+ */
+exports.stopTyping = asyncHandler(async (req, res, next) => {
+  const { chatId } = req.params;
+  const userId = req.user._id;
+
+  if (!mongoose.Types.ObjectId.isValid(chatId)) {
+    return next(new ErrorResponse('ID della chat non valido', 400));
+  }
+
+  const chat = await Chat.findById(chatId);
+  if (!chat) {
+    return next(new ErrorResponse('Chat non trovata', 404));
+  }
+  if (!chat.participants.some(p => p.equals(userId))) {
+    return next(new ErrorResponse('Non sei autorizzato ad accedere a questa chat', 403));
+  }
+
+  await chat.stopTyping(userId);
+  
+  res.status(200).json({ 
+    success: true, 
+    message: 'Typing indicator disattivato',
+    typingUsers: chat.typingUsers
+  });
+});
+
+/**
+ * @desc    Marca i messaggi come letti
+ * @route   POST /api/chats/:chatId/read
+ * @access  Private
+ */
+exports.markAsRead = asyncHandler(async (req, res, next) => {
+  const { chatId } = req.params;
+  const userId = req.user._id;
+
+  if (!mongoose.Types.ObjectId.isValid(chatId)) {
+    return next(new ErrorResponse('ID della chat non valido', 400));
+  }
+
+  const chat = await Chat.findById(chatId);
+  if (!chat) {
+    return next(new ErrorResponse('Chat non trovata', 404));
+  }
+  if (!chat.participants.some(p => p.equals(userId))) {
+    return next(new ErrorResponse('Non sei autorizzato ad accedere a questa chat', 403));
+  }
+
+  await chat.markAsRead(userId);
+  
+  res.status(200).json({ 
+    success: true, 
+    message: 'Messaggi marcati come letti',
+    readBy: chat.messages.map(msg => ({
+      messageId: msg._id,
+      readBy: msg.readBy
+    }))
+  });
+});
+
+/**
+ * @desc    Ottieni lo stato di typing e lettura della chat
+ * @route   GET /api/chats/:chatId/status
+ * @access  Private
+ */
+exports.getChatStatus = asyncHandler(async (req, res, next) => {
+  const { chatId } = req.params;
+  const userId = req.user._id;
+
+  if (!mongoose.Types.ObjectId.isValid(chatId)) {
+    return next(new ErrorResponse('ID della chat non valido', 400));
+  }
+
+  const chat = await Chat.findById(chatId)
+    .populate({ path: 'typingUsers.user', select: 'nickname profileImage' })
+    .populate({ path: 'messages.readBy.user', select: 'nickname profileImage' });
+
+  if (!chat) {
+    return next(new ErrorResponse('Chat non trovata', 404));
+  }
+  if (!chat.participants.some(p => p.equals(userId))) {
+    return next(new ErrorResponse('Non sei autorizzato ad accedere a questa chat', 403));
+  }
+
+  // Filtra gli utenti che scrivono (escludi l'utente corrente)
+  const otherTypingUsers = chat.typingUsers.filter(tu => !tu.user.equals(userId));
+  
+  // Ottieni le conferme di lettura per i messaggi dell'utente corrente
+  const userMessages = chat.messages.filter(msg => msg.sender.equals(userId));
+  const readStatus = userMessages.map(msg => ({
+    messageId: msg._id,
+    readBy: msg.readBy.filter(rb => !rb.user.equals(userId)) // Escludi l'utente corrente
+  }));
+
+  res.status(200).json({ 
+    success: true, 
+    data: {
+      typingUsers: otherTypingUsers,
+      readStatus,
+      lastActivity: chat.lastActivity
+    }
+  });
+});
+
+/**
  * @desc    Ottieni la chat associata a un pasto (creandola se non esiste)
  * @route   GET /api/chats/meal/:mealId
  * @access  Private

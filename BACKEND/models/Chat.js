@@ -24,6 +24,17 @@ const MessageSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     ref: 'User'
   }],
+  readBy: [{
+    user: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    readAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   edited: {
     type: Boolean,
     default: false
@@ -98,7 +109,19 @@ const ChatSchema = new mongoose.Schema({
       min: 1,
       max: 365
     }
-  }
+  },
+  // Traccia chi sta scrivendo nella chat
+  typingUsers: [{
+    user: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    startedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -140,6 +163,12 @@ ChatSchema.pre(/^find/, function(next) {
   }).populate({
     path: 'messages.sender',
     select: 'nickname profileImage'
+  }).populate({
+    path: 'messages.readBy.user',
+    select: 'nickname profileImage'
+  }).populate({
+    path: 'typingUsers.user',
+    select: 'nickname profileImage'
   });
   
   next();
@@ -160,6 +189,10 @@ ChatSchema.methods.addMessage = async function(senderId, content, attachments = 
     sender: senderId,
     content,
     read: [senderId],
+    readBy: [{
+      user: senderId,
+      readAt: new Date()
+    }],
     timestamp: Date.now()
   };
 
@@ -179,6 +212,15 @@ ChatSchema.methods.markAsRead = async function(userId) {
   this.messages.forEach(message => {
     if (!message.read.includes(userId)) {
       message.read.push(userId);
+    }
+    
+    // Aggiungi anche al campo readBy con timestamp
+    const existingReadBy = message.readBy.find(rb => rb.user.toString() === userId.toString());
+    if (!existingReadBy) {
+      message.readBy.push({
+        user: userId,
+        readAt: new Date()
+      });
     }
   });
   
@@ -219,6 +261,36 @@ ChatSchema.methods.cleanOldMessages = async function() {
     message => message.timestamp > retentionDate
   );
   
+  return this.save();
+};
+
+// Metodo per iniziare a scrivere
+ChatSchema.methods.startTyping = async function(userId) {
+  const existingTyping = this.typingUsers.find(tu => tu.user.toString() === userId.toString());
+  if (!existingTyping) {
+    this.typingUsers.push({
+      user: userId,
+      startedAt: new Date()
+    });
+    return this.save();
+  }
+  return this;
+};
+
+// Metodo per smettere di scrivere
+ChatSchema.methods.stopTyping = async function(userId) {
+  this.typingUsers = this.typingUsers.filter(
+    tu => tu.user.toString() !== userId.toString()
+  );
+  return this.save();
+};
+
+// Metodo per pulire gli utenti che scrivono da troppo tempo (timeout)
+ChatSchema.methods.cleanTypingUsers = async function() {
+  const timeoutThreshold = new Date(Date.now() - 10000); // 10 secondi
+  this.typingUsers = this.typingUsers.filter(
+    tu => tu.startedAt > timeoutThreshold
+  );
   return this.save();
 };
 

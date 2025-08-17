@@ -13,7 +13,10 @@ const {
   getUnreadMessages,
   getMyChats,
   leaveChat,
-  closeChat
+  closeChat,
+  startTyping,
+  stopTyping,
+  getChatStatus
 } = require('../controllers/chatController');
 
 // Ottieni le chat dell'utente e i messaggi non letti
@@ -27,7 +30,14 @@ router.route('/meal/:mealId').get(protect, requireProfileComplete, getMealChat);
 router.route('/:chatId').get(protect, requireProfileComplete, getChat);
 // ▼▼▼ QUESTA ROTTA ORA FUNZIONERÀ ▼▼▼
 router.route('/:chatId/messages').post(protect, requireProfileComplete, sendMessage);
-router.route('/:chatId/read').put(protect, requireProfileComplete, markAsRead);
+router.route('/:chatId/read').post(protect, requireProfileComplete, markAsRead);
+
+// Typing indicator
+router.route('/:chatId/typing/start').post(protect, requireProfileComplete, startTyping);
+router.route('/:chatId/typing/stop').post(protect, requireProfileComplete, stopTyping);
+
+// Stato della chat (typing e lettura)
+router.route('/:chatId/status').get(protect, requireProfileComplete, getChatStatus);
 
 // Lascia una chat
 router.route('/:chatId/participants').delete(protect, requireProfileComplete, leaveChat);
