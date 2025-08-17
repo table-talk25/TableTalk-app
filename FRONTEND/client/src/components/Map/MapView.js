@@ -53,20 +53,27 @@ const MapView = ({ userPosition, nearbyUsers, nearbyMeals = [] }) => {
           iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' 
         });
 
-        // Marker per gli utenti nelle vicinanze
+        // Creazione marker per utenti e pasti con indirizzi visibili
+        // Il campo 'snippet' mostra l'indirizzo sotto il titolo del marker
+        // Quando l'utente clicca sul marker, vede sia il titolo che l'indirizzo completo
+        // Struttura location: { coordinates: [lng, lat], address: "Indirizzo completo" }
+
+        // Marker per gli utenti nelle vicinanze (con indirizzo nel snippet)
         const userMarkers = nearbyUsers.map(user => ({
           id: `user-${user._id}`,
           coordinate: { lat: user.location.coordinates[1], lng: user.location.coordinates[0] },
           title: user.nickname,
+          snippet: user.location.address || 'Indirizzo non disponibile', // Mostra l'indirizzo sotto il nome (fallback se mancante)
           iconUrl: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
         }));
         await map.addMarkers(userMarkers);
 
-        // Marker per i TableTalk® fisici nelle vicinanze
+        // Marker per i TableTalk® fisici nelle vicinanze (con indirizzo nel snippet)
         const mealMarkers = nearbyMeals.map(meal => ({
           id: `meal-${meal._id}`,
           coordinate: { lat: meal.location.coordinates[1], lng: meal.location.coordinates[0] },
           title: `${meal.title} - ${meal.host.nickname}`,
+          snippet: meal.location.address || 'Indirizzo non disponibile', // Mostra l'indirizzo sotto il titolo (fallback se mancante)
           iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
         }));
         await map.addMarkers(mealMarkers);

@@ -52,6 +52,11 @@ const sendPushNotification = async (tokens, title, body, data = {}, type = 'gene
       ...data
     };
 
+    // Prepara configurazione per notifiche interattive
+    const isInteractive = data.actions && Array.isArray(data.actions) && data.actions.length > 0;
+    const deepLink = data.deepLink || null;
+    const action = data.action || null;
+
     const message = {
       notification: {
         title,
@@ -62,11 +67,27 @@ const sendPushNotification = async (tokens, title, body, data = {}, type = 'gene
       android: {
         priority: 'high',
         notification: {
-          channel_id: 'tabletalk-general',
+          channel_id: isInteractive ? 'tabletalk-interactive' : 'tabletalk-general',
           icon: 'ic_stat_icon_config_sample',
-          color: '#488AFF',
+          color: data.color || '#488AFF',
           sound: 'default',
-          click_action: 'FLUTTER_NOTIFICATION_CLICK'
+          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+          // Configurazione per notifiche interattive
+          ...(isInteractive && {
+            actions: data.actions.map(action => ({
+              title: action.title,
+              icon: action.icon,
+              action: action.action
+            })),
+            intent_filter: deepLink ? {
+              action: 'VIEW',
+              data: {
+                scheme: 'tabletalk',
+                host: 'app',
+                path: deepLink
+              }
+            } : undefined
+          })
         }
       },
       apns: {
@@ -74,8 +95,22 @@ const sendPushNotification = async (tokens, title, body, data = {}, type = 'gene
           aps: {
             'content-available': 1,
             sound: 'default',
-            badge: 1
+            badge: 1,
+            // Configurazione per notifiche interattive
+            ...(isInteractive && {
+              category: 'tabletalk-interactive',
+              'mutable-content': 1,
+              'thread-id': type
+            })
           },
+          // Azioni personalizzate per iOS
+          ...(isInteractive && {
+            actions: data.actions.map(action => ({
+              identifier: action.action,
+              title: action.title,
+              icon: action.icon
+            }))
+          })
         },
         fcm_options: {
           image: 'https://tabletalk.app/logo.png'
@@ -84,16 +119,31 @@ const sendPushNotification = async (tokens, title, body, data = {}, type = 'gene
       webpush: {
         notification: {
           icon: 'https://tabletalk.app/logo.png',
-          badge: 'https://tabletalk.app/badge.png'
+          badge: 'https://tabletalk.app/badge.png',
+          // Configurazione per notifiche interattive
+          ...(isInteractive && {
+            requireInteraction: true,
+            tag: `tabletalk-${type}`,
+            actions: data.actions.map(action => ({
+              action: action.action,
+              title: action.title,
+              icon: action.icon
+            })),
+            data: {
+              deepLink: deepLink,
+              action: action,
+              type: type
+            }
+          })
         }
       }
     };
 
-    console.log(`[Push Notification] Invio notifica "${type}" a ${uniqueTokens.length} dispositivi`);
+    console.log(`[Push Notification] Invio notifica "${type}" a ${uniqueTokens.length} dispositivi${isInteractive ? ' (INTERATTIVA)' : ''}`);
     
     const response = await admin.messaging().sendMulticast(message);
     
-    console.log(`✅ [Push Notification] Inviate con successo: ${response.successCount}/${uniqueTokens.length}`);
+    console.log(`✅ [Push Notification] Inviate con successo: ${response.successCount}/${uniqueTokens.length}${isInteractive ? ' - Notifica interattiva con ${data.actions.length} azioni' : ''}`);
     
     if (response.failureCount > 0) {
       console.log(`⚠️ [Push Notification] Invii falliti: ${response.failureCount}`);

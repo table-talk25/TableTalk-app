@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Meal = require('../models/Meal');
 const pushNotificationService = require('./pushNotificationService');
 const notificationService = require('./notificationService');
+const interactiveNotificationService = require('./interactiveNotificationService');
 
 /**
  * Servizio per le notifiche geolocalizzate
@@ -147,11 +148,11 @@ class GeolocationNotificationService {
                     // Prepara il messaggio della notifica
                     const notificationMessage = this.createNotificationMessage(meal, distance, mealLocation);
                     
-                    // Invia notifica push se abilitata
-                    if (user.fcmTokens && user.fcmTokens.length > 0) {
-                        await this.sendPushNotification(user, meal, distance, mealLocation);
-                        pushNotificationsSent++;
-                    }
+                               // Invia notifica push interattiva se abilitata
+           if (user.fcmTokens && user.fcmTokens.length > 0) {
+               await this.sendInteractivePushNotification(user, meal, distance, mealLocation);
+               pushNotificationsSent++;
+           }
 
                     // Invia notifica socket se l'utente è online
                     await this.sendSocketNotification(user._id, meal, distance, mealLocation);
@@ -205,7 +206,7 @@ class GeolocationNotificationService {
         return `Nuovo ${mealTypeLabel} vicino a te! Dai un'occhiata a "${meal.title}" a soli ${distanceText} da casa tua.`;
     }
 
-    /**
+        /**
      * Invia notifica push
      * @param {Object} user - Utente destinatario
      * @param {Object} meal - Il pasto
@@ -216,7 +217,7 @@ class GeolocationNotificationService {
         try {
             const title = '🍽️ Nuovo TableTalk® nelle vicinanze!';
             const body = this.createNotificationMessage(meal, distance, mealLocation);
-            
+
             const data = {
                 mealId: meal._id.toString(),
                 type: 'nearby_meal',
@@ -235,6 +236,33 @@ class GeolocationNotificationService {
 
         } catch (error) {
             console.error(`❌ [GeolocationNotification] Errore nell'invio notifica push a ${user._id}:`, error);
+        }
+    }
+
+    /**
+     * Invia notifica push interattiva con azioni rapide
+     * @param {Object} user - Utente destinatario
+     * @param {Object} meal - Il pasto
+     * @param {number} distance - Distanza in km
+     * @param {string} mealLocation - Posizione del pasto
+     */
+    async sendInteractivePushNotification(user, meal, distance, mealLocation) {
+        try {
+            // Utilizza il servizio di notifiche interattive
+            await interactiveNotificationService.sendNearbyMealNotification(
+                user._id,
+                meal,
+                distance
+            );
+
+            console.log(`✅ [GeolocationNotification] Notifica push interattiva inviata a ${user._id} per pasto ${meal._id}`);
+
+        } catch (error) {
+            console.error(`❌ [GeolocationNotification] Errore nell'invio notifica push interattiva a ${user._id}:`, error);
+            
+            // Fallback alla notifica push standard
+            console.log(`🔄 [GeolocationNotification] Fallback a notifica push standard per utente ${user._id}`);
+            await this.sendPushNotification(user, meal, distance, mealLocation);
         }
     }
 
