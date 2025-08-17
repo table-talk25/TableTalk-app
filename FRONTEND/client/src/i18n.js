@@ -25,6 +25,69 @@ i18n
     lng: 'it',
     fallbackLng: 'it',
     interpolation: { escapeValue: false },
+    // 🌍 Configurazione pluralizzazione dinamica
+    pluralSeparator: '_',
+    keySeparator: '.',
+    // Configurazione pluralizzazione per lingue supportate
+    pluralRules: {
+      // Italiano: 1, 2+, 0
+      it: {
+        numbers: [1, 2, 0],
+        plurals: function(n) {
+          if (n === 1) return 0;
+          if (n >= 2 && n <= 19) return 1;
+          return 2;
+        }
+      },
+      // Inglese: 1, other
+      en: {
+        numbers: [1, 2],
+        plurals: function(n) {
+          return n === 1 ? 0 : 1;
+        }
+      },
+      // Francese: 0, 1, other
+      fr: {
+        numbers: [0, 1, 2],
+        plurals: function(n) {
+          if (n === 0) return 0;
+          if (n === 1) return 1;
+          return 2;
+        }
+      },
+      // Tedesco: 1, other
+      de: {
+        numbers: [1, 2],
+        plurals: function(n) {
+          return n === 1 ? 0 : 1;
+        }
+      },
+      // Spagnolo: 1, other
+      es: {
+        numbers: [1, 2],
+        plurals: function(n) {
+          return n === 1 ? 0 : 1;
+        }
+      },
+      // Arabo: 0, 1, 2, 3-10, 11+
+      ar: {
+        numbers: [0, 1, 2, 3, 4],
+        plurals: function(n) {
+          if (n === 0) return 0;
+          if (n === 1) return 1;
+          if (n === 2) return 2;
+          if (n >= 3 && n <= 10) return 3;
+          return 4;
+        }
+      },
+      // Cinese: sempre singolare
+      zh: {
+        numbers: [1],
+        plurals: function() {
+          return 0;
+        }
+      }
+    }
   });
 
 // Quando cambia lingua, carica il pacchetto se non è già presente

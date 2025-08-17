@@ -23,11 +23,13 @@ import { Geolocation } from '@capacitor/geolocation';
 import { Capacitor } from '@capacitor/core';
 import BackButton from '../../components/common/BackButton';
 import { Button, Alert, Spinner } from 'react-bootstrap';
+import usePluralization from '../../hooks/usePluralization';
 import styles from './MapPage.module.css';
 
 const MapPage = () => {
     const { t } = useTranslation();
     const { user } = useAuth();
+    const { pluralizeMeal, pluralizeUser, pluralizeKilometer } = usePluralization();
     const [currentUserPosition, setCurrentUserPosition] = useState(null);
     const [nearbyUsers, setNearbyUsers] = useState([]);
     const [nearbyMeals, setNearbyMeals] = useState([]);
@@ -102,6 +104,9 @@ const MapPage = () => {
                     console.log(`  - ${meal.title}: ${meal.distanceFormatted || 'N/A'} km`);
                 });
             }
+            
+            // Log con pluralizzazione dinamica
+            console.log(`✅ [MapPage] ${pluralizeMeal(validMeals.length)} trovati nel raggio di 50km`);
             
         } catch (error) {
             console.error('❌ [MapPage] Errore nel caricamento TableTalk® con query geospaziale:', error);
@@ -319,6 +324,7 @@ const MapPage = () => {
             });
             
             console.log(`[MapPage] Trovati ${data.length} utenti nelle vicinanze.`);
+            console.log(`✅ [MapPage] ${pluralizeUser(data.length)} trovati nel raggio di 50km`);
             setNearbyUsers(data);
         } catch (err) {
             console.error('[MapPage] Errore nel caricamento utenti:', err);
@@ -405,6 +411,12 @@ const MapPage = () => {
                 <div className={styles.statItem}>
                   <span className={styles.statLabel}>Area:</span>
                   <span className={styles.statValue}>{geoStats.searchArea?.areaKm2 || 'N/A'} km²</span>
+                </div>
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Densità:</span>
+                  <span className={styles.statValue}>
+                    {geoStats.density?.mealsPer100Km2 || 'N/A'} {pluralizeMeal(geoStats.density?.mealsPer100Km2 || 0)} per 100 km²
+                  </span>
                 </div>
               </div>
             </div>
