@@ -306,6 +306,10 @@ console.log('✅ [SERVER] Job riepilogo giornaliero segnalazioni avviato');
 geolocationNotificationJob.start();
 console.log('✅ [SERVER] Job notifiche geolocalizzate avviato');
 
+// 🧹 INIZIALIZZAZIONE JOB PULIZIA TOKEN VERIFICA EMAIL
+emailVerificationCleanupJob.start();
+console.log('✅ [SERVER] Job pulizia token verifica email avviato');
+
 // Avvio del server
 const PORT = process.env.PORT || 5001;
 const HOST = '0.0.0.0'; // Ascolta su tutte le interfacce per la compatibilità mobile

@@ -365,5 +365,65 @@ UserSchema.methods.getBlockedUsers = function() {
   return this.blockedUsers;
 };
 
+// 🔐 METODI PER VERIFICA EMAIL
+/**
+ * Genera un token di verifica email univoco e sicuro
+ * @returns {string} Token di verifica
+ */
+UserSchema.methods.generateEmailVerificationToken = function() {
+  // Genera un token casuale di 32 byte (256 bit)
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  
+  // Imposta la scadenza a 24 ore
+  const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  
+  this.verificationToken = verificationToken;
+  this.verificationTokenExpires = verificationTokenExpires;
+  
+  return verificationToken;
+};
+
+/**
+ * Verifica se il token di verifica email è valido e non scaduto
+ * @param {string} token - Token da verificare
+ * @returns {boolean} True se il token è valido
+ */
+UserSchema.methods.isEmailVerificationTokenValid = function(token) {
+  if (!this.verificationToken || !this.verificationTokenExpires) {
+    return false;
+  }
+  
+  // Verifica che il token corrisponda
+  if (this.verificationToken !== token) {
+    return false;
+  }
+  
+  // Verifica che non sia scaduto
+  if (new Date() > this.verificationTokenExpires) {
+    return false;
+  }
+  
+  return true;
+};
+
+/**
+ * Marca l'email come verificata e pulisce i token
+ */
+UserSchema.methods.verifyEmail = function() {
+  this.isEmailVerified = true;
+  this.verificationToken = undefined;
+  this.verificationTokenExpires = undefined;
+  
+  return this;
+};
+
+/**
+ * Invia nuovamente il token di verifica (rigenera e aggiorna scadenza)
+ * @returns {string} Nuovo token di verifica
+ */
+UserSchema.methods.resendEmailVerificationToken = function() {
+  return this.generateEmailVerificationToken();
+};
+
 const User = mongoose.model('User', UserSchema);
 module.exports = User;

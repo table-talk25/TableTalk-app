@@ -42,9 +42,14 @@ router.post('/forgot-password', forgotPasswordValidation, authController.forgotP
 
 router.post('/reset-password/:token', resetPasswordValidation, authController.resetPassword);
 
-router.post('/verify-email/:token', authController.verifyEmail);
+// 🔐 Route per verifica email
+router.get('/verify-email', authController.verifyEmail);
 
 router.post('/resend-verification', [check('email', 'Email non valida').isEmail()], authController.resendVerification);
+
+// 📊 Route per statistiche e manutenzione (solo admin)
+router.get('/verification-stats', protect, authController.getVerificationStats);
+router.post('/cleanup-expired-tokens', protect, authController.cleanupExpiredTokens);
 
 // Social Authentication Routes
 router.post('/google', socialAuthController.googleAuth);

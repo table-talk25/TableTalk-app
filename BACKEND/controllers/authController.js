@@ -5,7 +5,8 @@ const { validationResult } = require('express-validator');
 const asyncHandler = require('express-async-handler');
 const ErrorResponse = require('../utils/errorResponse');
 const User = require('../models/User');
-const sendEmail = require('../utils/sendEmail'); // Assicurati che questo utility esista e funzioni
+const sendEmail = require('../utils/sendEmail');
+const emailVerificationService = require('../services/emailVerificationService');
 
 /**
  * @desc    Registra un nuovo utente
@@ -35,18 +36,20 @@ exports.register = asyncHandler(async (req, res, next) => {
     console.log('Dettagli utente salvato:', user);
     console.log('-------------------------------------------\n');
     
-    // Genera il token e invia la risposta
+    // Genera il token JWT per l'autenticazione
     const token = user.generateAuthToken();
-    // Genera il token di verifica email
-    const verificationToken = user.generateVerificationToken();
-    user.isVerified = false;
-    await user.save({ validateBeforeSave: false });
-
-    // Invia l'email di verifica
+    
+    // Invia l'email di verifica utilizzando il servizio dedicato
     try {
-      await sendEmail.sendVerificationEmail(user.email, verificationToken);
+      const verificationResult = await emailVerificationService.sendVerificationEmail(user);
+      
+      if (!verificationResult.success) {
+        console.warn('⚠️ [AuthController] Email verifica non inviata:', verificationResult.message);
+        // Non blocchiamo la registrazione se l'email fallisce
+      }
     } catch (err) {
-      console.error('Errore invio email di verifica:', err.message);
+      console.error('❌ [AuthController] Errore invio email verifica:', err.message);
+      // Non blocchiamo la registrazione se l'email fallisce
     }
     console.timeEnd('Tempo Registrazione');
     // Creo un oggetto con solo i dati essenziali per il frontend
@@ -56,9 +59,16 @@ exports.register = asyncHandler(async (req, res, next) => {
       email: user.email,
       role: user.role,
       profileCompleted: user.profileCompleted,
-      isVerified: user.isVerified
+      isEmailVerified: user.isEmailVerified
     };
-    res.status(201).json({ success: true, token, user: userInfo, message: 'Registrazione effettuata con successo. Controlla la tua email per verificare il tuo account.' });
+    
+    res.status(201).json({ 
+      success: true, 
+      token, 
+      user: userInfo, 
+      message: 'Registrazione effettuata con successo! Controlla la tua email per verificare il tuo account e accedere a tutte le funzionalità.',
+      requiresEmailVerification: true
+    });
 });
 
 /**
@@ -82,7 +92,7 @@ exports.login = asyncHandler(async (req, res, next) => {
 
     // 🔒 SICUREZZA: Verifica che l'email sia stata verificata
     if (!user.isEmailVerified) {
-        return next(new ErrorResponse('Account non verificato. Controlla la tua email e clicca sul link di verifica per completare la registrazione.', 403));
+        return next(new ErrorResponse('Account non verificato. Controlla la tua email e clicca sul link di verifica per completare la registrazione. Se non hai ricevuto l\'email, puoi richiederne una nuova.', 403));
     }
 
     if (user.isLocked()) {
@@ -180,50 +190,137 @@ exports.resetPassword = asyncHandler(async (req, res, next) => {
 
 /**
  * @desc    Verifica l'email di un utente
- * @route   POST /api/auth/verify-email/:token
+ * @route   GET /api/auth/verify-email
+ * @access  Public
  */
 exports.verifyEmail = asyncHandler(async (req, res, next) => {
-    const verificationToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
-    const user = await User.findOne({
-        verificationToken,
-        verificationTokenExpires: { $gt: Date.now() }
-    });
-    if (!user) {
-        return next(new ErrorResponse('Token di verifica non valido o scaduto', 400));
+    const { token } = req.query;
+    
+    if (!token) {
+        return next(new ErrorResponse('Token di verifica richiesto', 400));
     }
     
-    // 🔒 SICUREZZA: Aggiorna il campo corretto per la verifica email
-    user.isEmailVerified = true;
-    user.verificationToken = undefined;
-    user.verificationTokenExpires = undefined;
-    await user.save({ validateBeforeSave: false });
+    console.log(`🔍 [AuthController] Verifica email richiesta per token: ${token.substring(0, 8)}...`);
     
-    res.status(200).json({ success: true, message: 'Email verificata con successo. Ora puoi accedere a tutte le funzionalità.' });
+    try {
+        const verificationResult = await emailVerificationService.verifyEmailToken(token);
+        
+        if (verificationResult.success) {
+            console.log(`✅ [AuthController] Email verificata con successo per utente: ${verificationResult.userId}`);
+            
+            res.status(200).json({
+                success: true,
+                message: 'Email verificata con successo! Ora puoi accedere a tutte le funzionalità di TableTalk.',
+                user: verificationResult.user
+            });
+        } else {
+            console.log(`❌ [AuthController] Verifica email fallita: ${verificationResult.message}`);
+            
+            return next(new ErrorResponse(verificationResult.message, 400, null, verificationResult.code));
+        }
+        
+    } catch (error) {
+        console.error(`❌ [AuthController] Errore nella verifica email:`, error);
+        return next(new ErrorResponse('Errore nella verifica dell\'email', 500));
+    }
 });
 
 /**
  * @desc    Reinvia l'email di verifica
  * @route   POST /api/auth/resend-verification
+ * @access  Public
  */
 exports.resendVerification = asyncHandler(async (req, res, next) => {
     const { email } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) {
-        return next(new ErrorResponse('Utente non trovato', 404));
+    
+    if (!email) {
+        return next(new ErrorResponse('Email richiesta', 400));
     }
     
-    // 🔒 SICUREZZA: Controlla il campo corretto per la verifica email
-    if (user.isEmailVerified) {
-        return res.status(200).json({ success: true, message: 'Account già verificato.' });
-    }
+    console.log(`🔄 [AuthController] Richiesta riinvio verifica per: ${email}`);
     
-    const verificationToken = user.generateVerificationToken();
-    await user.save({ validateBeforeSave: false });
     try {
-        await sendEmail.sendVerificationEmail(user.email, verificationToken);
-    } catch (err) {
-        console.error('Errore invio email di verifica:', err.message);
-        return next(new ErrorResponse('Errore nell\'invio dell\'email di verifica', 500));
+        const result = await emailVerificationService.resendVerificationEmail(email);
+        
+        if (result.success) {
+            console.log(`✅ [AuthController] Email verifica reinviata a: ${email}`);
+            
+            res.status(200).json({
+                success: true,
+                message: 'Nuova email di verifica inviata. Controlla la tua casella di posta.',
+                email: email,
+                tokenExpires: result.tokenExpires
+            });
+        } else {
+            console.log(`❌ [AuthController] Rinvio verifica fallito: ${result.message}`);
+            
+            // Gestisci i diversi tipi di errore
+            if (result.code === 'USER_NOT_FOUND') {
+                return next(new ErrorResponse('Utente non trovato', 404));
+            } else if (result.code === 'ALREADY_VERIFIED') {
+                return res.status(200).json({
+                    success: true,
+                    message: 'Account già verificato. Puoi effettuare il login normalmente.'
+                });
+            } else if (result.code === 'COOLDOWN_ACTIVE') {
+                return next(new ErrorResponse(result.message, 429, null, 'COOLDOWN_ACTIVE'));
+            } else {
+                return next(new ErrorResponse(result.message, 500));
+            }
+        }
+        
+    } catch (error) {
+        console.error(`❌ [AuthController] Errore nel riinvio verifica:`, error);
+        return next(new ErrorResponse('Errore nel riinvio dell\'email di verifica', 500));
     }
-    res.status(200).json({ success: true, message: 'Nuova email di verifica inviata. Controlla la tua casella di posta.' });
+});
+
+/**
+ * @desc    Ottiene statistiche sulla verifica email (solo admin)
+ * @route   GET /api/auth/verification-stats
+ * @access  Private (Admin)
+ */
+exports.getVerificationStats = asyncHandler(async (req, res, next) => {
+    try {
+        const stats = await emailVerificationService.getVerificationStats();
+        
+        if (stats.success) {
+            res.status(200).json({
+                success: true,
+                message: 'Statistiche verifica email recuperate con successo',
+                stats: stats.stats
+            });
+        } else {
+            return next(new ErrorResponse(stats.message, 500));
+        }
+        
+    } catch (error) {
+        console.error(`❌ [AuthController] Errore nel recupero statistiche verifica:`, error);
+        return next(new ErrorResponse('Errore nel recupero statistiche verifica', 500));
+    }
+});
+
+/**
+ * @desc    Pulisce token di verifica scaduti (solo admin)
+ * @route   POST /api/auth/cleanup-expired-tokens
+ * @access  Private (Admin)
+ */
+exports.cleanupExpiredTokens = asyncHandler(async (req, res, next) => {
+    try {
+        const result = await emailVerificationService.cleanupExpiredTokens();
+        
+        if (result.success) {
+            res.status(200).json({
+                success: true,
+                message: result.message,
+                cleanedCount: result.cleanedCount
+            });
+        } else {
+            return next(new ErrorResponse(result.message, 500));
+        }
+        
+    } catch (error) {
+        console.error(`❌ [AuthController] Errore nella pulizia token:`, error);
+        return next(new ErrorResponse('Errore nella pulizia token scaduti', 500));
+    }
 });
