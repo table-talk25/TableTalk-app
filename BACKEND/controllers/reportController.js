@@ -108,13 +108,20 @@ exports.createReport = asyncHandler(async (req, res, next) => {
     }
 
     // ✅ TUTTI I CONTROLLI SUPERATI: Crea la segnalazione
-    const report = await Report.create({
+    const reportData = {
         reporter: reporterId,
         reportedUser: reportedUserId,
         reason,
         details,
         context: context || 'general'
-    });
+    };
+
+    // Aggiungi meal se fornito
+    if (req.body.meal) {
+        reportData.meal = req.body.meal;
+    }
+
+    const report = await Report.create(reportData);
 
     // Log della segnalazione creata
     if (REPORT_LIMITS.LOGGING.ENABLED) {

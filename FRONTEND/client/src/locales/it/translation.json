@@ -441,6 +441,7 @@
       "inappropriate": "Comportamento Inappropriato",
       "spam": "Spam",
       "fakeProfile": "Profilo Falso",
+      "video_call": "Problema in Videochiamata",
       "other": "Altro"
     },
     "additionalDetails": "Dettagli aggiuntivi",
@@ -627,7 +628,11 @@
     "confirmEndCall": "Sei sicuro di voler terminare la chiamata per tutti i partecipanti?",
     "endCallError": "Errore nel terminare la chiamata.",
     "leaveCall": "Abbandona Chiamata",
-    "endCallForEveryone": "Termina Per Tutti"
+    "endCallForEveryone": "Termina Per Tutti",
+    "participants": "Partecipanti",
+    "noParticipants": "Nessun partecipante presente",
+    "you": "Tu",
+    "reportUser": "Segnala Utente"
   },
   "terms": {
     "title": "Termini e Condizioni di TableTalk",

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { createReport } from '../../../services/apiService';
 import styles from './ReportModal.module.css';
 
-const ReportModal = ({ show, onHide, reportedUser, context = 'general' }) => {
+const ReportModal = ({ show, onHide, reportedUser, context = 'general', mealId = null }) => {
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
     reason: '',
@@ -33,12 +33,19 @@ const ReportModal = ({ show, onHide, reportedUser, context = 'general' }) => {
     setError('');
 
     try {
-      await createReport({
+      const reportData = {
         reportedUserId: reportedUser._id,
         reason: formData.reason,
         details: formData.details,
         context
-      });
+      };
+
+      // Aggiungi mealId se disponibile
+      if (mealId) {
+        reportData.meal = mealId;
+      }
+
+      await createReport(reportData);
 
       setSuccess(true);
       setTimeout(() => {

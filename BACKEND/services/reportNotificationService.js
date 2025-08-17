@@ -31,7 +31,7 @@ class ReportNotificationService {
         if (report.context === 'spam' || report.context === 'fake_profile') {
             score += 2;
         }
-        if (report.context === 'meal' || report.context === 'chat') {
+        if (report.context === 'meal' || report.context === 'chat' || report.context === 'video_call') {
             score += 1;
         }
 
@@ -223,6 +223,7 @@ class ReportNotificationService {
             'fake_profile': 'Profilo Falso',
             'meal': 'Problema Pasto',
             'chat': 'Problema Chat',
+            'video_call': 'Problema in Videochiamata',
             'other': 'Altro'
         };
 

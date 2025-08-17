@@ -50,6 +50,7 @@ const REPORT_NOTIFICATION_CONFIG = {
             FAKE_PROFILE: 2,         // Profilo falso
             MEAL_ISSUE: 1,           // Problema pasto
             CHAT_ISSUE: 1,           // Problema chat
+            VIDEO_CALL_ISSUE: 1,     // Problema in videochiamata
             GENERAL: 0                // Generale
         },
         

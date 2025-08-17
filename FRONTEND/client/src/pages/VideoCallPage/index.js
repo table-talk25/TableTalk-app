@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import Video from 'twilio-video';
 import { useAuth } from '../../contexts/AuthContext';
 import videoService from '../../services/videoService';
-import { Button, Container, Spinner, Alert } from 'react-bootstrap';
+import { Button, Container, Spinner, Alert, Dropdown } from 'react-bootstrap';
 import styles from './VideoCallPage.module.css';
 import mealService from '../../services/mealService'; 
 import { Camera } from '@capacitor/camera';
@@ -14,6 +14,8 @@ import { MediaStream } from '@capacitor/core';
 import BackButton from '../../components/common/BackButton';
 import LeaveReportModal from '../../components/meals/LeaveReportModal';
 import { sendLeaveReport } from '../../services/apiService';
+import ReportModal from '../../components/common/ReportModal';
+import ParticipantList from './ParticipantList';
 
 const VideoCallPage = () => {
     const { t } = useTranslation();
@@ -28,6 +30,8 @@ const VideoCallPage = () => {
     const [error, setError] = useState('');
     const [retrying, setRetrying] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [userToReport, setUserToReport] = useState(null);
 
     const localVideoRef = useRef();
     const remoteVideoRef = useRef();
@@ -214,6 +218,16 @@ const handleEndCallForEveryone = async () => {
     }
 };
 
+const handleReportUser = (participant) => {
+    setUserToReport(participant);
+    setShowReportModal(true);
+};
+
+const handleCloseReportModal = () => {
+    setShowReportModal(false);
+    setUserToReport(null);
+};
+
     if (loading) {
         return (
             <Container className={styles.centerContainer}>
@@ -270,6 +284,14 @@ const handleEndCallForEveryone = async () => {
             <div className={styles.localParticipantContainer} ref={localVideoRef}>
                 {/* Il nostro video verrà inserito qui */}
             </div>
+            
+            {/* Lista partecipanti con opzioni di segnalazione */}
+            <ParticipantList 
+                participants={participants}
+                currentUser={user}
+                onReportUser={handleReportUser}
+            />
+            
             <div className={styles.controls}>
                 <Button variant="secondary" onClick={handleLeaveCall}>
                     {t('videoCall.leaveCall')}
@@ -280,12 +302,30 @@ const handleEndCallForEveryone = async () => {
                     </Button>
                 )}
             </div>
+            
+            {/* Modale per lasciare la chiamata */}
             <LeaveReportModal
                 show={showLeaveModal}
                 onClose={() => setShowLeaveModal(false)}
                 onConfirm={handleConfirmLeaveWithReport}
                 type="video"
             />
+            
+            {/* Modale per segnalare un utente */}
+            {userToReport && (
+                <ReportModal
+                    show={showReportModal}
+                    onHide={handleCloseReportModal}
+                    reportedUser={{
+                        _id: userToReport.identity, // Usa l'identity come ID temporaneo
+                        nickname: userToReport.identity,
+                        profileImage: null // Non abbiamo l'immagine del profilo in videochiamata
+                    }}
+                    context="video_call"
+                    mealId={roomName} // L'ID del pasto è il nome della stanza
+                />
+            )}
+            
             <BackButton className="mb-4" /> 
         </div>
     );

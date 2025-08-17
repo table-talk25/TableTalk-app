@@ -5,7 +5,8 @@ const reportSchema = new mongoose.Schema({
     reportedUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Chi è stato segnalato
     reason: { type: String, required: true, enum: ['Comportamento Inappropriato', 'Spam', 'Profilo Falso', 'Altro'] },
     details: { type: String }, // Testo libero
-    context: { type: String, enum: ['chat', 'profile', 'meal', 'general'], default: 'general' }, // Contesto della segnalazione
+    context: { type: String, enum: ['chat', 'profile', 'meal', 'video_call', 'general'], default: 'general' }, // Contesto della segnalazione
+    meal: { type: mongoose.Schema.Types.ObjectId, ref: 'Meal' }, // Riferimento al pasto (opzionale)
     status: { type: String, enum: ['pending', 'reviewed', 'resolved', 'dismissed'], default: 'pending' }, // Stato della segnalazione
     adminNotes: { type: String }, // Note dell'amministratore
     resolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Admin che ha risolto
