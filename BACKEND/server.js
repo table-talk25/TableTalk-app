@@ -41,7 +41,7 @@ try {
       
       // Inizializza Firebase con configurazione vuota per evitare crash
       admin.initializeApp({
-        projectId: 'tabletalk-social'
+        projectId: process.env.FIREBASE_PROJECT_ID || 'tabletalk-social'
       });
       console.log('✅ Firebase Admin SDK inizializzato in modalità limitata (temporaneo)');
     } else {
@@ -58,7 +58,7 @@ try {
     
     // Inizializza Firebase con configurazione vuota per evitare crash
     admin.initializeApp({
-      projectId: 'tabletalk-social'
+      projectId: process.env.FIREBASE_PROJECT_ID || 'tabletalk-social'
     });
     console.log('✅ Firebase Admin SDK inizializzato in modalità limitata');
   }
@@ -70,7 +70,7 @@ try {
   // Inizializza Firebase con configurazione vuota per evitare crash
   try {
     admin.initializeApp({
-      projectId: 'tabletalk-social'
+      projectId: process.env.FIREBASE_PROJECT_ID || 'tabletalk-social'
     });
     console.log('✅ Firebase Admin SDK inizializzato in modalità limitata (fallback)');
   } catch (fallbackError) {

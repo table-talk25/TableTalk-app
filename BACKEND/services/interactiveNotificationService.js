@@ -443,7 +443,7 @@ class InteractiveNotificationService {
         });
 
         // Aggiungi il protocollo e il dominio
-        const baseUrl = process.env.FRONTEND_URL || 'https://tabletalk.app';
+        const baseUrl = process.env.FRONTEND_URL || process.env.APP_BASE_URL || 'https://tabletalk.app';
         return `${baseUrl}${deepLink}`;
     }
 

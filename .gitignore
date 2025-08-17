@@ -189,4 +189,4 @@ test-results.xml
 !LICENSE
 !.gitignore
 !cleanup-*.sh
-!FIREBASE_SETUP.md
+!FIREBASE_SETUP.mdBACKEND/.env.backup*

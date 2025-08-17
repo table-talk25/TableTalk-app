@@ -52,8 +52,8 @@ const SocialLoginButtons = ({ onSuccess, onError, disabled = false }) => {
     
     try {
       const options = {
-        clientId: 'com.tabletalk.socialapp',
-        redirectURI: 'https://tabletalk.app/auth/apple/callback',
+                  clientId: process.env.REACT_APP_APPLE_CLIENT_ID || 'com.tabletalk.socialapp',
+        redirectURI: process.env.REACT_APP_APPLE_REDIRECT_URI || 'https://tabletalk.app/auth/apple/callback',
         scopes: 'email name',
         state: '12345',
         nonce: 'nonce',

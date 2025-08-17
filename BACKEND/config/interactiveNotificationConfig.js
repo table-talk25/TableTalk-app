@@ -123,7 +123,7 @@ const INTERACTIVE_NOTIFICATION_CONFIG = {
             
             // Configurazione deep link
             DEEP_LINK: {
-                baseUrl: 'https://tabletalk.app',
+                baseUrl: process.env.APP_BASE_URL || 'https://tabletalk.app',
                 scheme: 'tabletalk://',
                 fallback: true
             }
@@ -133,7 +133,7 @@ const INTERACTIVE_NOTIFICATION_CONFIG = {
     // 🔗 Configurazione Deep Link
     DEEP_LINKS: {
         // URL base per deep link
-        BASE_URL: process.env.FRONTEND_URL || 'https://tabletalk.app',
+        BASE_URL: process.env.FRONTEND_URL || process.env.APP_BASE_URL || 'https://tabletalk.app',
         
         // Protocollo personalizzato
         CUSTOM_SCHEME: 'tabletalk://',

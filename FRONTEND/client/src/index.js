@@ -1,4 +1,4 @@
-// File: src/index.js (Versione Finale e Pulita)
+// File: src/index.js (Versione Finale e Pulita con Sentry)
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -8,6 +8,7 @@ import { MealsProvider } from './contexts/MealsContext';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { StatusBar, Style as StatusBarStyle } from '@capacitor/status-bar';
 import { initializeDebugSystem, safeLog } from './utils/debugHelper';
+import { initializeSentry } from './config/sentry';
 import './i18n';
 
 // Ora importiamo solo il nostro file CSS principale e quello della libreria di notifiche
@@ -21,6 +22,18 @@ try {
   initializeDebugSystem();
 } catch (error) {
   console.error('Errore nell\'inizializzazione del sistema di debug:', error);
+}
+
+// Inizializza Sentry per il monitoraggio degli errori
+try {
+  const sentryInitialized = initializeSentry();
+  if (sentryInitialized) {
+    safeLog('info', 'Sentry inizializzato correttamente per il monitoraggio errori');
+  } else {
+    safeLog('warn', 'Sentry non inizializzato - monitoraggio errori disabilitato');
+  }
+} catch (error) {
+  safeLog('error', 'Errore nell\'inizializzazione di Sentry:', error);
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

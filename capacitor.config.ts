@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
   },
   plugins: {
     GoogleMaps: {
-      apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE'
+      apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE'
     },
     SplashScreen: {
       launchShowDuration: 2000,

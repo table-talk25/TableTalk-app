@@ -15,8 +15,8 @@
 
   // Definiamo gli indirizzi base per le diverse piattaforme
   const BasiURL = {
-    web_or_ios: 'http://localhost:5001',
-    android: 'http://10.0.2.2:5001'
+      web_or_ios: process.env.REACT_APP_API_URL || 'http://localhost:5001',
+  android: process.env.REACT_APP_ANDROID_API_URL || 'http://10.0.2.2:5001'
   };
 
   // Scegliamo l'indirizzo base corretto

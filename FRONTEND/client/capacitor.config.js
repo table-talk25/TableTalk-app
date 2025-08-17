@@ -1,16 +1,16 @@
 // Configurazione Capacitor diretta
-const devServerUrl = process.env.DEV_SERVER_URL || '';
+const devServerUrl = process.env.REACT_APP_DEV_SERVER_URL || process.env.DEV_SERVER_URL || '';
 const config = {
-  appId: 'com.tabletalk.socialapp',
-  appName: 'TableTalk Social',
-  webDir: 'build',
+  appId: process.env.REACT_APP_CAPACITOR_APP_ID || 'com.tabletalk.socialapp',
+  appName: process.env.REACT_APP_CAPACITOR_APP_NAME || 'TableTalk Social',
+  webDir: process.env.REACT_APP_CAPACITOR_WEB_DIR || 'build',
   server: {
-    androidScheme: 'https',
+    androidScheme: process.env.REACT_APP_CAPACITOR_ANDROID_SCHEME || 'https',
     ...(devServerUrl ? { url: devServerUrl, cleartext: true } : {})
   },
   plugins: {
     GoogleMaps: {
-      apiKey: process.env.MAPS_API_KEY || ''
+      apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || process.env.MAPS_API_KEY || ''
     },
     SplashScreen: {
       launchShowDuration: 3000, // Aumentato per dare più tempo all'app di caricarsi
@@ -35,8 +35,8 @@ const config = {
       forceCodeForRefreshToken: true
     },
     SignInWithApple: {
-      clientId: 'com.tabletalk.socialapp',
-      redirectURI: 'https://tabletalk.app/auth/apple/callback',
+              clientId: process.env.REACT_APP_APPLE_CLIENT_ID || 'com.tabletalk.socialapp',
+      redirectURI: process.env.REACT_APP_APPLE_REDIRECT_URI || 'https://tabletalk.app/auth/apple/callback',
       scopes: 'email name'
     }
   },

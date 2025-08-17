@@ -5,10 +5,6 @@ const mongoose = require('mongoose');
  * Gestisce le informazioni sui pasti, i partecipanti e i link per videochiamata
  */
 const MealSchema = new mongoose.Schema({
-  // Configurazione per includere virtuals nelle risposte JSON
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
-}, {
   title: {
     type: String,
     required: [true, 'Per favore inserisci un titolo per il pasto virtuale'],
@@ -671,5 +667,9 @@ MealSchema.methods.updateStatus = function(newStatus) {
   
   return this.save();
 };
+
+// Configurazione per includere virtuals nelle risposte JSON
+MealSchema.set('toJSON', { virtuals: true });
+MealSchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model('Meal', MealSchema);

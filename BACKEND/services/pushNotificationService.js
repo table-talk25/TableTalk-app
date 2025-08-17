@@ -13,7 +13,7 @@ const initializeFirebase = () => {
       
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        projectId: 'tabletalk-social'
+        projectId: process.env.FIREBASE_PROJECT_ID || 'tabletalk-social'
       });
       
       console.log('✅ Firebase Admin inizializzato con successo');
@@ -113,13 +113,13 @@ const sendPushNotification = async (tokens, title, body, data = {}, type = 'gene
           })
         },
         fcm_options: {
-          image: 'https://tabletalk.app/logo.png'
+          image: process.env.APP_LOGO_URL || 'https://tabletalk.app/logo.png'
         }
       },
       webpush: {
         notification: {
-          icon: 'https://tabletalk.app/logo.png',
-          badge: 'https://tabletalk.app/badge.png',
+                  icon: process.env.APP_LOGO_URL || 'https://tabletalk.app/logo.png',
+        badge: process.env.APP_BADGE_URL || 'https://tabletalk.app/badge.png',
           // Configurazione per notifiche interattive
           ...(isInteractive && {
             requireInteraction: true,

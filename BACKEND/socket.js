@@ -49,8 +49,8 @@ const allowedOrigins = [
   'http://localhost:5001',
   'http://localhost:5002',
   'http://localhost:5003',
-  'http://192.168.1.224:3000', // IP corretto del frontend
-  'http://192.168.1.224:5001', // IP corretto del backend
+  process.env.FRONTEND_URL || 'http://localhost:3000',
+  process.env.API_URL || 'http://localhost:5001',
   'capacitor://localhost',
   'http://localhost',
 ];

@@ -5,7 +5,7 @@
 
 // Scegli API_URL: priorità a REACT_APP_API_URL, poi localhost in dev, altrimenti produzione
 const apiUrl = process.env.REACT_APP_API_URL
-  || (process.env.NODE_ENV === 'development' ? 'http://localhost:5001/api' : 'https://tabletalk-app-backend.onrender.com/api');
+  || (process.env.NODE_ENV === 'development' ? process.env.REACT_APP_DEV_API_URL || 'http://localhost:5001/api' : process.env.REACT_APP_PROD_API_URL || process.env.REACT_APP_API_URL || 'https://tabletalk-app-backend.onrender.com/api');
 
 /**
  * Esportazioni NOMINALI per essere usate nel resto della tua app (es. nel tuo ApiService).
@@ -37,7 +37,7 @@ const config = {
   },
   plugins: {
     GoogleMaps: {
-      apiKey: process.env.MAPS_API_KEY || '' // Usa la variabile d'ambiente per la chiave
+      apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || process.env.MAPS_API_KEY || '' // Usa la variabile d'ambiente per la chiave
     },
     SplashScreen: {
       launchShowDuration: 600,

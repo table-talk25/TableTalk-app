@@ -19,11 +19,11 @@ const config = {
   googleIosClientId: '534454809499-1f66hg06varvottb4pgal89ojqip7rg4.apps.googleusercontent.com',
   
   // Apple Sign-In
-  appleClientId: 'com.tabletalk.socialapp',
-  appleRedirectURI: 'https://tabletalk.app/auth/apple/callback',
+  appleClientId: process.env.APPLE_CLIENT_ID || 'com.tabletalk.socialapp',
+  appleRedirectURI: process.env.APPLE_REDIRECT_URI || 'https://tabletalk.app/auth/apple/callback',
   
   // Email
-  emailFrom: process.env.EMAIL_FROM || 'noreply@tabletalk.app',
+  emailFrom: process.env.EMAIL_FROM || process.env.SENDGRID_FROM_EMAIL || 'noreply@tabletalk.app',
   emailService: process.env.EMAIL_SERVICE || 'gmail',
   emailUser: process.env.EMAIL_USER,
   emailPassword: process.env.EMAIL_PASSWORD,

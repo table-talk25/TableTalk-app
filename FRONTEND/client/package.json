@@ -24,6 +24,8 @@
         "@capacitor/status-bar": "^7.0.1",
         "@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
         "@fortawesome/fontawesome-free": "^6.7.2",
+        "@sentry/react": "^10.5.0",
+        "@sentry/tracing": "^7.120.4",
         "@testing-library/jest-dom": "^5.17.0",
         "@testing-library/react": "^13.4.0",
         "@testing-library/user-event": "^13.5.0",

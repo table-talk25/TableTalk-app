@@ -17,7 +17,7 @@ export const GOOGLE_AUTH_CONFIG = {
   ],
   
   // URL di reindirizzamento per l'autenticazione web
-  redirectUri: 'https://tabletalk.app/auth/callback'
+  redirectUri: process.env.REACT_APP_GOOGLE_REDIRECT_URI || 'https://tabletalk.app/auth/callback'
 };
 
 export default GOOGLE_AUTH_CONFIG;
