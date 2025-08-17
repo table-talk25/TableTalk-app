@@ -15,6 +15,7 @@ import { FaComments, FaVideo } from 'react-icons/fa';
 import { getHostAvatarUrl, getMealCoverImageUrl } from '../../../constants/mealConstants';
 import LeaveReportModal from '../../../components/meals/LeaveReportModal';
 import { sendLeaveReport } from '../../../services/apiService';
+import MealInlineEditor from '../../../components/meals/MealInlineEditor';
 
 const MealDetailPage = () => {
     const { t } = useTranslation();
@@ -284,22 +285,8 @@ const MealDetailPage = () => {
                 <Row>
                     <Col lg={8}>
                         <Card className={styles.mainContent}>
-                            <div className={styles.coverImageContainer}>
-                                <img 
-                                    src={(() => {
-                                        console.log('🖼️ [MealDetail] meal.coverImage:', meal.coverImage);
-                                        const imageUrl = getMealCoverImageUrl(meal.coverImage);
-                                        console.log('🖼️ [MealDetail] Generated URL:', imageUrl);
-                                        return imageUrl;
-                                    })()} 
-                                    alt={t('meals.detail.coverImageAlt')}
-                                    className={styles.coverImage}
-                                />
-                            </div>
-                            
                             <Card.Body>
                                 <div className={styles.mealHeader}>
-                                    <h2 className={styles.mealTitle}>{meal.title}</h2>
                                     <div className={styles.mealMeta}>
                                         <Badge bg={meal.mealType === 'virtual' ? 'info' : 'success'} className={styles.mealTypeBadge}>
                                             {meal.mealType === 'virtual' ? t('meals.mealType.virtual') : t('meals.mealType.physical')}
@@ -310,15 +297,15 @@ const MealDetailPage = () => {
                                     </div>
                                 </div>
 
+                                {/* Editor inline per i campi del pasto */}
+                                <MealInlineEditor
+                                    meal={meal}
+                                    onMealUpdate={setMeal}
+                                    isHost={isHost}
+                                    className={styles.mealInlineEditor}
+                                />
+
                                 <div className={styles.mealInfo}>
-                                    <div className={styles.infoItem}>
-                                        <FaCalendarAlt className={styles.infoIcon} />
-                                        <span>{new Date(meal.date).toLocaleDateString()}</span>
-                                    </div>
-                                    <div className={styles.infoItem}>
-                                        <FaClock className={styles.infoIcon} />
-                                        <span>{new Date(meal.date).toLocaleTimeString()}</span>
-                                    </div>
                                     <div className={styles.infoItem}>
                                         <FaUsers className={styles.infoIcon} />
                                         <span>{t('meals.detail.participantsText', { current: meal?.participants?.length || 0, max: meal?.maxParticipants || 0 })}</span>
@@ -330,13 +317,6 @@ const MealDetailPage = () => {
                                         </div>
                                     )}
                                 </div>
-
-                                {meal.description && (
-                                    <div className={styles.description}>
-                                        <h4>{t('meals.detail.description')}</h4>
-                                        <p>{meal.description}</p>
-                                    </div>
-                                )}
 
                                 {renderActionButtons()}
 

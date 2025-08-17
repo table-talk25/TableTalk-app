@@ -419,16 +419,26 @@ exports.createMeal = asyncHandler(async (req, res, next) => {
   }
 });
 
-// PUT /api/meals/:id (Modifica pasto)
+// @desc    Update a meal (partial updates allowed)
+// @route   PATCH /api/meals/:id
+// @access  Private
 exports.updateMeal = asyncHandler(async (req, res, next) => {
-  const meal = await Meal.findById(req.params.id);
-  if (!meal) return next(new ErrorResponse(`Pasto non trovato`, 404));
-  if (meal.host.toString() !== req.user.id) return next(new ErrorResponse(`Non autorizzato`, 403));
-  
-  // BLOCCO: Se il pasto è terminato o cancellato, non si può modificare
-  const mealEndTime = new Date(meal.date.getTime() + (meal.duration || 0) * 60000);
-  if (meal.status === 'completed' || meal.status === 'cancelled' || new Date() > mealEndTime) {
-    return next(new ErrorResponse('Non puoi modificare un pasto già terminato o cancellato.', 403));
+  let meal = await Meal.findById(req.params.id);
+
+  if (!meal) {
+    return next(
+      new ErrorResponse(`Meal not found with id of ${req.params.id}`, 404)
+    );
+  }
+
+  // Make sure user is the meal host
+  if (meal.host.toString() !== req.user.id) {
+    return next(
+      new ErrorResponse(
+        `User ${req.user.id} is not authorized to update this meal`,
+        401
+      )
+    );
   }
 
   // 🛡️ PROTEZIONE XSS: Sanitizza tutti i dati prima dell'aggiornamento
@@ -445,60 +455,61 @@ exports.updateMeal = asyncHandler(async (req, res, next) => {
     }
   }
 
+  // Create an object with only the fields to update
+  const updates = { ...sanitizedBody };
+
+  // If a new image is uploaded, add its path to the updates
+  if (req.file) {
+    // Qui puoi anche aggiungere la logica per eliminare la vecchia immagine dal server
+    updates.coverImage = req.file.path;
+  }
+
   // Gestione del campo location dal FormData: normalizza a stringa indirizzo
-  if (sanitizedBody.location) {
-          try {
-        const parsedLocation = JSON.parse(sanitizedBody.location);
-        if (parsedLocation && typeof parsedLocation === 'object') {
-          sanitizedBody.location = parsedLocation.address || parsedLocation.formattedAddress || parsedLocation.label || '';
-          if (!sanitizedBody.location && typeof sanitizedBody.location === 'string') {
-            sanitizedBody.location = sanitizedBody.location.slice(0, 200);
-          }
-        } else {
-          sanitizedBody.location = String(sanitizedBody.location);
+  if (updates.location) {
+    try {
+      const parsedLocation = JSON.parse(updates.location);
+      if (parsedLocation && typeof parsedLocation === 'object') {
+        updates.location = parsedLocation.address || parsedLocation.formattedAddress || parsedLocation.label || '';
+        if (!updates.location && typeof updates.location === 'string') {
+          updates.location = updates.location.slice(0, 200);
         }
-      } catch (error) {
-        // Se non è JSON valido, usa il valore come stringa
-        sanitizedBody.location = String(sanitizedBody.location);
+      } else {
+        updates.location = String(updates.location);
       }
+    } catch (error) {
+      // Se non è JSON valido, usa il valore come stringa
+      updates.location = String(updates.location);
     }
+  }
 
   // Se il pasto diventa fisico da virtuale, rimuovi i dati Twilio
-  if (sanitizedBody.mealType === 'physical' && meal.mealType === 'virtual') {
-    sanitizedBody.twilioRoomSid = undefined;
-    sanitizedBody.videoCallStatus = undefined;
+  if (updates.mealType === 'physical' && meal.mealType === 'virtual') {
+    updates.twilioRoomSid = undefined;
+    updates.videoCallStatus = undefined;
   }
 
   // Se il pasto diventa virtuale da fisico, crea stanza Twilio
-  if (sanitizedBody.mealType === 'virtual' && meal.mealType === 'physical') {
+  if (updates.mealType === 'virtual' && meal.mealType === 'physical') {
     try {
       const room = await twilioClient.video.v1.rooms.create({
         uniqueName: meal._id.toString(),
         type: 'group'
       });
-      req.body.twilioRoomSid = room.sid;
-      req.body.videoCallStatus = 'pending';
+      updates.twilioRoomSid = room.sid;
+      updates.videoCallStatus = 'pending';
     } catch (error) {
       console.error("Errore nella creazione della stanza Twilio:", error);
       return next(new ErrorResponse('Errore nella creazione della stanza video.', 500));
     }
   }
 
-  if (req.file) sanitizedBody.coverImage = req.file.path;
-  if (!sanitizedBody.coverImage && sanitizedBody.coverImageBase64) {
-    try { sanitizedBody.coverImage = saveBase64Cover(sanitizedBody.coverImageBase64, req.user.id); } catch (e) { /* ignore */ }
-  }
-  if (sanitizedBody.coverLocalUri && !sanitizedBody.coverImage) {
-    // Mantieni l'URI locale come metadato (opzionale)
-    sanitizedBody.coverLocalUri = sanitizedBody.coverLocalUri;
-  }
-
-  const updatedMeal = await Meal.findByIdAndUpdate(req.params.id, sanitizedBody, {
+  // Use findByIdAndUpdate to apply the partial updates
+  meal = await Meal.findByIdAndUpdate(req.params.id, updates, {
     new: true,
-    runValidators: true
+    runValidators: true,
   }).populate('host', 'nickname profileImage');
 
-  res.status(200).json({ success: true, data: updatedMeal });
+  res.status(200).json({ success: true, data: meal });
 });
 
 // DELETE /api/meals/:id (Cancella pasto)

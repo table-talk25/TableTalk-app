@@ -40,6 +40,10 @@ router.get('/', protect, mealController.getMeals);
 router.get('/status/stats', protect, mealController.getMealStatusStats);
 router.post('/:id/sync-status', protect, mealController.syncMealStatus);
 
+// 🔄 ROTTE AGGIORNAMENTO (PATCH per modifiche parziali)
+// PATCH è più appropriato per aggiornamenti parziali di una risorsa
+// PUT richiederebbe l'invio dell'intera risorsa
+
 /**
  * @route   GET /api/meals/search
  * @desc    Cerca pasti in base a una query testuale
@@ -52,12 +56,12 @@ router.get('/user/all', protect, mealController.getUserMeals);
 router.get('/:id', [ protect, check('id', 'ID pasto non valido').isMongoId() ], mealController.getMeal);
 
 
-// ==================== ROTTE PROTETTE ====================
+// ==================== ROTTE PROTETTE (Aggiornamenti parziali) ====================
 
 router.use(protect);
 
 router.route('/:id')
-  .put(upload.single('coverImage'), updateMeal)
+  .patch(upload.single('coverImage'), updateMeal) // 🔄 PATCH per aggiornamenti parziali/selettivi
   .delete(deleteMeal);
 
 // ▼▼▼ 2. ROTTA VIDEOCHIAMATA SCOMMENTATA E ATTIVA ▼▼▼
@@ -76,8 +80,8 @@ router.route('/:id/participants')
 // Crea un nuovo pasto
 router.post('/', protect, requireProfileComplete, upload.single('coverImage'), mealController.createMeal);
 
-// Modifica un pasto esistente
-router.put('/:id', protect, requireProfileComplete, upload.single('coverImage'), mealController.updateMeal);
+// Modifica parziale di un pasto esistente (PATCH per aggiornamenti selettivi)
+router.patch('/:id', protect, requireProfileComplete, upload.single('coverImage'), mealController.updateMeal);
 
 // Elimina un pasto
 router.delete('/:id', [ protect, requireProfileComplete, check('id', 'ID pasto non valido').isMongoId() ], mealController.deleteMeal);

@@ -94,6 +94,29 @@
       "virtual": "Virtuale",
       "physical": "Fisico"
     },
+    "edit": {
+      "editTitle": "Modifica titolo",
+      "editDescription": "Modifica descrizione",
+      "editDate": "Modifica data",
+      "changeCoverImage": "Cambia immagine di copertina",
+      "titlePlaceholder": "Inserisci il titolo del pasto",
+      "descriptionPlaceholder": "Inserisci una descrizione del pasto",
+      "descriptionHelp": "Premi Ctrl+Enter per salvare",
+      "date": "Data",
+      "time": "Ora",
+      "selectImage": "Seleziona immagine",
+      "noImageSelected": "Nessuna immagine selezionata",
+      "coverImagePreview": "Anteprima immagine di copertina",
+      "titleUpdateSuccess": "Titolo aggiornato con successo!",
+      "titleUpdateError": "Errore nell'aggiornamento del titolo",
+      "descriptionUpdateSuccess": "Descrizione aggiornata con successo!",
+      "descriptionUpdateError": "Errore nell'aggiornamento della descrizione",
+      "dateUpdateSuccess": "Data aggiornata con successo!",
+      "dateUpdateError": "Errore nell'aggiornamento della data",
+      "coverImageUpdateSuccess": "Immagine di copertina aggiornata con successo!",
+      "coverImageUpdateError": "Errore nell'aggiornamento dell'immagine",
+      "updating": "Aggiornamento in corso..."
+    },
     "mealTypes": {
       "breakfast": "Colazione",
       "lunch": "Pranzo",
@@ -223,7 +246,9 @@
       "noLocation": "Posizione non specificata",
       "participantsList": "Partecipanti",
       "participantAvatarAlt": "Avatar partecipante",
-      "leaveReportTitle": "Motivo dell'abbandono"
+      "leaveReportTitle": "Motivo dell'abbandono",
+      "noDescription": "Nessuna descrizione disponibile",
+      "noCoverImage": "Nessuna immagine di copertina"
     },
     "history": {
       "pageTitle": "I Miei TableTalk®",

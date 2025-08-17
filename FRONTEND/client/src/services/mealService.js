@@ -1,5 +1,18 @@
 // File: frontend/client/src/services/mealService.js (Corretto)
 
+/**
+ * 🍽️ SERVIZIO PASTI (TableTalk®)
+ * 
+ * Metodi HTTP utilizzati:
+ * - GET: Lettura dati
+ * - POST: Creazione nuove risorse
+ * - PATCH: Aggiornamenti parziali (modifica solo alcuni campi)
+ * - DELETE: Rimozione risorse
+ * 
+ * Nota: PATCH è preferito a PUT per aggiornamenti parziali
+ * poiché PUT richiederebbe l'invio dell'intera risorsa
+ */
+
 import apiClient from './apiService'; // <-- USA L'API CLIENT UNIFICATO
 import { CapacitorHttp } from '@capacitor/core';
 import { getPreference, PREFERENCE_KEYS } from '../utils/preferences';
@@ -76,13 +89,32 @@ const getMealById = async (id) => {
   }
 };
 
-  const updateMeal = async (id, formData) => {
-  const response = await apiClient.put(`/meals/${id}`, formData, {
-    // Non impostare Content-Type per FormData: il browser aggiunge il boundary
-    suppressErrorAlert: true,
-  });
-  return response.data; // { success, data }
-};
+  // 🔄 Aggiorna un pasto esistente (aggiornamenti parziali supportati)
+  // Utilizza PATCH per comunicare l'intento di modificare solo alcuni campi
+  const updateMeal = async (id, mealData) => {
+    try {
+      const formData = new FormData();
+      Object.keys(mealData).forEach(key => {
+        // Gestisce correttamente anche gli array come i topics
+        if (Array.isArray(mealData[key])) {
+          mealData[key].forEach(item => formData.append(key, item));
+        } else {
+          formData.append(key, mealData[key]);
+        }
+      });
+
+      const response = await apiClient.patch(`/meals/${id}`, formData, { // 🔄 Cambiato da .put() a .patch()
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        suppressErrorAlert: true,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating meal:', error);
+      throw error;
+    }
+  };
 
 const deleteMeal = async (id) => {
   const response = await apiClient.delete(`/meals/${id}`);

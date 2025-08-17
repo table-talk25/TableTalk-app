@@ -82,6 +82,11 @@
     color: #4a5568;
 }
 
+/* Stili per l'editor inline */
+.mealInlineEditor {
+    margin-bottom: 2rem;
+}
+
 /* Media Query per Responsività */
 @media (max-width: 991px) {
     .sidebar { position: static; margin-top: 2rem; }
