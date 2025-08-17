@@ -1,4 +1,18 @@
 // File: src/pages/MapPage/index.js
+// 🗺️ MAP PAGE CON QUERY GEOSPAZIALI OTTIMIZZATE
+// 
+// Funzionalità implementate:
+// - GPS tracking con permessi nativi
+// - Query geospaziali ottimizzate per pasti nelle vicinanze
+// - Statistiche geospaziali in tempo reale
+// - Fallback intelligente per compatibilità
+// - UI responsive con statistiche visuali
+// 
+// Endpoint utilizzati:
+// - GET /api/meals/map - Ricerca pasti per mappa (geospaziale)
+// - GET /api/meals/geostats - Statistiche geospaziali
+// - GET /api/meals/search/advanced - Ricerca avanzata (se necessario)
+//
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import MapView from '../../components/Map/MapView';
@@ -17,6 +31,7 @@ const MapPage = () => {
     const [currentUserPosition, setCurrentUserPosition] = useState(null);
     const [nearbyUsers, setNearbyUsers] = useState([]);
     const [nearbyMeals, setNearbyMeals] = useState([]);
+    const [geoStats, setGeoStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [permissionStatus, setPermissionStatus] = useState('unknown'); // 'unknown', 'granted', 'denied', 'prompt'
@@ -57,27 +72,57 @@ const MapPage = () => {
         };
     }, [user]);
 
-            // Funzione per ottenere i TableTalk® fisici nelle vicinanze
+            // 🗺️ Funzione per ottenere i TableTalk® fisici nelle vicinanze (OTTIMIZZATA)
     const fetchNearbyMeals = async (coords) => {
         try {
-            console.log('🍽️ [MapPage] Cerco TableTalk® fisici nelle vicinanze...');
+            console.log('🍽️ [MapPage] Cerco TableTalk® fisici nelle vicinanze con query geospaziale...');
             console.log('📍 [MapPage] Coordinate:', coords);
 
-            const mealsResp = await mealService.getMeals({
-                near: `${coords.latitude},${coords.longitude}`,
+            // Utilizza il nuovo endpoint geospaziale ottimizzato
+            const mealsResp = await mealService.getMealsForMap(coords, 50, {
                 mealType: 'physical',
                 status: 'upcoming,ongoing'
             });
 
-            const meals = Array.isArray(mealsResp) ? mealsResp : (Array.isArray(mealsResp?.data) ? mealsResp.data : []);
-
-            console.log('🔍 [MapPage] Meals ricevuti:', meals);
+            // I risultati includono già la distanza calcolata
+            const meals = mealsResp?.data || [];
+            console.log('🔍 [MapPage] Meals ricevuti (con distanza):', meals);
+            
+            // Filtra pasti con location valida (già fatto dal backend, ma controllo extra)
             const validMeals = meals.filter(meal => meal && meal._id && meal.location && meal.location.coordinates);
-            console.log(`[MapPage] Trovati ${validMeals.length} TableTalk® fisici nelle vicinanze.`);
+            console.log(`✅ [MapPage] Trovati ${validMeals.length} TableTalk® fisici nel raggio di 50km`);
+            
+            // I pasti sono già ordinati per distanza dal backend
             setNearbyMeals(validMeals);
+            
+            // Log delle distanze per debug
+            if (validMeals.length > 0) {
+                console.log('📏 [MapPage] Distanze dei pasti trovati:');
+                validMeals.forEach(meal => {
+                    console.log(`  - ${meal.title}: ${meal.distanceFormatted || 'N/A'} km`);
+                });
+            }
+            
         } catch (error) {
-            console.error('[MapPage] Errore nel caricamento TableTalk®:', error);
-            setNearbyMeals([]);
+            console.error('❌ [MapPage] Errore nel caricamento TableTalk® con query geospaziale:', error);
+            
+            // Fallback alla vecchia query se la geospaziale fallisce
+            console.log('🔄 [MapPage] Fallback alla query legacy...');
+            try {
+                const mealsResp = await mealService.getMeals({
+                    near: `${coords.latitude},${coords.longitude}`,
+                    mealType: 'physical',
+                    status: 'upcoming,ongoing'
+                });
+
+                const meals = Array.isArray(mealsResp) ? mealsResp : (Array.isArray(mealsResp?.data) ? mealsResp.data : []);
+                const validMeals = meals.filter(meal => meal && meal._id && meal.location && meal.location.coordinates);
+                console.log(`🔄 [MapPage] Fallback completato: ${validMeals.length} pasti trovati`);
+                setNearbyMeals(validMeals);
+            } catch (fallbackError) {
+                console.error('❌ [MapPage] Anche il fallback è fallito:', fallbackError);
+                setNearbyMeals([]);
+            }
         }
     };
 
@@ -207,10 +252,11 @@ const MapPage = () => {
                 // Non blocchiamo l'app se l'aggiornamento fallisce
             }
 
-            // 5. Carica utenti e TableTalk® nelle vicinanze
+            // 5. Carica utenti, TableTalk® e statistiche geospaziali
             await Promise.all([
                 fetchNearbyUsers(position),
-                fetchNearbyMeals(position)
+                fetchNearbyMeals(position),
+                fetchGeoStats(position)
             ]);
 
         } catch (err) {
@@ -221,11 +267,42 @@ const MapPage = () => {
             try {
                 await Promise.all([
                   fetchNearbyUsers(DEFAULT_CENTER),
-                  fetchNearbyMeals(DEFAULT_CENTER)
+                  fetchNearbyMeals(DEFAULT_CENTER),
+                  fetchGeoStats(DEFAULT_CENTER)
                 ]);
             } catch (_) {}
         } finally {
             setLoading(false);
+        }
+    };
+
+    // 📊 Funzione per ottenere statistiche geospaziali
+    const fetchGeoStats = async (coords) => {
+        try {
+            console.log('📊 [MapPage] Richiesta statistiche geospaziali...');
+            console.log('📍 [MapPage] Coordinate per statistiche:', coords);
+
+            const statsResp = await mealService.getMealsGeoStats(coords, 50);
+            const stats = statsResp?.data || null;
+
+            if (stats) {
+                console.log('✅ [MapPage] Statistiche geospaziali ricevute:', stats);
+                setGeoStats(stats);
+                
+                // Log delle statistiche per debug
+                console.log(`📊 [MapPage] Riepilogo statistiche:`);
+                console.log(`  - Totale pasti: ${stats.totalMeals}`);
+                console.log(`  - Pasti futuri: ${stats.upcomingMeals}`);
+                console.log(`  - Pasti in corso: ${stats.ongoingMeals}`);
+                console.log(`  - Area di ricerca: ${stats.searchArea?.areaKm2 || 'N/A'} km²`);
+                console.log(`  - Densità: ${stats.density?.mealsPer100Km2 || 'N/A'} pasti per 100 km²`);
+            } else {
+                console.log('⚠️ [MapPage] Nessuna statistica ricevuta');
+                setGeoStats(null);
+            }
+        } catch (error) {
+            console.error('❌ [MapPage] Errore nel caricamento statistiche geospaziali:', error);
+            setGeoStats(null);
         }
     };
 
@@ -304,6 +381,35 @@ const MapPage = () => {
         </div>
         <div className={styles.mapContainer}>
           <div className={styles.badge}>{permissionStatus === 'granted' ? 'GPS attivo' : 'GPS non attivo'}</div>
+          
+          {/* 📊 Statistiche Geospaziali */}
+          {geoStats && (
+            <div className={styles.geoStats}>
+              <div className={styles.statsHeader}>
+                <span className={styles.statsIcon}>📊</span>
+                <span className={styles.statsTitle}>Statistiche Area</span>
+              </div>
+              <div className={styles.statsContent}>
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Totale Pasti:</span>
+                  <span className={styles.statValue}>{geoStats.totalMeals}</span>
+                </div>
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Futuri:</span>
+                  <span className={styles.statValue}>{geoStats.upcomingMeals}</span>
+                </div>
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>In Corso:</span>
+                  <span className={styles.statValue}>{geoStats.ongoingMeals}</span>
+                </div>
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Area:</span>
+                  <span className={styles.statValue}>{geoStats.searchArea?.areaKm2 || 'N/A'} km²</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <MapView
             userPosition={currentUserPosition}
             nearbyUsers={nearbyUsers}

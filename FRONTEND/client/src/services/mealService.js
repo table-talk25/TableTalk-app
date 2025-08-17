@@ -24,6 +24,73 @@ const getMeals = async (params = {}) => {
   return response.data;
 };
 
+// 🗺️ Nuova funzione per query geospaziali ottimizzate
+const getMealsForMap = async (coords, radius = 50, options = {}) => {
+  try {
+    console.log('🗺️ [mealService] Ricerca pasti per mappa con coordinate geospaziali');
+    console.log('📍 [mealService] Coordinate:', coords, 'Raggio:', radius, 'km');
+    
+    const params = {
+      lat: coords.latitude,
+      lng: coords.longitude,
+      radius: radius,
+      ...options
+    };
+    
+    const response = await apiClient.get('/meals/map', { 
+      params, 
+      suppressErrorAlert: options.suppressErrorAlert 
+    });
+    
+    console.log('✅ [mealService] Risultati query geospaziale:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ [mealService] Errore query geospaziale:', error);
+    throw error;
+  }
+};
+
+// 📊 Nuova funzione per statistiche geospaziali
+const getMealsGeoStats = async (coords, radius = 50) => {
+  try {
+    console.log('📊 [mealService] Richiesta statistiche geospaziali');
+    
+    const params = {
+      lat: coords.latitude,
+      lng: coords.longitude,
+      radius: radius
+    };
+    
+    const response = await apiClient.get('/meals/geostats', { params });
+    console.log('✅ [mealService] Statistiche geospaziali ricevute:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ [mealService] Errore statistiche geospaziali:', error);
+    throw error;
+  }
+};
+
+// 🔍 Nuova funzione per ricerca avanzata geospaziale
+const advancedGeospatialSearch = async (coords, radius = 50, filters = {}) => {
+  try {
+    console.log('🔍 [mealService] Ricerca avanzata geospaziale');
+    
+    const params = {
+      lat: coords.latitude,
+      lng: coords.longitude,
+      radius: radius,
+      ...filters
+    };
+    
+    const response = await apiClient.get('/meals/search/advanced', { params });
+    console.log('✅ [mealService] Ricerca avanzata completata:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ [mealService] Errore ricerca avanzata:', error);
+    throw error;
+  }
+};
+
 const getMealById = async (id) => {
   const response = await apiClient.get(`/meals/${id}`);
   return response.data;
@@ -179,7 +246,11 @@ const mealService = {
   joinMeal,
   leaveMeal,
   searchMeals,
-  getUserMeals
+  getUserMeals,
+  // 🗺️ Nuove funzioni geospaziali
+  getMealsForMap,
+  getMealsGeoStats,
+  advancedGeospatialSearch
 };
 
 export default mealService;

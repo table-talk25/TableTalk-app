@@ -70,9 +70,87 @@
   border-radius: 8px;
 }
 
+/* 📊 Statistiche Geospaziali */
+.geoStats {
+  position: absolute;
+  right: max(12px, env(safe-area-inset-right));
+  top: max(12px, env(safe-area-inset-top));
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 200px;
+  z-index: 10;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.statsHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.statsIcon {
+  font-size: 1.2rem;
+}
+
+.statsTitle {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.statsContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.statItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.statLabel {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.statValue {
+  color: #111827;
+  font-weight: 600;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 30px;
+  text-align: center;
+}
+
 @media (max-width: 768px) {
   .title { font-size: 0.95rem; }
   .subtitle { font-size: 0.8rem; }
   .fab { padding: 9px 12px; }
+  
+  /* 📊 Statistiche responsive su mobile */
+  .geoStats {
+    right: 12px;
+    top: 12px;
+    min-width: 180px;
+    padding: 10px;
+  }
+  
+  .statsTitle {
+    font-size: 0.85rem;
+  }
+  
+  .statItem {
+    font-size: 0.75rem;
+  }
 }
 
