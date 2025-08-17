@@ -87,6 +87,23 @@
     margin-bottom: 2rem;
 }
 
+/* Stili per il messaggio di videochiamata non disponibile */
+.callUnavailableMessage {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    text-align: center;
+}
+
+.callUnavailableText {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.95rem;
+    font-style: italic;
+}
+
 /* Media Query per Responsività */
 @media (max-width: 991px) {
     .sidebar { position: static; margin-top: 2rem; }

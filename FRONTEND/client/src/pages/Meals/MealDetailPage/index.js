@@ -28,6 +28,7 @@ const MealDetailPage = () => {
     const [error, setError] = useState('');
     const [now, setNow] = useState(new Date());
     const [showLeaveModal, setShowLeaveModal] = useState(false);
+    const [canJoinCall, setCanJoinCall] = useState(false);
 
     const fetchMealDetails = useCallback(async () => {
         console.log('🔄 MealDetail: Inizio caricamento per ID:', id);
@@ -194,6 +195,32 @@ const MealDetailPage = () => {
     const canJoinChat = isParticipant || isHost;
     const canLeaveChat = canJoinChat && meal.chatId;
 
+    // Videochiamata: logica temporale migliorata per controllo accesso
+    useEffect(() => {
+        if (meal && meal.date) {
+            const checkCallAvailability = () => {
+                const now = new Date();
+                const mealStartTime = new Date(meal.date);
+                const tenMinutesBefore = new Date(mealStartTime.getTime() - 10 * 60 * 1000);
+                
+                // La chiamata è accessibile da 10 minuti prima fino alla fine del pasto
+                const mealEndTime = new Date(mealStartTime.getTime() + (meal.duration || 0) * 60 * 1000);
+
+                if (now >= tenMinutesBefore && now <= mealEndTime) {
+                    setCanJoinCall(true);
+                } else {
+                    setCanJoinCall(false);
+                }
+            };
+
+            // Controlla subito e poi ogni 30 secondi
+            checkCallAvailability();
+            const interval = setInterval(checkCallAvailability, 30000);
+
+            return () => clearInterval(interval); // Pulisce l'intervallo quando il componente viene smontato
+        }
+    }, [meal]); // Esegui questo effetto quando i dati del pasto cambiano
+
     // Videochiamata: mostra da 10 minuti prima dell'inizio e durante l'evento
     const startTime = new Date(meal.date);
     const msToStart = startTime - now;
@@ -201,7 +228,7 @@ const MealDetailPage = () => {
     const isVirtual = meal.mealType === 'virtual';
     const isWithinPreWindow = meal.status === 'upcoming' && msToStart <= tenMinutesMs;
     const isOngoing = meal.status === 'ongoing';
-    const canJoinVideo = (isParticipant || isHost) && isVirtual && (isWithinPreWindow || isOngoing);
+    const canJoinVideo = (isParticipant || isHost) && isVirtual && canJoinCall;
 
     const renderActionButtons = () => {
         return (
@@ -239,15 +266,29 @@ const MealDetailPage = () => {
                     </Button>
                 )}
 
-                {canJoinVideo && (
-                    <Button 
-                        variant="danger" 
-                        size="lg" 
-                        onClick={() => navigate(`/meals/${id}/video`)}
-                        className={styles.chatButton}
-                    >
-                        <FaVideo /> {t('meals.detail.joinVideo', { defaultValue: 'Videochiamata' })}
-                    </Button>
+                {/* Videochiamata: mostra pulsante solo quando disponibile */}
+                {isVirtual && (isParticipant || isHost) && (
+                    <>
+                        {canJoinCall ? (
+                            <Button 
+                                variant="danger" 
+                                size="lg" 
+                                onClick={() => navigate(`/meals/${id}/video`)}
+                                className={styles.chatButton}
+                            >
+                                <FaVideo /> {t('meals.detail.joinVideo', { defaultValue: 'Videochiamata' })}
+                            </Button>
+                        ) : (
+                            <div className={styles.callUnavailableMessage}>
+                                <p className={styles.callUnavailableText}>
+                                    {t('meals.detail.callUnavailable', { 
+                                        defaultValue: 'Potrai accedere alla videochiamata 10 minuti prima dell\'inizio.' 
+                                    })}
+                                </p>
+                                {/* Qui potresti anche mostrare un countdown */}
+                            </div>
+                        )}
+                    </>
                 )}
 
                 {canLeaveChat && (

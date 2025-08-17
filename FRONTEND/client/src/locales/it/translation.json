@@ -236,6 +236,7 @@
       "joinChat": "Unisciti alla Chat",
       "leaveChat": "Lascia Chat",
       "joinVideo": "Videochiamata",
+      "callUnavailable": "Potrai accedere alla videochiamata 10 minuti prima dell'inizio.",
       "coverImageAlt": "Immagine di copertina del TableTalk®",
       "participants": "{{count}} di {{max}} partecipanti",
       "participantsText": "{{current}} di {{max}} partecipanti",
