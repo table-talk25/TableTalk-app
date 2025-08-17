@@ -809,5 +809,52 @@
     "noPastCreated": "Non hai ancora finito nessun TableTalk® che hai organizzato.",
     "noPastParticipated": "Non hai ancora partecipato a nessun TableTalk®.",
     "loadError": "Errore nel caricamento dei tuoi TableTalk®."
+  },
+  "errorBoundary": {
+    "title": "Ops! Qualcosa è andato storto",
+    "message": "Si è verificato un errore imprevisto. Il nostro team è stato notificato e sta lavorando per risolverlo.",
+    "errorId": "ID Errore",
+    "technicalDetails": "Dettagli tecnici (solo sviluppo)",
+    "errorMessage": "Messaggio",
+    "errorStack": "Stack",
+    "componentStack": "Component Stack",
+    "retry": "Riprova",
+    "goHome": "Torna alla Home",
+    "contactSupport": "Contatta Supporto",
+    "supportEmailSubject": "Errore TableTalk - Richiesta Supporto",
+    "supportEmailBody": "Ciao Team TableTalk,\n\nHo riscontrato un errore nell'app:\n\nID Errore: {{errorId}}\nComponente: {{componentName}}\nData: {{date}}\nURL: {{url}}\n\nDettagli dell'errore:\n{{errorMessage}}\n\nStack trace:\n{{errorStack}}\n\nGrazie per l'assistenza!"
+  },
+  "errorMonitoring": {
+    "title": "Monitoraggio Errori",
+    "initializing": "Inizializzazione monitoraggio errori...",
+    "initialized": "Monitoraggio errori inizializzato",
+    "notInitialized": "Monitoraggio errori non inizializzato",
+    "capturingError": "Cattura errore in corso...",
+    "errorCaptured": "Errore catturato e inviato",
+    "captureFailed": "Errore nella cattura dell'errore",
+    "testConnection": "Test connessione",
+    "testErrorCapture": "Test cattura errori",
+    "testEnvironment": "Test configurazione ambiente",
+    "connectionSuccess": "Connessione testata con successo",
+    "connectionFailed": "Test connessione fallito",
+    "errorCaptureSuccess": "Test cattura errori completato",
+    "errorCaptureFailed": "Test cattura errori fallito",
+    "environmentValid": "Configurazione ambiente valida",
+    "environmentInvalid": "Configurazione ambiente incompleta"
+  },
+  "sentry": {
+    "title": "Sentry - Monitoraggio Errori",
+    "initializing": "Inizializzazione Sentry...",
+    "initialized": "Sentry inizializzato correttamente",
+    "notInitialized": "Sentry non inizializzato",
+    "dsnNotConfigured": "DSN Sentry non configurato",
+    "monitoringDisabled": "Monitoraggio errori disabilitato",
+    "testMessage": "Test di connessione Sentry - TableTalk",
+    "testError": "Errore di test per Sentry - TableTalk",
+    "breadcrumbAdded": "Breadcrumb aggiunto",
+    "userContextSet": "Contesto utente impostato",
+    "mealContextSet": "Contesto pasto impostato",
+    "performanceTracked": "Performance tracciata",
+    "eventTracked": "Evento tracciato"
   }
 }
