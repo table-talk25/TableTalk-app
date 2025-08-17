@@ -3,6 +3,7 @@ const User = require('../models/User');
 const asyncHandler = require('express-async-handler');
 const ErrorResponse = require('../utils/errorResponse');
 const REPORT_LIMITS = require('../config/reportLimits');
+const reportNotificationService = require('../services/reportNotificationService');
 
 // @desc    Crea una nuova segnalazione
 // @route   POST /api/reports
@@ -118,6 +119,17 @@ exports.createReport = asyncHandler(async (req, res, next) => {
     // Log della segnalazione creata
     if (REPORT_LIMITS.LOGGING.ENABLED) {
         console.log(`${REPORT_LIMITS.LOGGING.LEVELS.INFO} [ReportController] Segnalazione creata: ${reporterId} -> ${reportedUserId} (${reason})`);
+    }
+
+    // 📧 INVIA NOTIFICA EMAIL AGLI AMMINISTRATORI
+    try {
+        await reportNotificationService.sendNewReportNotification(report);
+        if (REPORT_LIMITS.LOGGING.ENABLED) {
+            console.log(`${REPORT_LIMITS.LOGGING.LEVELS.INFO} [ReportController] Notifica email inviata per segnalazione ${report._id}`);
+        }
+    } catch (emailError) {
+        // Non blocchiamo la creazione della segnalazione se l'email fallisce
+        console.error(`❌ [ReportController] Errore invio notifica email per segnalazione ${report._id}:`, emailError);
     }
 
     // Popola i dati degli utenti per la risposta

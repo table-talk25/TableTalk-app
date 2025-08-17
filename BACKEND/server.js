@@ -19,6 +19,7 @@ const notificationService = require('./services/notificationService');
 const pushNotificationService = require('./services/pushNotificationService');
 const startMealStatusUpdater = require('./jobs/mealStatusUpdater');
 const mealStatusService = require('./services/mealStatusService');
+const dailyReportSummaryJob = require('./jobs/dailyReportSummary');
 const twilio = require('twilio');
 
 
@@ -293,6 +294,10 @@ mealStatusService.initializeStatusService()
   .catch(error => {
     console.error('❌ [SERVER] Errore inizializzazione servizio status pasti:', error);
   });
+
+// 📧 INIZIALIZZAZIONE JOB RIEPILOGO GIORNALIERO SEGNALAZIONI
+dailyReportSummaryJob.start();
+console.log('✅ [SERVER] Job riepilogo giornaliero segnalazioni avviato');
 
 // Avvio del server
 const PORT = process.env.PORT || 5001;
