@@ -63,7 +63,421 @@ const normalizeMealLocation = (mealDoc) => {
   return meal;
 };
 
-// GET /api/meals (Mostra solo pasti futuri)
+// Helper functions per calcoli geospaziali
+const calculateDistance = (lat1, lng1, lat2, lng2) => {
+  const R = 6371; // Raggio della Terra in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // Distanza in km
+};
+
+const validateCoordinates = (lat, lng) => {
+  return !isNaN(lat) && !isNaN(lng) && 
+         lat >= -90 && lat <= 90 && 
+         lng >= -180 && lng <= 180;
+};
+
+const validateRadius = (radius) => {
+  const radiusNum = parseFloat(radius);
+  return !isNaN(radiusNum) && radiusNum > 0 && radiusNum <= 1000; // Max 1000 km
+};
+
+// @desc    Get meals within a certain radius for the map (OTIMIZZATA)
+// @route   GET /api/meals/map?lat=45.46&lng=9.18&radius=50
+// @access  Public
+exports.getMealsForMap = asyncHandler(async (req, res, next) => {
+  try {
+    const { lat, lng, radius, mealType = 'physical', status = 'upcoming' } = req.query;
+
+    // Validazione parametri richiesti
+    if (!lat || !lng || !radius) {
+      return next(new ErrorResponse('Coordinate e raggio richiesti: lat, lng, radius', 400));
+    }
+
+    // Validazione coordinate
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+    const radiusKm = parseFloat(radius);
+
+    if (!validateCoordinates(latitude, longitude)) {
+      return next(new ErrorResponse('Coordinate non valide. Lat: -90 a 90, Lng: -180 a 180', 400));
+    }
+
+    if (!validateRadius(radiusKm)) {
+      return next(new ErrorResponse('Raggio non valido. Deve essere tra 0 e 1000 km', 400));
+    }
+
+    console.log(`🗺️ [MealController] Ricerca pasti per mappa: lat=${latitude}, lng=${longitude}, radius=${radiusKm}km`);
+
+    // Calcola il raggio in radianti per query MongoDB
+    const radiusInRad = radiusKm / 6371; // 6371 km = raggio della Terra
+
+    // Query base per pasti fisici con location valida
+    const baseQuery = {
+      mealType: mealType,
+      status: { $in: status.split(',') },
+      'location.coordinates': { $exists: true, $ne: null }
+    };
+
+    // Query geospaziale ottimizzata
+    const geoQuery = {
+      ...baseQuery,
+      'location.coordinates': {
+        $geoWithin: {
+          $centerSphere: [[longitude, latitude], radiusInRad]
+        }
+      }
+    };
+
+    // Esegui query con popolamento minimo per performance
+    const meals = await Meal.find(geoQuery)
+      .select('_id title description date duration mealType location host maxParticipants participants status')
+      .populate('host', 'nickname profileImage')
+      .lean()
+      .exec();
+
+    console.log(`✅ [MealController] Trovati ${meals.length} pasti nel raggio di ${radiusKm}km`);
+
+    // Aggiungi distanza calcolata e normalizza location
+    const mealsWithDistance = meals.map(meal => {
+      const mealData = normalizeMealLocation(meal);
+      
+      if (mealData.location && mealData.location.coordinates) {
+        const [mealLng, mealLat] = mealData.location.coordinates;
+        const distance = calculateDistance(latitude, longitude, mealLat, mealLng);
+        
+        return {
+          ...mealData,
+          distance: Math.round(distance * 100) / 100, // Arrotonda a 2 decimali
+          distanceFormatted: `${Math.round(distance * 100) / 100} km`
+        };
+      }
+      
+      return mealData;
+    });
+
+    // Ordina per distanza (più vicini prima)
+    mealsWithDistance.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+
+    res.status(200).json({
+      success: true,
+      count: mealsWithDistance.length,
+      data: mealsWithDistance,
+      searchParams: {
+        center: { lat: latitude, lng: longitude },
+        radius: radiusKm,
+        mealType,
+        status
+      },
+      performance: {
+        queryType: 'geospatial',
+        radiusKm,
+        resultsCount: mealsWithDistance.length
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [MealController] Errore in getMealsForMap:', error);
+    return next(new ErrorResponse('Errore nella ricerca geospaziale', 500));
+  }
+});
+
+// @desc    Get geospatial statistics for meals
+// @route   GET /api/meals/geostats?lat=45.46&lng=9.18&radius=50
+// @access  Public
+exports.getMealsGeoStats = asyncHandler(async (req, res, next) => {
+  try {
+    const { lat, lng, radius = 50 } = req.query;
+
+    if (!lat || !lng) {
+      return next(new ErrorResponse('Coordinate richieste: lat, lng', 400));
+    }
+
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+    const radiusKm = parseFloat(radius);
+
+    if (!validateCoordinates(latitude, longitude)) {
+      return next(new ErrorResponse('Coordinate non valide', 400));
+    }
+
+    if (!validateRadius(radiusKm)) {
+      return next(new ErrorResponse('Raggio non valido', 400));
+    }
+
+    console.log(`📊 [MealController] Statistiche geospaziali: lat=${latitude}, lng=${longitude}, radius=${radiusKm}km`);
+
+    const radiusInRad = radiusKm / 6371;
+
+    // Query per statistiche aggregate
+    const stats = await Meal.aggregate([
+      {
+        $match: {
+          mealType: 'physical',
+          'location.coordinates': {
+            $geoWithin: {
+              $centerSphere: [[longitude, latitude], radiusInRad]
+            }
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalMeals: { $sum: 1 },
+          upcomingMeals: {
+            $sum: {
+              $cond: [
+                { $gte: ['$date', new Date()] },
+                1,
+                0
+              ]
+            }
+          },
+          ongoingMeals: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $lte: ['$date', new Date()] },
+                    { $gte: [{ $add: ['$date', { $multiply: ['$duration', 60000] }] }, new Date()] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          avgParticipants: { $avg: { $size: '$participants' } },
+          maxParticipants: { $max: { $size: '$participants' } },
+          mealTypes: { $addToSet: '$mealType' },
+          hosts: { $addToSet: '$host' }
+        }
+      }
+    ]);
+
+    const result = stats[0] || {
+      totalMeals: 0,
+      upcomingMeals: 0,
+      ongoingMeals: 0,
+      avgParticipants: 0,
+      maxParticipants: 0,
+      mealTypes: [],
+      hosts: []
+    };
+
+    // Calcola densità e distribuzione
+    const area = Math.PI * radiusKm * radiusKm; // Area approssimativa in km²
+    const density = result.totalMeals / area;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...result,
+        searchArea: {
+          center: { lat: latitude, lng: longitude },
+          radius: radiusKm,
+          areaKm2: Math.round(area * 100) / 100
+        },
+        density: {
+          mealsPerKm2: Math.round(density * 1000) / 1000,
+          mealsPer100Km2: Math.round(density * 100 * 100) / 100
+        },
+        performance: {
+          queryType: 'geospatial_aggregation',
+          radiusKm,
+          resultsCount: result.totalMeals
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [MealController] Errore in getMealsGeoStats:', error);
+    return next(new ErrorResponse('Errore nelle statistiche geospaziali', 500));
+  }
+});
+
+// @desc    Get meals within a certain radius for the map (LEGACY - mantenuta per compatibilità)
+// @route   GET /api/meals/map?lat=45.46&lng=9.18&radius=50
+// @access  Public
+exports.getMealsForMapLegacy = asyncHandler(async (req, res, next) => {
+  try {
+    const { lat, lng, radius } = req.query;
+
+    if (!lat || !lng || !radius) {
+      return next(new ErrorResponse('Please provide latitude, longitude, and radius', 400));
+    }
+
+    // Calcola il raggio in radianti dividendo la distanza per il raggio della Terra (6378 km)
+    const radiusInRad = radius / 6378;
+
+    const meals = await Meal.find({
+      mealType: 'physical',
+      location: {
+        $geoWithin: { $centerSphere: [[parseFloat(lng), parseFloat(lat)], radiusInRad] }
+      }
+    });
+
+    res.status(200).json({ success: true, count: meals.length, data: meals });
+  } catch (error) {
+    console.error('❌ [MealController] Errore in getMealsForMapLegacy:', error);
+    return next(new ErrorResponse('Errore nella ricerca geospaziale legacy', 500));
+  }
+});
+
+// @desc    Advanced geospatial search with multiple filters
+// @route   GET /api/meals/search/advanced?lat=45.46&lng=9.18&radius=50&mealType=physical&date=2024-01-01&maxDistance=25
+// @access  Public
+exports.advancedGeospatialSearch = asyncHandler(async (req, res, next) => {
+  try {
+    const { 
+      lat, lng, radius = 50, 
+      mealType = 'physical', 
+      status = 'upcoming',
+      date,
+      maxDistance,
+      minParticipants,
+      maxParticipants,
+      hostId,
+      tags
+    } = req.query;
+
+    if (!lat || !lng) {
+      return next(new ErrorResponse('Coordinate richieste: lat, lng', 400));
+    }
+
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+    const radiusKm = parseFloat(radius);
+
+    if (!validateCoordinates(latitude, longitude)) {
+      return next(new ErrorResponse('Coordinate non valide', 400));
+    }
+
+    if (!validateRadius(radiusKm)) {
+      return next(new ErrorResponse('Raggio non valido', 400));
+    }
+
+    console.log(`🔍 [MealController] Ricerca avanzata: lat=${latitude}, lng=${longitude}, radius=${radiusKm}km`);
+
+    const radiusInRad = radiusKm / 6371;
+
+    // Query base geospaziale
+    let geoQuery = {
+      mealType: mealType,
+      status: { $in: status.split(',') },
+      'location.coordinates': {
+        $geoWithin: {
+          $centerSphere: [[longitude, latitude], radiusInRad]
+        }
+      }
+    };
+
+    // Filtri aggiuntivi
+    if (date) {
+      const targetDate = new Date(date);
+      if (!isNaN(targetDate.getTime())) {
+        geoQuery.date = {
+          $gte: targetDate,
+          $lt: new Date(targetDate.getTime() + 24 * 60 * 60 * 1000) // +24 ore
+        };
+      }
+    }
+
+    if (minParticipants || maxParticipants) {
+      geoQuery.participants = {};
+      if (minParticipants) geoQuery.participants.$gte = parseInt(minParticipants);
+      if (maxParticipants) geoQuery.participants.$lte = parseInt(maxParticipants);
+    }
+
+    if (hostId) {
+      geoQuery.host = hostId;
+    }
+
+    if (tags) {
+      const tagArray = tags.split(',').map(tag => tag.trim());
+      geoQuery.tags = { $in: tagArray };
+    }
+
+    // Esegui query con popolamento e selezione ottimizzati
+    const meals = await Meal.find(geoQuery)
+      .select('_id title description date duration mealType location host maxParticipants participants status tags')
+      .populate('host', 'nickname profileImage')
+      .lean()
+      .exec();
+
+    console.log(`✅ [MealController] Ricerca avanzata completata: ${meals.length} risultati`);
+
+    // Aggiungi distanza e filtra per distanza massima se specificata
+    let mealsWithDistance = meals.map(meal => {
+      const mealData = normalizeMealLocation(meal);
+      
+      if (mealData.location && mealData.location.coordinates) {
+        const [mealLng, mealLat] = mealData.location.coordinates;
+        const distance = calculateDistance(latitude, longitude, mealLat, mealLng);
+        
+        return {
+          ...mealData,
+          distance: Math.round(distance * 100) / 100,
+          distanceFormatted: `${Math.round(distance * 100) / 100} km`
+        };
+      }
+      
+      return mealData;
+    });
+
+    // Filtra per distanza massima se specificata
+    if (maxDistance) {
+      const maxDist = parseFloat(maxDistance);
+      if (!isNaN(maxDist)) {
+        mealsWithDistance = mealsWithDistance.filter(meal => meal.distance <= maxDist);
+        console.log(`📍 [MealController] Filtrati per distanza max ${maxDist}km: ${mealsWithDistance.length} risultati`);
+      }
+    }
+
+    // Ordina per distanza e poi per data
+    mealsWithDistance.sort((a, b) => {
+      const distDiff = (a.distance || 0) - (b.distance || 0);
+      if (distDiff !== 0) return distDiff;
+      return new Date(a.date) - new Date(b.date);
+    });
+
+    res.status(200).json({
+      success: true,
+      count: mealsWithDistance.length,
+      data: mealsWithDistance,
+      searchParams: {
+        center: { lat: latitude, lng: longitude },
+        radius: radiusKm,
+        mealType,
+        status,
+        date,
+        maxDistance,
+        minParticipants,
+        maxParticipants,
+        hostId,
+        tags
+      },
+      performance: {
+        queryType: 'advanced_geospatial',
+        radiusKm,
+        resultsCount: mealsWithDistance.length,
+        filtersApplied: Object.keys(geoQuery).length
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [MealController] Errore in advancedGeospatialSearch:', error);
+    return next(new ErrorResponse('Errore nella ricerca avanzata geospaziale', 500));
+  }
+});
+
+// GET /api/meals (Mostra solo pasti futuri - OTTIMIZZATA)
 exports.getMeals = asyncHandler(async (req, res) => {
   const statusFilter = req.query.status ? req.query.status.split(',') : ['upcoming'];
   const mealTypeFilter = req.query.mealType; // Nuovo filtro per tipo di pasto
@@ -80,29 +494,40 @@ exports.getMeals = asyncHandler(async (req, res) => {
     query.mealType = mealTypeFilter;
   }
 
-  // Aggiungi filtro per posizione geografica se specificato
+  // Aggiungi filtro per posizione geografica se specificato (OTTIMIZZATO)
   if (nearFilter) {
     try {
       const [lat, lng] = nearFilter.split(',').map(coord => parseFloat(coord.trim()));
       
-      if (isNaN(lat) || isNaN(lng)) {
+      if (!validateCoordinates(lat, lng)) {
         return res.status(400).json({
           success: false,
-          message: 'Formato coordinate non valido. Usa: lat,lng'
+          message: 'Coordinate non valide. Lat: -90 a 90, Lng: -180 a 180'
         });
       }
 
       // Filtra solo pasti fisici con location valida
       query.mealType = 'physical';
-      query.location = { $exists: true, $ne: null };
+      query['location.coordinates'] = { $exists: true, $ne: null };
       
-      // Aggiungi filtro per coordinate (se il campo location ha coordinate)
-      // Nota: Questo assume che il campo location sia una stringa con l'indirizzo
-      // Se hai coordinate separate, dovresti aggiungere un filtro più specifico
+      // Aggiungi filtro geospaziale ottimizzato
+      // Calcola raggio predefinito di 50 km se non specificato
+      const defaultRadius = 50;
+      const radiusInRad = defaultRadius / 6371;
+      
+      query['location.coordinates'] = {
+        $geoWithin: {
+          $centerSphere: [[lng, lat], radiusInRad]
+        }
+      };
+      
+      console.log(`🗺️ [MealController] Filtro geospaziale applicato: lat=${lat}, lng=${lng}, radius=${defaultRadius}km`);
+      
     } catch (error) {
+      console.error('❌ [MealController] Errore nel filtro geografico:', error);
       return res.status(400).json({
         success: false,
-        message: 'Formato coordinate non valido'
+        message: 'Formato coordinate non valido. Usa: lat,lng'
       });
     }
   }

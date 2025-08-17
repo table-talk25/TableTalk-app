@@ -30,11 +30,19 @@ const {
   searchMeals,
   getVideoCallUrl,
   getMealStatusStats,
-  syncMealStatus
+  syncMealStatus,
+  getMealsForMap,
+  getMealsGeoStats,
+  advancedGeospatialSearch
 } = require('../controllers/mealController');
 
 // ==================== ROTTE PUBBLICHE ====================
 router.get('/', protect, mealController.getMeals);
+
+// 🗺️ ROTTE GEOSPAZIALI OTTIMIZZATE
+router.get('/map', mealController.getMealsForMap); // Ricerca pasti per mappa con coordinate e raggio
+router.get('/geostats', mealController.getMealsGeoStats); // Statistiche geospaziali
+router.get('/search/advanced', mealController.advancedGeospatialSearch); // Ricerca avanzata con filtri multipli
 
 // 🕐 ROTTE STATUS VIRTUALE
 router.get('/status/stats', protect, mealController.getMealStatusStats);
