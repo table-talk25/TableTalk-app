@@ -2,6 +2,7 @@ const Report = require('../models/Report');
 const User = require('../models/User');
 const asyncHandler = require('express-async-handler');
 const ErrorResponse = require('../utils/errorResponse');
+const REPORT_LIMITS = require('../config/reportLimits');
 
 // @desc    Crea una nuova segnalazione
 // @route   POST /api/reports
@@ -21,17 +22,91 @@ exports.createReport = asyncHandler(async (req, res, next) => {
         return next(new ErrorResponse('Utente segnalato non trovato', 404));
     }
 
-    // Verifica se esiste già una segnalazione pendente dello stesso utente
-    const existingReport = await Report.findOne({
+    // 🛡️ CONTROLLO ANTI-SPAM: Verifica segnalazioni duplicate e recenti
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - REPORT_LIMITS.INTERVALS.DAY);
+    const oneWeekAgo = new Date(now.getTime() - REPORT_LIMITS.INTERVALS.WEEK);
+
+    // 1. Controlla se esiste già una segnalazione PENDENTE dello stesso utente
+    const existingPendingReport = await Report.findOne({
         reporter: reporterId,
         reportedUser: reportedUserId,
         status: 'pending'
     });
 
-    if (existingReport) {
-        return next(new ErrorResponse('Hai già una segnalazione pendente per questo utente', 400));
+    if (existingPendingReport) {
+        if (REPORT_LIMITS.LOGGING.ENABLED) {
+            console.log(`${REPORT_LIMITS.LOGGING.LEVELS.BLOCKED} [ReportController] Tentativo di spam segnalazione: ${reporterId} -> ${reportedUserId} (già pendente)`);
+        }
+        return next(new ErrorResponse(
+            REPORT_LIMITS.MESSAGES.ALREADY_REPORTED_PENDING,
+            400
+        ));
     }
 
+    // 2. Controlla se esiste una segnalazione RECENTE (ultime 24 ore) dello stesso utente
+    const recentReport = await Report.findOne({
+        reporter: reporterId,
+        reportedUser: reportedUserId,
+        createdAt: { $gte: oneDayAgo }
+    });
+
+    if (recentReport) {
+        if (REPORT_LIMITS.LOGGING.ENABLED) {
+            console.log(`${REPORT_LIMITS.LOGGING.LEVELS.WARNING} [ReportController] Tentativo di segnalazione troppo frequente: ${reporterId} -> ${reportedUserId} (ultime 24h)`);
+        }
+        return next(new ErrorResponse(
+            REPORT_LIMITS.MESSAGES.ALREADY_REPORTED_RECENT,
+            429
+        ));
+    }
+
+    // 3. Controlla il numero totale di segnalazioni dell'utente nelle ultime 24 ore
+    const userDailyReports = await Report.countDocuments({
+        reporter: reporterId,
+        createdAt: { $gte: oneDayAgo }
+    });
+
+    if (userDailyReports >= REPORT_LIMITS.DAILY_LIMIT) {
+        if (REPORT_LIMITS.LOGGING.ENABLED) {
+            console.log(`${REPORT_LIMITS.LOGGING.LEVELS.ERROR} [ReportController] Limite giornaliero segnalazioni superato: ${reporterId} (${userDailyReports} segnalazioni)`);
+        }
+        return next(new ErrorResponse(
+            REPORT_LIMITS.MESSAGES.DAILY_LIMIT_EXCEEDED.replace('{{limit}}', REPORT_LIMITS.DAILY_LIMIT),
+            429
+        ));
+    }
+
+    // 4. Controlla il numero totale di segnalazioni dell'utente nelle ultime 2 settimane
+    const userWeeklyReports = await Report.countDocuments({
+        reporter: reporterId,
+        createdAt: { $gte: oneWeekAgo }
+    });
+
+    if (userWeeklyReports >= REPORT_LIMITS.WEEKLY_LIMIT) {
+        if (REPORT_LIMITS.LOGGING.ENABLED) {
+            console.log(`${REPORT_LIMITS.LOGGING.LEVELS.ERROR} [ReportController] Limite settimanale segnalazioni superato: ${reporterId} (${userWeeklyReports} segnalazioni)`);
+        }
+        return next(new ErrorResponse(
+            REPORT_LIMITS.MESSAGES.WEEKLY_LIMIT_EXCEEDED.replace('{{limit}}', REPORT_LIMITS.WEEKLY_LIMIT),
+            429
+        ));
+    }
+
+    // 5. Controlla se l'utente segnalato ha già troppe segnalazioni pendenti
+    const pendingReportsForUser = await Report.countDocuments({
+        reportedUser: reportedUserId,
+        status: 'pending'
+    });
+
+    if (pendingReportsForUser >= REPORT_LIMITS.MAX_PENDING_PER_USER) {
+        if (REPORT_LIMITS.LOGGING.ENABLED) {
+            console.log(`${REPORT_LIMITS.LOGGING.LEVELS.WARNING} [ReportController] Utente con troppe segnalazioni pendenti: ${reportedUserId} (${pendingReportsForUser} segnalazioni)`);
+        }
+        // Non blocchiamo la segnalazione, ma la logghiamo per attenzione
+    }
+
+    // ✅ TUTTI I CONTROLLI SUPERATI: Crea la segnalazione
     const report = await Report.create({
         reporter: reporterId,
         reportedUser: reportedUserId,
@@ -40,13 +115,19 @@ exports.createReport = asyncHandler(async (req, res, next) => {
         context: context || 'general'
     });
 
+    // Log della segnalazione creata
+    if (REPORT_LIMITS.LOGGING.ENABLED) {
+        console.log(`${REPORT_LIMITS.LOGGING.LEVELS.INFO} [ReportController] Segnalazione creata: ${reporterId} -> ${reportedUserId} (${reason})`);
+    }
+
     // Popola i dati degli utenti per la risposta
     await report.populate('reporter', 'nickname profileImage');
     await report.populate('reportedUser', 'nickname profileImage');
 
     res.status(201).json({
         success: true,
-        data: report
+        data: report,
+        message: REPORT_LIMITS.MESSAGES.SUCCESS
     });
 });
 
@@ -98,6 +179,65 @@ exports.getMyReports = asyncHandler(async (req, res, next) => {
         success: true,
         count: reports.length,
         data: reports
+    });
+});
+
+// @desc    Ottieni le statistiche personali delle segnalazioni dell'utente corrente
+// @route   GET /api/reports/my-stats
+// @access  Private
+exports.getMyReportStats = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - REPORT_LIMITS.INTERVALS.DAY);
+    const oneWeekAgo = new Date(now.getTime() - REPORT_LIMITS.INTERVALS.WEEK);
+
+    // Conta le segnalazioni per periodo
+    const [dailyCount, weeklyCount, totalCount] = await Promise.all([
+        Report.countDocuments({
+            reporter: userId,
+            createdAt: { $gte: oneDayAgo }
+        }),
+        Report.countDocuments({
+            reporter: userId,
+            createdAt: { $gte: oneWeekAgo }
+        }),
+        Report.countDocuments({ reporter: userId })
+    ]);
+
+    // Limiti configurati
+    const limits = {
+        daily: REPORT_LIMITS.DAILY_LIMIT,
+        weekly: REPORT_LIMITS.WEEKLY_LIMIT
+    };
+
+    // Calcola i limiti rimanenti
+    const remaining = {
+        daily: Math.max(0, limits.daily - dailyCount),
+        weekly: Math.max(0, limits.weekly - weeklyCount)
+    };
+
+    // Determina se l'utente può fare nuove segnalazioni
+    const canReport = {
+        daily: dailyCount < limits.daily,
+        weekly: weeklyCount < limits.weekly
+    };
+
+    res.status(200).json({
+        success: true,
+        data: {
+            counts: {
+                daily: dailyCount,
+                weekly: weeklyCount,
+                total: totalCount
+            },
+            limits,
+            remaining,
+            canReport,
+            nextReset: {
+                daily: new Date(now.getTime() + REPORT_LIMITS.INTERVALS.DAY), // Domani
+                weekly: new Date(now.getTime() + REPORT_LIMITS.INTERVALS.WEEK) // Prossima settimana
+            }
+        }
     });
 });
 

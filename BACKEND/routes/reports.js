@@ -5,6 +5,7 @@ const {
     createReport,
     getReports,
     getMyReports,
+    getMyReportStats,
     getReport,
     updateReportStatus,
     deleteReport,
@@ -14,6 +15,7 @@ const {
 // Routes per utenti autenticati
 router.post('/', protect, createReport);
 router.get('/my-reports', protect, getMyReports);
+router.get('/my-stats', protect, getMyReportStats);
 
 // Routes per admin
 router.get('/', protect, authorize('admin'), getReports);
