@@ -85,6 +85,32 @@ const MealDetailPage = () => {
         return () => clearInterval(timer);
     }, [fetchMealDetails, id]);
 
+    // Videochiamata: logica temporale migliorata per controllo accesso
+    useEffect(() => {
+        if (meal && meal.date) {
+            const checkCallAvailability = () => {
+                const now = new Date();
+                const mealStartTime = new Date(meal.date);
+                const tenMinutesBefore = new Date(mealStartTime.getTime() - 10 * 60 * 1000);
+                
+                // La chiamata è accessibile da 10 minuti prima fino alla fine del pasto
+                const mealEndTime = new Date(mealStartTime.getTime() + (meal.duration || 0) * 60 * 1000);
+
+                if (now >= tenMinutesBefore && now <= mealEndTime) {
+                    setCanJoinCall(true);
+                } else {
+                    setCanJoinCall(false);
+                }
+            };
+
+            // Controlla subito e poi ogni 30 secondi
+            checkCallAvailability();
+            const interval = setInterval(checkCallAvailability, 30000);
+
+            return () => clearInterval(interval); // Pulisce l'intervallo quando il componente viene smontato
+        }
+    }, [meal]); // Esegui questo effetto quando i dati del pasto cambiano
+
     const handleJoinMeal = async () => {
         try {
             await mealService.joinMeal(id);
@@ -194,32 +220,6 @@ const MealDetailPage = () => {
     const canLeave = isParticipant && meal.status === 'upcoming';
     const canJoinChat = isParticipant || isHost;
     const canLeaveChat = canJoinChat && meal.chatId;
-
-    // Videochiamata: logica temporale migliorata per controllo accesso
-    useEffect(() => {
-        if (meal && meal.date) {
-            const checkCallAvailability = () => {
-                const now = new Date();
-                const mealStartTime = new Date(meal.date);
-                const tenMinutesBefore = new Date(mealStartTime.getTime() - 10 * 60 * 1000);
-                
-                // La chiamata è accessibile da 10 minuti prima fino alla fine del pasto
-                const mealEndTime = new Date(mealStartTime.getTime() + (meal.duration || 0) * 60 * 1000);
-
-                if (now >= tenMinutesBefore && now <= mealEndTime) {
-                    setCanJoinCall(true);
-                } else {
-                    setCanJoinCall(false);
-                }
-            };
-
-            // Controlla subito e poi ogni 30 secondi
-            checkCallAvailability();
-            const interval = setInterval(checkCallAvailability, 30000);
-
-            return () => clearInterval(interval); // Pulisce l'intervallo quando il componente viene smontato
-        }
-    }, [meal]); // Esegui questo effetto quando i dati del pasto cambiano
 
     // Videochiamata: mostra da 10 minuti prima dell'inizio e durante l'evento
     const startTime = new Date(meal.date);

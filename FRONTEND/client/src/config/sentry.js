@@ -33,9 +33,9 @@ export const initializeSentry = () => {
       integrations: [
         new BrowserTracing({
           // Traccia le performance delle route
-          routingInstrumentation: Sentry.reactRouterV6Instrumentation(
-            history => history.listen
-          ),
+          // routingInstrumentation: Sentry.reactRouterV6Instrumentation(
+          //   history => history.listen
+          // ),
         }),
       ],
       

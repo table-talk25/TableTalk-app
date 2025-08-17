@@ -90,7 +90,6 @@
     "searchError": "Si è verificato un errore durante la ricerca.",
     "noMealsFound": "Nessun TableTalk® trovato per \"{{searchTerm}}\".",
     "noMealsWithFilters": "Nessun TableTalk® trovato con i filtri applicati.",
-    // 🌍 Pluralizzazione dinamica per pasti
     "mealCount_one": "{{count}} TableTalk®",
     "mealCount_other": "{{count}} TableTalk®",
     "mealCount_zero": "Nessun TableTalk®",

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { FaBell, FaRegBell } from 'react-icons/fa';
-import notificationService from '../../../services/notifications.js';
+import notificationService from '../../../services/notificationService';
 import styles from './Notifications.module.css';
 import { toast } from 'react-toastify';
 

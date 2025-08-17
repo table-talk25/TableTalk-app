@@ -6,15 +6,13 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Container, Row, Col, Card, Alert, Button } from 'react-bootstrap';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useProfile } from '../../../contexts/ProfileContext';
-import ProfileForm from '../../../components/profile/ProfileForm';
+import PersonalInfo from '../../../components/profile/PersonalInfo';
 import styles from './CompleteProfilePage.module.css';
 
 const CompleteProfilePage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, updateProfile } = useAuth();
-  const { refreshProfile } = useProfile();
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,9 +39,6 @@ const CompleteProfilePage = () => {
       
       // Aggiorna il profilo
       await updateProfile(profileData);
-      
-      // Aggiorna il profilo nel context
-      await refreshProfile();
       
       console.log('✅ [CompleteProfile] Profilo completato con successo!');
       
@@ -134,14 +129,11 @@ const CompleteProfilePage = () => {
                 </Alert>
               )}
 
-              <ProfileForm
-                initialData={user}
-                onSubmit={handleProfileSubmit}
-                isLoading={isLoading}
-                isSubmitting={isLoading}
-                submitButtonText="Completa Profilo"
+              <PersonalInfo
+                profileData={user}
+                onUpdate={handleProfileSubmit}
+                isUpdating={isLoading}
                 showRequiredFieldsOnly={true}
-                isCompleteProfileMode={true}
               />
             </Card.Body>
           </Card>

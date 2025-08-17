@@ -35,9 +35,9 @@ class ErrorMonitoringService {
         integrations: [
           new BrowserTracing({
             // Traccia le performance delle route
-            routingInstrumentation: Sentry.reactRouterV6Instrumentation(
-              history => history.listen
-            ),
+            // routingInstrumentation: Sentry.reactRouterV6Instrumentation(
+            //   history => history.listen
+            // ),
           }),
         ],
         
@@ -247,14 +247,15 @@ class ErrorMonitoringService {
     if (!this.isInitialized) return null;
 
     try {
-      const transaction = Sentry.startTransaction({
-        name,
-        op: operation
-      });
+      // const transaction = Sentry.startTransaction({
+      //   name,
+      //   op: operation
+      // });
       
-      Sentry.getCurrentHub().configureScope(scope => scope.setSpan(transaction));
+      // Sentry.getCurrentHub().configureScope(scope => scope.setSpan(transaction));
       
-      return transaction;
+      // return transaction;
+      return null; // Temporaneamente disabilitato per compatibilità
     } catch (error) {
       console.error('❌ Errore nell\'avvio della transazione:', error);
       return null;
@@ -298,13 +299,13 @@ class ErrorMonitoringService {
     if (!this.isInitialized) return;
 
     try {
-      Sentry.configureScope(scope => {
-        scope.setTag('component', componentName);
-        scope.setContext('component', {
-          name: componentName,
-          ...options
-        });
-      });
+      // Sentry.configureScope(scope => {
+      //   scope.setTag('component', componentName);
+      //   scope.setContext('component', {
+      //     name: componentName,
+      //     ...options
+      //   });
+      // });
     } catch (error) {
       console.error('❌ Errore nella configurazione del componente:', error);
     }
@@ -318,23 +319,23 @@ class ErrorMonitoringService {
       return await apiCall();
     }
 
-    const transaction = this.startTransaction('API Call', 'http');
+    // const transaction = this.startTransaction('API Call', 'http');
     
     try {
       const result = await apiCall();
       
-      if (transaction) {
-        transaction.setTag('api.success', true);
-        transaction.finish();
-      }
+      // if (transaction) {
+      //   transaction.setTag('api.success', true);
+      //   transaction.finish();
+      // }
       
       return result;
     } catch (error) {
-      if (transaction) {
-        transaction.setTag('api.success', false);
-        transaction.setTag('api.error', error.message);
-        transaction.finish();
-      }
+      // if (transaction) {
+      //   transaction.setTag('api.success', false);
+      //   transaction.setTag('api.error', error.message);
+      //   transaction.finish();
+      // }
       
       // Cattura l'errore
       this.captureError(error, {
@@ -358,23 +359,23 @@ class ErrorMonitoringService {
       return await operation();
     }
 
-    const transaction = this.startTransaction(name, 'async');
+    // const transaction = this.startTransaction(name, 'async');
     
     try {
       const result = await operation();
       
-      if (transaction) {
-        transaction.setTag('operation.success', true);
-        transaction.finish();
-      }
+      // if (transaction) {
+      //   transaction.setTag('operation.success', true);
+      //   transaction.finish();
+      // }
       
       return result;
     } catch (error) {
-      if (transaction) {
-        transaction.setTag('operation.success', false);
-        transaction.setTag('operation.error', error.message);
-        transaction.finish();
-      }
+      // if (transaction) {
+      //   transaction.setTag('operation.success', false);
+      //   transaction.setTag('operation.error', error.message);
+      //   transaction.finish();
+      // }
       
       this.captureError(error, {
         ...context,

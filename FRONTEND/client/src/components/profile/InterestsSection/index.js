@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaPlus, FaChevronDown } from 'react-icons/fa';
+import { FaPlus, FaChevronDown, FaTimes } from 'react-icons/fa';
 import { availableCuisines, availableInterests, availableLanguages } from '../../../constants/profileConstants';
 import ProfileSectionWrapper from '../ProfileSectionWrapper';
 import styles from './InterestsSection.module.css';

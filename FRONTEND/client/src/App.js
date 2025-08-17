@@ -1,6 +1,4 @@
 // File: src/App.js (Versione Aggiornata con Profilo Pubblico/Privato e Sentry)
-import TestPage from './pages/TestPage'; 
-
 import React, { useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
@@ -145,7 +143,6 @@ const App = () => {
         <Route path="/complete-profile" element={<CompleteProfilePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} /> {/* <-- 2. AGGIUNGI LA NUOVA ROTTA */}
         <Route path="/termini-e-condizioni" element={<TermsAndConditionsPage />} />
-        <Route path="/test" element={<TestPage />} />
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
