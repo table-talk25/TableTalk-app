@@ -538,8 +538,21 @@ const MealForm = ({ initialData, onSubmit, onCancel, isLoading, isSubmitting, su
                 <Form.Label className={styles.formLabel}>{t('meals.form.addressLabel')}</Form.Label>
                 <PlacesAutocompleteInput
                   value={formData.location}
-                  onChange={(text) => setFormData(prev => ({ ...prev, location: { ...(prev.location || {}), address: text } }))}
-                  onSelect={(loc) => setFormData(prev => ({ ...prev, location: loc }))}
+                  onChange={(text) => setFormData(prev => ({ 
+                    ...prev, 
+                    location: { 
+                      ...(prev.location || {}), 
+                      address: text,
+                      coordinates: prev.location?.coordinates || undefined
+                    } 
+                  }))}
+                  onSelect={(loc) => setFormData(prev => ({ 
+                    ...prev, 
+                    location: {
+                      address: loc.address,
+                      coordinates: loc.coordinates || prev.location?.coordinates
+                    }
+                  }))}
                   placeholder={t('meals.form.addressPlaceholder')}
                   className={`${styles.formControl} ${errors.location ? 'is-invalid' : ''}`}
                 />
@@ -558,7 +571,14 @@ const MealForm = ({ initialData, onSubmit, onCancel, isLoading, isSubmitting, su
           <label className={styles.formLabel}>{t('meals.form.mapLabel')}</label>
           <div className={styles.mapContainer}>
             <LocationPicker
-              onLocationSelect={(location) => setFormData({ ...formData, location })}
+              onLocationSelect={(location) => setFormData(prev => ({ 
+                ...prev, 
+                location: {
+                  address: location.address || prev.location?.address,
+                  coordinates: location.coordinates
+                }
+              }))}
+              currentLocation={formData.location}
               initialCenter={
                 formData.location && typeof formData.location === 'object' && Array.isArray(formData.location.coordinates) && formData.location.coordinates.length >= 2
                   ? { lat: formData.location.coordinates[1], lng: formData.location.coordinates[0] }

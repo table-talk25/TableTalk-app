@@ -34,6 +34,34 @@ const twilioClient = twilio(
   { accountSid: process.env.TWILIO_ACCOUNT_SID }
 );
 
+// Helper function per normalizzare la location
+const normalizeMealLocation = (mealDoc) => {
+  const meal = mealDoc && typeof mealDoc.toObject === 'function' ? mealDoc.toObject() : mealDoc;
+  
+  if (meal && meal.location) {
+    if (typeof meal.location === 'string') {
+      const match = meal.location.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+      if (match) {
+        const latNum = parseFloat(match[1]);
+        const lngNum = parseFloat(match[2]);
+        if (!Number.isNaN(latNum) && !Number.isNaN(lngNum)) {
+          meal.location = {
+            address: meal.location,
+            coordinates: [lngNum, latNum]
+          };
+        }
+      } else {
+        meal.location = {
+          address: meal.location,
+          coordinates: undefined
+        };
+      }
+    }
+  }
+  
+  return meal;
+};
+
 // GET /api/meals (Mostra solo pasti futuri)
 exports.getMeals = asyncHandler(async (req, res) => {
   const statusFilter = req.query.status ? req.query.status.split(',') : ['upcoming'];
@@ -175,25 +203,7 @@ exports.getMeals = asyncHandler(async (req, res) => {
     Meal.countDocuments(query)
   ]);
 
-  // Normalizza la location: se è una stringa "lat,lng", esponi anche le coordinates
-  const normalizeMealLocation = (mealDoc) => {
-    // Usa plain object per evitare effetti collaterali su Mongoose docs
-    const meal = mealDoc && typeof mealDoc.toObject === 'function' ? mealDoc.toObject() : mealDoc;
-    if (meal && typeof meal.location === 'string') {
-      const match = meal.location.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
-      if (match) {
-        const latNum = parseFloat(match[1]);
-        const lngNum = parseFloat(match[2]);
-        if (!Number.isNaN(latNum) && !Number.isNaN(lngNum)) {
-          meal.location = {
-            address: meal.location,
-            coordinates: [lngNum, latNum]
-          };
-        }
-      }
-    }
-    return meal;
-  };
+  // Normalizza la location usando la funzione helper
   const normalizedMeals = Array.isArray(meals) ? meals.map(normalizeMealLocation) : [];
 
   // Se è richiesto un filtro geografico, filtra i risultati per distanza
@@ -204,16 +214,21 @@ exports.getMeals = asyncHandler(async (req, res) => {
       
       // Filtra i pasti che hanno coordinate valide
       filteredMeals = normalizedMeals.filter(meal => {
-        if (!meal.location || typeof meal.location !== 'object' || !meal.location.coordinates) {
+        if (!meal.location || typeof meal.location !== 'object' || !meal.location.coordinates || !Array.isArray(meal.location.coordinates) || meal.location.coordinates.length !== 2) {
+          return false;
+        }
+        
+        const [mealLng, mealLat] = meal.location.coordinates;
+        if (typeof mealLng !== 'number' || typeof mealLat !== 'number' || isNaN(mealLng) || isNaN(mealLat)) {
           return false;
         }
         
         // Calcola la distanza usando la formula di Haversine
         const R = 6371; // Raggio della Terra in km
-        const dLat = (meal.location.coordinates[1] - lat) * Math.PI / 180;
-        const dLng = (meal.location.coordinates[0] - lng) * Math.PI / 180;
+        const dLat = (mealLat - lat) * Math.PI / 180;
+        const dLng = (mealLng - lng) * Math.PI / 180;
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                  Math.cos(lat * Math.PI / 180) * Math.cos(meal.location.coordinates[1] * Math.PI / 180) *
+                  Math.cos(lat * Math.PI / 180) * Math.cos(mealLat * Math.PI / 180) *
                   Math.sin(dLng/2) * Math.sin(dLng/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         const distance = R * c;
@@ -268,7 +283,9 @@ exports.getMealHistory = asyncHandler(async (req, res) => {
 exports.getMeal = asyncHandler(async (req, res, next) => {
   const meal = await Meal.findById(req.params.id).populate('host participants', 'nickname profileImage');
   if (!meal) return next(new ErrorResponse(`Pasto non trovato`, 404));
-  res.status(200).json({ success: true, data: meal });
+  
+  const normalizedMeal = normalizeMealLocation(meal);
+  res.status(200).json({ success: true, data: normalizedMeal });
 });
 
 // POST /api/meals (Crea pasto, chat E stanza video)
@@ -317,29 +334,24 @@ exports.createMeal = asyncHandler(async (req, res, next) => {
   
   // Gestione del campo location dal FormData.
   // Se arriva un JSON con coordinates [lng, lat], salviamo come stringa "lat,lng" per compatibilità
-  // così le API di listing possono riconvertirla in oggetto con coordinates.
+  // Gestione del campo location: salva l'oggetto completo con indirizzo e coordinate
   let rawLocationReceived = req.body.location;
   if (req.body.location) {
     try {
       const parsedLocation = JSON.parse(req.body.location);
       if (parsedLocation && typeof parsedLocation === 'object') {
-        const hasCoords = Array.isArray(parsedLocation.coordinates) && parsedLocation.coordinates.length >= 2;
-        if (hasCoords) {
-          const lngNum = Number(parsedLocation.coordinates[0]);
-          const latNum = Number(parsedLocation.coordinates[1]);
-          if (!Number.isNaN(latNum) && !Number.isNaN(lngNum)) {
-            mealData.location = `${latNum},${lngNum}`; // es. "41.90,12.49"
-          }
-        }
-        // Se non abbiamo coords valide, prova a usare un address/label come stringa
-        if (!mealData.location) {
-          mealData.location = parsedLocation.address || parsedLocation.formattedAddress || parsedLocation.label || '';
-        }
-        if (!mealData.location && typeof req.body.location === 'string') {
-          // Fallback: limita la stringa a 200 caratteri per rispettare la validazione dello schema
-          mealData.location = req.body.location.slice(0, 200);
+        // Salva l'oggetto location completo
+        mealData.location = {
+          address: parsedLocation.address || parsedLocation.formattedAddress || parsedLocation.label || '',
+          coordinates: parsedLocation.coordinates || undefined
+        };
+        
+        // Se non abbiamo un indirizzo valido, prova a usare il valore originale
+        if (!mealData.location.address && typeof req.body.location === 'string') {
+          mealData.location.address = req.body.location.slice(0, 200);
         }
       } else {
+        // Fallback per valori non oggetto: salva come stringa
         mealData.location = String(req.body.location);
       }
     } catch (error) {
@@ -365,6 +377,9 @@ exports.createMeal = asyncHandler(async (req, res, next) => {
       hasCoverImageBase64: typeof req.body?.coverImageBase64 === 'string' && req.body.coverImageBase64.startsWith('data:image/'),
       locationRaw: rawLocationReceived,
       locationNormalized: mealData?.location,
+      locationType: typeof mealData?.location,
+      locationHasAddress: mealData?.location?.address ? true : false,
+      locationHasCoordinates: mealData?.location?.coordinates ? true : false,
     });
   } catch (_e) {}
   
@@ -403,7 +418,9 @@ exports.createMeal = asyncHandler(async (req, res, next) => {
       
       await User.findByIdAndUpdate(req.user.id, { $push: { createdMeals: meal._id } });
       const populatedMeal = await Meal.findById(meal._id).populate('host', 'nickname profileImage');
-      res.status(201).json({ success: true, data: populatedMeal });
+      
+      const normalizedMeal = normalizeMealLocation(populatedMeal);
+      res.status(201).json({ success: true, data: normalizedMeal });
   } catch (error) {
       if (meal) await Meal.findByIdAndDelete(meal._id);
       if (chat) await Chat.findByIdAndDelete(chat._id);
@@ -464,22 +481,40 @@ exports.updateMeal = asyncHandler(async (req, res, next) => {
     updates.coverImage = req.file.path;
   }
 
-  // Gestione del campo location dal FormData: normalizza a stringa indirizzo
+  // Gestione del campo location dal FormData: salva l'oggetto completo
   if (updates.location) {
     try {
       const parsedLocation = JSON.parse(updates.location);
       if (parsedLocation && typeof parsedLocation === 'object') {
-        updates.location = parsedLocation.address || parsedLocation.formattedAddress || parsedLocation.label || '';
-        if (!updates.location && typeof updates.location === 'string') {
-          updates.location = updates.location.slice(0, 200);
+        // Salva l'oggetto location completo
+        updates.location = {
+          address: parsedLocation.address || parsedLocation.formattedAddress || parsedLocation.label || '',
+          coordinates: parsedLocation.coordinates || undefined
+        };
+        
+        // Se non abbiamo un indirizzo valido, prova a usare il valore originale
+        if (!updates.location.address && typeof req.body.location === 'string') {
+          updates.location.address = req.body.location.slice(0, 200);
         }
       } else {
+        // Fallback per valori non oggetto: salva come stringa
         updates.location = String(updates.location);
       }
     } catch (error) {
       // Se non è JSON valido, usa il valore come stringa
       updates.location = String(updates.location);
     }
+  }
+  
+  // Log per debugging della location
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[UpdateMeal] Location aggiornata:', {
+      originalLocation: meal.location,
+      newLocation: updates.location,
+      locationType: typeof updates.location,
+      hasAddress: updates.location?.address ? true : false,
+      hasCoordinates: updates.location?.coordinates ? true : false,
+    });
   }
 
   // Se il pasto diventa fisico da virtuale, rimuovi i dati Twilio
@@ -509,7 +544,8 @@ exports.updateMeal = asyncHandler(async (req, res, next) => {
     runValidators: true,
   }).populate('host', 'nickname profileImage');
 
-  res.status(200).json({ success: true, data: meal });
+  const normalizedMeal = normalizeMealLocation(meal);
+  res.status(200).json({ success: true, data: normalizedMeal });
 });
 
 // DELETE /api/meals/:id (Cancella pasto)

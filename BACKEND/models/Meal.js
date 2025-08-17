@@ -135,11 +135,11 @@ const MealSchema = new mongoose.Schema({
   },
   // Campo per la posizione - obbligatorio solo per pasti fisici
   location: {
-    type: String,
+    type: mongoose.Schema.Types.Mixed, // Supporta sia stringa che oggetto
     validate: {
       validator: function(value) {
         // Se è un pasto fisico, la location è obbligatoria
-        if (this.mealType === 'physical' && (!value || value.trim().length === 0)) {
+        if (this.mealType === 'physical' && (!value || (typeof value === 'string' && value.trim().length === 0) || (typeof value === 'object' && !value.address))) {
           this.invalidate('location', 'La posizione è obbligatoria per un pasto fisico');
           return false;
         }
@@ -147,10 +147,43 @@ const MealSchema = new mongoose.Schema({
         if (this.mealType === 'virtual') {
           return true;
         }
-        // Per pasti fisici, la location deve essere valida
-        return value && value.trim().length >= 5 && value.trim().length <= 200;
+        
+        // Validazione per stringhe (compatibilità con dati esistenti)
+        if (typeof value === 'string') {
+          return value.trim().length >= 5 && value.trim().length <= 200;
+        }
+        
+        // Validazione per oggetti (nuovo formato)
+        if (typeof value === 'object' && value !== null) {
+          // Deve avere almeno un indirizzo
+          if (!value.address || typeof value.address !== 'string' || value.address.trim().length === 0) {
+            return false;
+          }
+          
+          // L'indirizzo deve essere tra 5 e 200 caratteri
+          if (value.address.trim().length < 5 || value.address.trim().length > 200) {
+            return false;
+          }
+          
+          // Se ci sono coordinate, devono essere valide
+          if (value.coordinates && Array.isArray(value.coordinates)) {
+            if (value.coordinates.length !== 2) {
+              return false;
+            }
+            const [lng, lat] = value.coordinates;
+            if (typeof lng !== 'number' || typeof lat !== 'number' || 
+                isNaN(lng) || isNaN(lat) || 
+                lng < -180 || lng > 180 || lat < -90 || lat > 90) {
+              return false;
+            }
+          }
+          
+          return true;
+        }
+        
+        return false;
       },
-      message: 'La posizione deve essere tra 5 e 200 caratteri per pasti fisici'
+      message: 'La posizione deve essere valida: stringa tra 5-200 caratteri o oggetto con address e coordinate opzionali'
     }
   },
   // Campo per distinguere pasti pubblici e privati

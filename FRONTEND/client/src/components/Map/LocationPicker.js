@@ -6,7 +6,25 @@ import { GoogleMap } from '@capacitor/google-maps';
 import { Spinner, Alert, Button } from 'react-bootstrap';
 import { useAuth } from '../../contexts/AuthContext';
 
-const LocationPicker = ({ onLocationSelect, initialCenter }) => {
+// Funzione per fare il geocoding inverso (da coordinate a indirizzo)
+const reverseGeocode = async (lat, lng) => {
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&language=it`
+    );
+    const data = await response.json();
+    
+    if (data.status === 'OK' && data.results.length > 0) {
+      return data.results[0].formatted_address;
+    }
+    return null;
+  } catch (error) {
+    console.error('Errore nel geocoding inverso:', error);
+    return null;
+  }
+};
+
+const LocationPicker = ({ onLocationSelect, initialCenter, currentLocation }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const mapRef = useRef(null);
@@ -109,10 +127,13 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
             iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
           });
 
-          // Per ora usiamo coordinate semplici, in futuro potremmo fare geocoding
+          // Fai il geocoding inverso per ottenere l'indirizzo
+          const address = await reverseGeocode(clickedPosition.lat, clickedPosition.lng);
+          
+          // Crea l'oggetto location completo, preservando l'indirizzo esistente se disponibile
           const locationData = {
             coordinates: [clickedPosition.lng, clickedPosition.lat],
-            address: `${clickedPosition.lat.toFixed(6)}, ${clickedPosition.lng.toFixed(6)}`
+            address: address || currentLocation?.address || `${clickedPosition.lat.toFixed(6)}, ${clickedPosition.lng.toFixed(6)}`
           };
           
           setSelectedLocation(locationData);
@@ -161,9 +182,12 @@ const LocationPicker = ({ onLocationSelect, initialCenter }) => {
         zoom: 15
       });
 
+      // Fai il geocoding inverso per ottenere l'indirizzo della posizione corrente
+      const address = await reverseGeocode(userPosition.lat, userPosition.lng);
+      
       const locationData = {
         coordinates: [userPosition.lng, userPosition.lat],
-        address: t('map.currentLocation')
+        address: address || currentLocation?.address || t('map.currentLocation')
       };
       setSelectedLocation(locationData);
       if (onSelectRef.current) onSelectRef.current(locationData);
