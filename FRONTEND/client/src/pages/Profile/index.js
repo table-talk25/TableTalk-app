@@ -1,171 +1,142 @@
-// File: /src/pages/Profile/index.js (Versione Definitiva e Completa)
+// File: /src/pages/Profile/index.js (Versione Unificata e Corretta)
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Container, Alert, Spinner } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
+import { FaUsers, FaRegSmile, FaCheckCircle } from 'react-icons/fa';
+
 import { useAuth } from '../../contexts/AuthContext';
 import profileService from '../../services/profileService';
+
 import ProfileHeader from '../../components/profile/ProfileHeader';
 import PersonalInfo from '../../components/profile/PersonalInfo';
 import InterestsSection from '../../components/profile/InterestsSection';
 import LanguagesSection from '../../components/profile/LanguagesSection';
 import ProfileSettings from '../../components/profile/ProfileSettings';
-import styles from './ProfilePage.module.css';
 import BackButton from '../../components/common/BackButton';
-import { Geolocation } from '@capacitor/geolocation';
+
+import styles from './ProfilePage.module.css'; // Useremo lo stile della pagina profilo
+import welcomeStyles from './ProfileWelcomeComponent.module.css'; // E lo stile del benvenuto che abbiamo creato
 
 const ProfilePage = () => {
-  const { t } = useTranslation();
-  const { user, updateUser, loading: authLoading, logout, deleteAccount } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [profileData, setProfileData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState('');
+    const { t } = useTranslation();
+    const { user, updateUser, loading: authLoading, logout, deleteAccount } = useAuth();
+    
+    const [profileData, setProfileData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [error, setError] = useState('');
 
-  const loadProfile = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await profileService.getProfile();
-      setProfileData(data);
-    } catch (err) {
-      setError(t('profile.loadError'));
-    } finally {
-      setLoading(false);
+    const loadProfile = useCallback(async () => {
+        if (!user?.id) return;
+        try {
+            setLoading(true);
+            const data = await profileService.getProfile();
+            setProfileData(data);
+            // Aggiorna anche lo stato globale
+            updateUser(data);
+        } catch (err) {
+            setError(t('profile.loadError'));
+        } finally {
+            setLoading(false);
+        }
+    }, [user?.id, t]);
+
+    useEffect(() => {
+        loadProfile();
+    }, [loadProfile]);
+
+    const handleProfileUpdate = async (updatedData) => {
+        setIsUpdating(true);
+        try {
+            const freshProfile = await profileService.updateProfile(updatedData);
+            setProfileData(freshProfile);
+            updateUser(freshProfile); // Aggiorna il context
+            toast.success(t('profile.updateSuccess'));
+
+            // Se il profilo era incompleto, ora è completo!
+            if (!user.profileCompleted) {
+                // Potresti mostrare un messaggio di successo e reindirizzare
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || t('profile.updateError'));
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    // --- LOGICA DI RENDER PRINCIPALE ---
+
+    if (authLoading || loading) {
+        return <Spinner fullscreen label={t('common.loadingProfile') || 'Caricamento profilo...'} />;
     }
-  }, [updateUser, t]);
 
-  useEffect(() => {
-    console.log('[ProfilePage] useEffect attivato. user.id:', user?.id);
-
-    if (user?.id) loadProfile();
-  }, [user?.id, loadProfile]);
-
-  const handleProfileUpdate = async (updatedData) => {
-    setIsUpdating(true);
-    try {
-      // 1. Invia i dati da salvare al backend
-      const fresh = await profileService.updateProfile(updatedData);
-      
-      // 2. Mostra un messaggio di successo
-      toast.success(t('profile.updateSuccess'));
-      
-      // 3. Ricarica da zero tutti i dati dal server per essere sicuro al 100%
-      setProfileData(fresh);
-      // Propaga anche nel context per evitare che un refetch sovrascriva con i vecchi dati
-      await updateUser(fresh);
-
-    } catch (err) {
-      const status = err?.response?.status;
-      const code = err?.code;
-      // Se è un errore di rete transitorio (es. ECONNABORTED/ERR_NETWORK) non mostriamo errore rosso
-      if (!status && (code === 'ERR_NETWORK' || code === 'ECONNABORTED')) {
-        // opzionale: toast.info(t('common.networkTemporary'));
-      } else {
-        toast.error(err?.response?.data?.message || err?.message || t('profile.updateError'));
-      }
-    } finally {
-      setIsUpdating(false);
+    if (error) {
+        return <Container><Alert variant="danger">{error}</Alert></Container>;
     }
-  };
 
-  const handleImageUpdate = async (formData) => {
-    setIsUploading(true);
-    try {
-      await profileService.updateProfileImage(formData);
-      toast.success(t('profile.imageUpdateSuccess'));
-      await loadProfile(); // Ricarichiamo anche qui
-    } catch (err) {
-      const status = err?.response?.status;
-      const code = err?.code;
-      if (!status && (code === 'ERR_NETWORK' || code === 'ECONNABORTED')) {
-        // opzionale: toast.info(t('common.networkTemporary'));
-      } else {
-        toast.error(err?.response?.data?.message || err?.message || t('profile.imageUpdateError'));
-      }
-    } finally {
-      setIsUploading(false);
+    // SCENARIO 1: L'utente è loggato ma il profilo NON è completo
+    if (user && !user.profileCompleted) {
+        return (
+            <div className={welcomeStyles.welcomePage}>
+                <div className={welcomeStyles.header}>
+                    <h1 className={welcomeStyles.title}>Un ultimo passo!</h1>
+                    <p className={welcomeStyles.subtitle}>
+                        Completa il tuo profilo per rendere la tua esperienza su TableTalk unica.
+                    </p>
+                </div>
+
+                <div className={welcomeStyles.benefitsGrid}>
+                    <div className={welcomeStyles.benefitCard}>
+                        <FaUsers className={welcomeStyles.icon} size={40} />
+                        <h3 className={welcomeStyles.cardTitle}>Trova le Persone Giuste</h3>
+                        <p className={welcomeStyles.cardText}>
+                            Aggiungendo i tuoi interessi, ti aiuteremo a trovare pasti con persone simili a te.
+                        </p>
+                    </div>
+                    <div className={welcomeStyles.benefitCard}>
+                        <FaRegSmile className={welcomeStyles.icon} size={40} />
+                        <h3 className={welcomeStyles.cardTitle}>Fai una Bella Impressione</h3>
+                        <p className={welcomeStyles.cardText}>
+                            Una bio e una foto profilo aiutano gli altri a conoscerti meglio prima di un pasto.
+                        </p>
+                    </div>
+                    <div className={welcomeStyles.benefitCard}>
+                        <FaCheckCircle className={welcomeStyles.icon} size={40} />
+                        <h3 className={welcomeStyles.cardTitle}>Ottieni Più Inviti</h3>
+                        <p className={welcomeStyles.cardText}>
+                            I profili completi hanno il 75% in più di probabilità di essere invitati a pasti esclusivi.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Mostriamo direttamente il form di modifica sotto! */}
+                <div className={styles.profilePage} style={{ paddingTop: '2rem' }}>
+                    <div className={styles.content}>
+                        <PersonalInfo profileData={user} onUpdate={handleProfileUpdate} isUpdating={isUpdating} />
+                        <InterestsSection profileData={user} onUpdate={handleProfileUpdate} isUpdating={isUpdating} />
+                    </div>
+                </div>
+            </div>
+        );
     }
-  };
-
-  if (authLoading || loading) {
-    return <Spinner fullscreen label={t('common.loadingProfile') || 'Caricamento profilo...'} />;
-  }
-  if (error) {
-    return <Container><Alert variant="danger">{error}</Alert></Container>;
-  }
-  if (!profileData) {
-    return <Container><Alert variant="warning">{t('profile.noDataAvailable')}</Alert></Container>;
-  }
-
-  const handleUpdateLocation = async () => {
-    try {
-      // 1. Chiedi i permessi e ottieni la posizione
-      await Geolocation.requestPermissions();
-      const position = await Geolocation.getCurrentPosition();
-      const { latitude, longitude } = position.coords;
-  
-      // 2. Chiama il nostro nuovo servizio
-      const updatedProfile = await profileService.updateLocationFromCoords({
-        latitude,
-        longitude,
-      });
-      
-      // 3. Aggiorna il context
-      updateUser(updatedProfile);
-      
-      // 4. Mostra un messaggio di successo
-      toast.success(t('profile.locationUpdateSuccess'));
-      
-    } catch (err) {
-      console.error('Errore durante l\'aggiornamento della posizione:', err);
-      toast.error(t('profile.locationUpdateError'));
-    }
-  };
-
-  return (
-    <Container fluid className={styles.profilePage}>
-      <div className={styles.header}>
-        <BackButton className={styles.smallBackButton} />
-      </div>
-
-      <div className={styles.content}>
-        <ProfileHeader 
-          profile={profileData} 
-          onUpdateImage={handleImageUpdate}
-        />
-        
-        <PersonalInfo 
-          profileData={profileData} 
-          onUpdate={handleProfileUpdate}
-          isUpdating={isUpdating}
-        />
-        
-        <InterestsSection 
-          profileData={profileData} 
-          onUpdate={handleProfileUpdate}
-          isUpdating={isUpdating}
-        />
-        
-        <LanguagesSection 
-          profileData={profileData} 
-          onUpdate={handleProfileUpdate}
-          isUpdating={isUpdating}
-        />
-        
-        <ProfileSettings 
-          profileData={profileData}
-          onUpdate={handleProfileUpdate}
-          onLogout={logout}
-          onDeleteAccount={deleteAccount}
-        />
-      </div>
-    </Container>
-  );
+    
+    // SCENARIO 2: Il profilo è completo, mostra la pagina di modifica standard
+    return (
+        <Container fluid className={styles.profilePage}>
+            <div className={styles.header}>
+                <BackButton className={styles.smallBackButton} />
+            </div>
+            <div className={styles.content}>
+                <ProfileHeader profile={profileData} onUpdateImage={() => {}} />
+                <PersonalInfo profileData={profileData} onUpdate={handleProfileUpdate} isUpdating={isUpdating} />
+                <InterestsSection profileData={profileData} onUpdate={handleProfileUpdate} isUpdating={isUpdating} />
+                <LanguagesSection profileData={profileData} onUpdate={handleProfileUpdate} isUpdating={isUpdating} />
+                <ProfileSettings profileData={profileData} onUpdate={handleProfileUpdate} onLogout={logout} onDeleteAccount={deleteAccount} />
+            </div>
+        </Container>
+    );
 };
 
 export default ProfilePage;

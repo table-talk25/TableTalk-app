@@ -25,7 +25,6 @@ const RegisterPage = lazy(() => import('./pages/Auth/Register'));
 const ForgotPasswordPage = lazy(() => import('./pages/Auth/ForgotPassword'));
 const ResetPasswordPage = lazy(() => import('./pages/Auth/ResetPassword'));
 const ProfilePage = lazy(() => import('./pages/Profile')); // Pagina "Modifica Profilo"
-const CompleteProfilePage = lazy(() => import('./pages/Profile/CompleteProfilePage'));
 const PublicProfilePage = lazy(() => import('./pages/PublicProfile'));
 const MealsPage = lazy(() => import('./pages/Meals/MealsPage'));
 const SearchMealsPage = lazy(() => import('./pages/Meals/SearchMealsPage'));
@@ -140,7 +139,6 @@ const App = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-        <Route path="/complete-profile" element={<CompleteProfilePage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} /> {/* <-- 2. AGGIUNGI LA NUOVA ROTTA */}
         <Route path="/termini-e-condizioni" element={<TermsAndConditionsPage />} />
 
