@@ -36,22 +36,22 @@ const config = {
     androidScheme: 'https'
   },
   plugins: {
-    GoogleMaps: {
-      apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || process.env.MAPS_API_KEY || '' // Usa la variabile d'ambiente per la chiave
-    },
+    // GoogleMaps: {
+    //   apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || process.env.MAPS_API_KEY || '' // Usa la variabile d'ambiente per la chiave
+    // },
     SplashScreen: {
       launchShowDuration: 600,
       launchAutoHide: true,
       backgroundColor: '#ffffff',
       showSpinner: false
     },
-    PushNotifications: {
-      presentationOptions: [
-        "badge",
-        "sound",
-        "alert"
-      ]
-    },
+    // PushNotifications: {
+    //   presentationOptions: [
+    //     "badge",
+    //     "sound",
+    //     "alert"
+    //   ]
+    // },
     LocalNotifications: {
       smallIcon: "ic_stat_icon_config_sample",
       iconColor: "#488AFF"

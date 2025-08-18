@@ -9,22 +9,22 @@ const config = {
     ...(devServerUrl ? { url: devServerUrl, cleartext: true } : {})
   },
   plugins: {
-    GoogleMaps: {
-      apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || process.env.MAPS_API_KEY || ''
-    },
+    // GoogleMaps: {
+    //   apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || process.env.MAPS_API_KEY || ''
+    // },
     SplashScreen: {
       launchShowDuration: 3000, // Aumentato per dare più tempo all'app di caricarsi
       backgroundColor: '#ffffff',
       showSpinner: false,
       launchAutoHide: false // Non nascondere automaticamente per evitare crash
     },
-    PushNotifications: {
-      presentationOptions: [
-        "badge",
-        "sound", 
-        "alert"
-      ]
-    },
+    // PushNotifications: {
+    //   presentationOptions: [
+    //     "badge",
+    //     "sound", 
+    //     "alert"
+    //   ]
+    // },
     LocalNotifications: {
       smallIcon: "ic_stat_icon_config_sample",
       iconColor: "#488AFF"

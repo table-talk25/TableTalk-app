@@ -69,29 +69,34 @@ class NotificationService {
    */
   async initializePushNotifications() {
     try {
-      const { PushNotifications } = await import('@capacitor/push-notifications');
+      // DISABILITATO TEMPORANEAMENTE - Firebase non configurato
+      console.log('[NotificationService] Notifiche push disabilitate temporaneamente - Firebase non configurato');
+      this.isPushNotificationsAvailable = false;
+      return;
       
-      // Controlla permessi esistenti
-      const permissionStatus = await PushNotifications.checkPermissions();
+      // const { PushNotifications } = await import('@capacitor/push-notifications');
       
-      if (permissionStatus.receive !== 'granted') {
-        // Richiedi permessi
-        const result = await PushNotifications.requestPermissions();
-        if (result.receive !== 'granted') {
-          console.log('[NotificationService] Permesso notifiche push negato dall\'utente');
-          return;
-        }
-      }
+      // // Controlla permessi esistenti
+      // const permissionStatus = await PushNotifications.checkPermissions();
+      
+      // if (permissionStatus.receive !== 'granted') {
+      //   // Richiedi permessi
+      //   const result = await PushNotifications.requestPermissions();
+      //   if (result.receive !== 'granted') {
+      //     console.log('[NotificationService] Permesso notifiche push negato dall\'utente');
+      //     return;
+      //   }
+      // }
 
-      // Registra il device per ricevere notifiche
-      await PushNotifications.register();
-      console.log('[NotificationService] Device registrato per notifiche push');
+      // // Registra il device per ricevere notifiche
+      // await PushNotifications.register();
+      // console.log('[NotificationService] Device registrato per notifiche push');
 
-      // Configura i listener per le notifiche
-      this.setupPushListeners(PushNotifications);
+      // // Configura i listener per le notifiche
+      // this.setupPushListeners(PushNotifications);
 
-      this.isPushNotificationsAvailable = true;
-      console.log('[NotificationService] Notifiche push abilitate con successo');
+      // this.isPushNotificationsAvailable = true;
+      // console.log('[NotificationService] Notifiche push abilitate con successo');
       
     } catch (error) {
       console.error('[NotificationService] Errore nell\'inizializzazione notifiche push:', error);
@@ -103,35 +108,39 @@ class NotificationService {
    * Configura i listener per le notifiche push
    */
   setupPushListeners(PushNotifications) {
-    // Notifica ricevuta quando l'app è in foreground
-    PushNotifications.addListener('pushNotificationReceived', (notification) => {
-      console.log('[NotificationService] Notifica push ricevuta (foreground):', notification);
+    // DISABILITATO TEMPORANEAMENTE - Firebase non configurato
+    console.log('[NotificationService] Listener notifiche push disabilitati temporaneamente');
+    return;
+    
+    // // Notifica ricevuta quando l'app è in foreground
+    // PushNotifications.addListener('pushNotificationReceived', (notification) => {
+    //   console.log('[NotificationService] Notifica push ricevuta (foreground):', notification);
       
-      // Mostra notifica locale se l'app è in foreground
-      this.showForegroundNotification(notification);
-    });
+    //   // Mostra notifica locale se l'app è in foreground
+    //   this.showForegroundNotification(notification);
+    // });
 
-    // Notifica cliccata dall'utente
-    PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-      console.log('[NotificationService] Notifica push cliccata:', notification);
+    // // Notifica cliccata dall'utente
+    // PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+    //   console.log('[NotificationService] Notifica push cliccata:', notification);
       
-      // Gestisci l'azione (es. apri chat, profilo, ecc.)
-      this.handleNotificationAction(notification);
-    });
+    //   // Gestisci l'azione (es. apri chat, profilo, ecc.)
+    //   this.handleNotificationAction(notification);
+    // });
 
-    // Token FCM ricevuto
-    PushNotifications.addListener('registration', (token) => {
-      console.log('[NotificationService] Token FCM ricevuto:', token);
-      this.pushToken = token.value;
+    // // Token FCM ricevuto
+    // PushNotifications.addListener('registration', (token) => {
+    //   console.log('[NotificationService] Token FCM ricevuto:', token);
+    //   this.pushToken = token.value;
       
-      // Invia il token al backend per salvare l'associazione device-utente
-      this.sendTokenToBackend(token.value);
-    });
+    //   // Invia il token al backend per salvare l'associazione device-utente
+    //   this.sendTokenToBackend(token.value);
+    // });
 
-    // Errore di registrazione
-    PushNotifications.addListener('registrationError', (error) => {
-      console.error('[NotificationService] Errore registrazione FCM:', error);
-    });
+    // // Errore di registrazione
+    // PushNotifications.addListener('registrationError', (error) => {
+    //   console.error('[NotificationService] Errore registrazione FCM:', error);
+    // });
   }
 
   /**

@@ -1,32 +1,55 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GoogleMap } from '@capacitor/google-maps';
-import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../contexts/AuthContext';
+// import { GoogleMap } from '@capacitor/google-maps'; // DISABILITATO TEMPORANEAMENTE
 
-import PublicProfileDetail from './PublicProfileDetail';
-import InviteForm from './InviteForm';
-import { sendInvitation } from '../../services/invitationService';
-
-const MapView = ({ userPosition, nearbyUsers, nearbyMeals = [] }) => {
+const MapView = ({ 
+  nearbyUsers = [], 
+  nearbyMeals = [], 
+  onUserSelect, 
+  onMealSelect,
+  initialCenter = null,
+  currentLocation = null
+}) => {
+  const { t } = useTranslation();
+  const { user } = useAuth();
   const mapRef = useRef(null);
-  const [fallbackUrl, setFallbackUrl] = useState(null);
-  const fallbackToastShown = useRef(false);
-
+  const [map, setMap] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedMeal, setSelectedMeal] = useState(null);
-  const [panelView, setPanelView] = useState('profile');
+  const [panelView, setPanelView] = useState('map');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // DISABILITATO TEMPORANEAMENTE - Google Maps non configurato
   useEffect(() => {
-    let map = null;
+    console.log('[MapView] Google Maps disabilitato temporaneamente - API key non configurata');
+    setIsLoading(false);
+    setError('Google Maps temporaneamente non disponibile. Richiede configurazione API key.');
+  }, []);
 
-    const createMap = async () => {
+  // Codice originale commentato temporaneamente
+  /*
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const initializeMap = async () => {
       try {
-        console.log('🗺️ [MapView] Iniziando creazione mappa...');
-        console.log('📍 [MapView] Posizione utente:', userPosition);
-        console.log('👥 [MapView] Utenti nelle vicinanze:', nearbyUsers.length);
-        console.log('🍽️ [MapView] TableTalk® nelle vicinanze:', nearbyMeals.length);
-        
-        const lat = (userPosition && (userPosition.latitude ?? userPosition.lat));
-        const lng = (userPosition && (userPosition.longitude ?? userPosition.lng));
+        setIsLoading(true);
+        setError(null);
+
+        // Determina il centro della mappa
+        let lat, lng;
+        if (initialCenter?.coordinates) {
+          [lng, lat] = initialCenter.coordinates;
+        } else if (currentLocation?.coordinates) {
+          [lng, lat] = currentLocation.coordinates;
+        } else {
+          // Default: Roma
+          lat = 41.9028;
+          lng = 12.4964;
+        }
+
         if (typeof lat !== 'number' || typeof lng !== 'number' || Number.isNaN(lat) || Number.isNaN(lng)) {
           throw new Error(`Coordinate non valide: lat=${lat}, lng=${lng}`);
         }
@@ -127,167 +150,84 @@ const MapView = ({ userPosition, nearbyUsers, nearbyMeals = [] }) => {
           }
         });
 
-        map.setOnMapClickListener(() => {
-            console.log('Click sulla mappa, nascondo il pannello.');
-            setSelectedUser(null);
-            setSelectedMeal(null);
-        });
-
+        setMap(map);
+        setIsLoading(false);
+        
       } catch (error) {
-        console.error('❌ [MapView] Errore creazione mappa:', error);
-        console.error('❌ [MapView] Dettagli errore:', {
-          message: error.message,
-          stack: error.stack,
-          userPosition,
-          nearbyUsersCount: nearbyUsers.length,
-          nearbyMealsCount: nearbyMeals.length
-        });
-        // Fallback: mappa web embedded senza chiave (degradata ma visibile)
-        const flat = (userPosition && (userPosition.latitude ?? userPosition.lat));
-        const flng = (userPosition && (userPosition.longitude ?? userPosition.lng));
-        if (typeof flat === 'number' && typeof flng === 'number') {
-          setFallbackUrl(`https://maps.google.com/maps?q=${flat},${flng}&z=13&output=embed`);
-        }
-        if (!fallbackToastShown.current) {
-          fallbackToastShown.current = true;
-          toast.info('Modalità mappa alternativa attiva.');
-        }
+        console.error('❌ [MapView] Errore nell\'inizializzazione della mappa:', error);
+        setError(error.message);
+        setIsLoading(false);
       }
     };
 
-    if (userPosition && mapRef.current) {
-        createMap();
-    }
+    initializeMap();
 
     return () => {
       if (map) {
         map.destroy();
       }
     };
-  }, [userPosition, nearbyUsers, nearbyMeals]);
+  }, [initialCenter, currentLocation, nearbyUsers, nearbyMeals]);
+  */
 
-  const handleClosePanel = () => {
-    setSelectedUser(null);
-    setSelectedMeal(null);
-  };
-
-  const handleShowInviteForm = () => setPanelView('invite');
-  const handleBackToProfile = () => setPanelView('profile');
-
-  const handleSendInvitation = async (message) => {
-    if (!selectedUser) return;
-    try {
-      await sendInvitation(selectedUser._id, message);
-      toast.success('Invito inviato con successo!');
-      handleClosePanel();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Errore nell\'invio dell\'invito.');
-    }
-  };
-
-  const renderPanelContent = () => {
-    if (selectedUser) {
-      switch (panelView) {
-        case 'profile':
-          return <PublicProfileDetail user={selectedUser} onInvite={handleShowInviteForm} onBack={handleClosePanel} />;
-        case 'invite':
-          return <InviteForm recipient={selectedUser} onSend={handleSendInvitation} onBack={handleBackToProfile} />;
-        default:
-          return null;
-      }
-    }
-    
-    if (selectedMeal) {
-      return (
-        <div style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-            <h4>🍽️ {selectedMeal.title}</h4>
-            <button 
-              onClick={handleClosePanel}
-              style={{ 
-                background: 'none', 
-                border: 'none', 
-                fontSize: '20px', 
-                cursor: 'pointer',
-                color: '#666'
-              }}
-            >
-              ✕
-            </button>
+  // Render del fallback
+  if (isLoading) {
+    return (
+      <div className="map-container" style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="text-center">
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">Caricamento...</span>
           </div>
-          
-          <div style={{ marginBottom: '10px' }}>
-            <strong>📍 Posizione:</strong> {typeof selectedMeal.location === 'string' ? selectedMeal.location : (selectedMeal.location?.address || `${selectedMeal.location?.coordinates?.[1]}, ${selectedMeal.location?.coordinates?.[0]}`)}
-          </div>
-          
-          <div style={{ marginBottom: '10px' }}>
-            <strong>👤 Organizzatore:</strong> {selectedMeal.host.nickname}
-          </div>
-          
-          <div style={{ marginBottom: '10px' }}>
-            <strong>📅 Data:</strong> {new Date(selectedMeal.date).toLocaleString('it-IT')}
-          </div>
-          
-          <div style={{ marginBottom: '10px' }}>
-            <strong>👥 Partecipanti:</strong> {selectedMeal.participants?.length || 0}/{selectedMeal.maxParticipants}
-          </div>
-          
-          <div style={{ marginBottom: '15px' }}>
-            <strong>💬 Descrizione:</strong> {selectedMeal.description}
-          </div>
-          
-          <button 
-            onClick={() => window.location.href = `/meals/${selectedMeal._id}`}
-            style={{
-              width: '100%',
-              padding: '10px',
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '16px'
-            }}
-          >
-            Vai al Dettaglio
-          </button>
+          <p className="mt-2">Caricamento mappa...</p>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
-    return null;
-  };
+  if (error) {
+    return (
+      <div className="map-container" style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="text-center">
+          <div className="alert alert-warning" role="alert">
+            <h5>🗺️ Mappa Temporaneamente Non Disponibile</h5>
+            <p>{error}</p>
+            <hr />
+            <p className="mb-0">
+              <strong>Utenti nelle vicinanze:</strong> {nearbyUsers.length}<br />
+              <strong>TableTalk® nelle vicinanze:</strong> {nearbyMeals.length}
+            </p>
+            <p className="mt-2 small text-muted">
+              Per abilitare Google Maps, configura la chiave API nelle variabili d'ambiente.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ height: '100vh', width: '100%', position: 'relative' }}>
-      {fallbackUrl ? (
-        <iframe
-          title="Mappa"
-          src={fallbackUrl}
-          style={{ display: 'block', width: '100%', height: '100%', border: 0 }}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
-      ) : (
-        <capacitor-google-map ref={mapRef} style={{ display: 'block', width: '100%', height: '100%' }} />
-      )}
-
-      <div style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: 'white',
-        borderTopLeftRadius: '20px',
-        borderTopRightRadius: '20px',
-        boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
-        maxHeight: '80vh',
-        overflowY: 'auto',
-        transform: (selectedUser || selectedMeal) ? 'translateY(0%)' : 'translateY(100%)',
-        transition: 'transform 0.3s ease-in-out',
-        padding: '20px',
-      }}>
-        {renderPanelContent()}
+    <div className="map-container">
+      <div 
+        ref={mapRef} 
+        style={{ 
+          width: '100%', 
+          height: '400px',
+          backgroundColor: '#f8f9fa',
+          border: '1px solid #dee2e6',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <div className="text-center">
+          <h5>🗺️ Mappa Temporaneamente Non Disponibile</h5>
+          <p>Google Maps richiede configurazione API key</p>
+          <div className="mt-3">
+            <strong>Utenti nelle vicinanze:</strong> {nearbyUsers.length}<br />
+            <strong>TableTalk® nelle vicinanze:</strong> {nearbyMeals.length}
+          </div>
+        </div>
       </div>
     </div>
   );

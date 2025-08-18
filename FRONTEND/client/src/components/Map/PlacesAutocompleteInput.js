@@ -1,49 +1,26 @@
 // File: FRONTEND/client/src/components/Map/PlacesAutocompleteInput.js
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+// import { GoogleMap } from '@capacitor/google-maps'; // DISABILITATO TEMPORANEAMENTE
 
-const loadGooglePlacesScript = (apiKey) => {
-  return new Promise((resolve, reject) => {
-    if (typeof window !== 'undefined' && window.google && window.google.maps && window.google.maps.places) {
-      resolve();
-      return;
-    }
-    if (!apiKey) {
-      reject(new Error('Google Maps API key non configurata'));
-      return;
-    }
-    const existing = document.querySelector('script[data-tt-places="1"]');
-    if (existing) {
-      existing.addEventListener('load', resolve);
-      existing.addEventListener('error', reject);
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&language=it`;
-    script.async = true;
-    script.defer = true;
-    script.dataset.ttPlaces = '1';
-    script.onload = resolve;
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-};
-
-const PlacesAutocompleteInput = ({
-  value,
-  onSelect,
-  onChange,
-  placeholder = 'Inserisci un indirizzo',
-  className,
-  inputProps = {},
-}) => {
-  const [query, setQuery] = useState(value?.address || '');
-  const [predictions, setPredictions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const autocompleteServiceRef = useRef(null);
-  const placesServiceRef = useRef(null);
+const PlacesAutocompleteInput = ({ value, onChange, placeholder, className = '', disabled = false }) => {
+  const { t } = useTranslation();
+  const [query, setQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [error, setError] = useState(null);
   const containerRef = useRef(null);
+  const inputRef = useRef(null);
 
+  // DISABILITATO TEMPORANEAMENTE - Google Places non configurato
+  useEffect(() => {
+    console.log('[PlacesAutocompleteInput] Google Places disabilitato temporaneamente - API key non configurata');
+    setError('Google Places temporaneamente non disponibile. Richiede configurazione API key.');
+  }, []);
+
+  // Codice originale commentato temporaneamente
+  /*
   const apiKey = useMemo(() => process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '', []);
 
   useEffect(() => {
@@ -54,103 +31,189 @@ const PlacesAutocompleteInput = ({
     let mounted = true;
     (async () => {
       try {
-        await loadGooglePlacesScript(apiKey);
-        if (!mounted) return;
-        autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
-        placesServiceRef.current = new window.google.maps.places.PlacesService(document.createElement('div'));
-      } catch (e) {
-        setError('Autocompletamento non disponibile');
+        if (!apiKey) {
+          console.warn('[PlacesAutocompleteInput] API key non configurata');
+          return;
+        }
+
+        // Carica Google Places API
+        if (!window.google || !window.google.maps || !window.google.maps.places) {
+          const script = document.createElement('script');
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+          script.async = true;
+          script.defer = true;
+          
+          script.onload = () => {
+            if (mounted) {
+              console.log('[PlacesAutocompleteInput] Google Places API caricata');
+            }
+          };
+          
+          script.onerror = () => {
+            if (mounted) {
+              setError('Errore nel caricamento di Google Places API');
+            }
+          };
+          
+          document.head.appendChild(script);
+        }
+      } catch (error) {
+        if (mounted) {
+          console.error('[PlacesAutocompleteInput] Errore nell\'inizializzazione:', error);
+          setError(error.message);
+        }
       }
     })();
-    return () => { mounted = false; };
+
+    return () => {
+      mounted = false;
+    };
   }, [apiKey]);
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setPredictions([]);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
-
-  const handleChange = (e) => {
-    const text = e.target.value;
-    setQuery(text);
-    setError('');
-    if (onChange) onChange(text);
-    if (!autocompleteServiceRef.current || !text || text.length < 2) {
-      setPredictions([]);
+  const searchPlaces = async (searchQuery) => {
+    if (!searchQuery.trim() || !window.google?.maps?.places) {
+      setSuggestions([]);
       return;
     }
-    setLoading(true);
-    autocompleteServiceRef.current.getPlacePredictions(
-      { input: text, language: 'it', types: ['geocode'] },
-      (res, status) => {
-        setLoading(false);
-        if (status !== window.google.maps.places.PlacesServiceStatus.OK || !Array.isArray(res)) {
-          setPredictions([]);
-          return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const service = new window.google.maps.places.AutocompleteService();
+      
+      const request = {
+        input: searchQuery,
+        componentRestrictions: { country: 'it' },
+        types: ['geocode', 'establishment']
+      };
+
+      service.getPlacePredictions(request, (predictions, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+          setSuggestions(predictions);
+        } else {
+          setSuggestions([]);
         }
-        setPredictions(res.slice(0, 6));
-      }
-    );
+        setIsLoading(false);
+      });
+
+    } catch (error) {
+      console.error('[PlacesAutocompleteInput] Errore nella ricerca:', error);
+      setError(error.message);
+      setIsLoading(false);
+    }
   };
 
-  const handlePick = (prediction) => {
-    setPredictions([]);
-    setQuery(prediction.description || '');
-    if (!placesServiceRef.current) {
-      onSelect && onSelect({ address: prediction.description || '', coordinates: undefined });
-      return;
+  const handleInputChange = (e) => {
+    const newQuery = e.target.value;
+    setQuery(newQuery);
+    setShowSuggestions(true);
+    
+    if (newQuery.trim()) {
+      searchPlaces(newQuery);
+    } else {
+      setSuggestions([]);
     }
-    placesServiceRef.current.getDetails(
-      { placeId: prediction.place_id, fields: ['formatted_address', 'geometry'] },
-      (place, status) => {
-        if (status !== window.google.maps.places.PlacesServiceStatus.OK || !place) {
-          onSelect && onSelect({ address: prediction.description || '', coordinates: undefined });
-          return;
-        }
-        const address = place.formatted_address || prediction.description || '';
-        const lat = place.geometry?.location?.lat?.();
-        const lng = place.geometry?.location?.lng?.();
-        const coordinates = (typeof lat === 'number' && typeof lng === 'number') ? [lng, lat] : undefined;
-        onSelect && onSelect({ address, coordinates });
-      }
-    );
   };
+
+  const handleSuggestionClick = async (suggestion) => {
+    try {
+      setQuery(suggestion.description);
+      setShowSuggestions(false);
+      setSuggestions([]);
+      
+      // Ottieni i dettagli del luogo
+      const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+      
+      service.getDetails(
+        { placeId: suggestion.place_id, fields: ['geometry', 'formatted_address'] },
+        (place, status) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
+            const location = {
+              coordinates: [place.geometry.location.lng(), place.geometry.location.lat()],
+              address: place.formatted_address
+            };
+            onChange(location);
+          }
+        }
+      );
+      
+    } catch (error) {
+      console.error('[PlacesAutocompleteInput] Errore nella selezione:', error);
+      setError(error.message);
+    }
+  };
+
+  const handleInputFocus = () => {
+    if (suggestions.length > 0) {
+      setShowSuggestions(true);
+    }
+  };
+
+  const handleInputBlur = () => {
+    // Ritarda la chiusura per permettere il click sui suggerimenti
+    setTimeout(() => {
+      setShowSuggestions(false);
+    }, 200);
+  };
+  */
+
+  // Render del fallback
+  if (error) {
+    return (
+      <div className={`places-autocomplete ${className}`}>
+        <div className="alert alert-warning" role="alert">
+          <h6>🔍 Ricerca Luoghi Temporaneamente Non Disponibile</h6>
+          <p>{error}</p>
+          <hr />
+          <p className="mb-0">
+            <strong>Indirizzo inserito:</strong> {value?.address || 'Nessuno'}<br />
+            <strong>Coordinate:</strong> {value?.coordinates ? `${value.coordinates[1].toFixed(6)}, ${value.coordinates[0].toFixed(6)}` : 'Nessuna'}
+          </p>
+          <p className="mt-2 small text-muted">
+            Per abilitare la ricerca luoghi automatica, configura la chiave API di Google Maps.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div ref={containerRef} style={{ position: 'relative' }}>
-      <input
-        type="text"
-        value={query}
-        onChange={handleChange}
-        placeholder={placeholder}
-        className={className}
-        {...inputProps}
-      />
-      {error && (
-        <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{error}</div>
-      )}
-      {(predictions.length > 0) && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
-          background: '#fff', border: '1px solid #ccc', borderTop: 'none', maxHeight: 240, overflowY: 'auto'
-        }}>
-          {predictions.map((p) => (
-            <div
-              key={p.place_id}
-              onClick={() => handlePick(p)}
-              style={{ padding: '8px 10px', cursor: 'pointer' }}
-            >
-              {p.description}
+    <div className={`places-autocomplete ${className}`}>
+      <div className="input-group">
+        <input
+          ref={inputRef}
+          type="text"
+          className="form-control"
+          placeholder={placeholder || "Inserisci un indirizzo..."}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => {}}
+          onBlur={() => {}}
+          disabled={disabled || true} // Disabilitato temporaneamente
+        />
+        {isLoading && (
+          <span className="input-group-text">
+            <div className="spinner-border spinner-border-sm" role="status">
+              <span className="visually-hidden">Caricamento...</span>
             </div>
-          ))}
-          {loading && <div style={{ padding: 8, color: '#666' }}>Caricamento…</div>}
+          </span>
+        )}
+      </div>
+      
+      <div className="mt-2">
+        <div className="alert alert-info" role="alert">
+          <h6>🔍 Ricerca Luoghi Temporaneamente Non Disponibile</h6>
+          <p>Google Places richiede configurazione API key</p>
+          <div className="mt-2">
+            <strong>Indirizzo inserito:</strong> {value?.address || 'Nessuno'}<br />
+            <strong>Coordinate:</strong> {value?.coordinates ? `${value.coordinates[1].toFixed(6)}, ${value.coordinates[0].toFixed(6)}` : 'Nessuna'}
+          </div>
+          <p className="mt-2 small text-muted">
+            Per abilitare la ricerca luoghi automatica, configura la chiave API di Google Maps.
+          </p>
         </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -37,7 +37,17 @@ function usePushPermission() {
             }, 3000);
           }
         } else {
-          console.log('[usePushPermission] ⚠️ Notifiche push non disponibili, usando fallback locale');
+          console.log('[usePushPermission] ⚠️ Notifiche push non disponibili (Firebase non configurato), usando fallback locale');
+          
+          // Mostra notifica informativa se le notifiche locali sono disponibili
+          if (status.localNotifications) {
+            setTimeout(() => {
+              notificationService.sendImmediateNotification(
+                'TableTalk', 
+                'App avviata con notifiche locali. Le notifiche push richiedono configurazione Firebase.'
+              );
+            }, 3000);
+          }
         }
         
       } catch (error) {
