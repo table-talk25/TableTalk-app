@@ -168,3 +168,95 @@
         grid-column: 1 / 5;   /* Occupa lo spazio sotto l'header */
     }
 }
+
+/* ========================================
+   SCHERMATA DI BENVENUTO
+   ======================================== */
+
+.welcomePage {
+  padding: 20px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.welcomePage .header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 0;
+}
+
+.welcomePage .title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #0d47a1;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.welcomePage .subtitle {
+  font-size: 1.2rem;
+  color: #1565c0;
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.benefitsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.benefitCard {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.benefitCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+}
+
+.benefitCard .icon {
+  color: #0d47a1;
+  margin-bottom: 1rem;
+}
+
+.benefitCard .cardTitle {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #0d47a1;
+  margin-bottom: 1rem;
+}
+
+.benefitCard .cardText {
+  font-size: 1rem;
+  color: #424242;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Responsive per tablet e desktop */
+@media (min-width: 768px) {
+  .benefitsGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+  
+  .welcomePage .title {
+    font-size: 3rem;
+  }
+  
+  .welcomePage .subtitle {
+    font-size: 1.3rem;
+  }
+}

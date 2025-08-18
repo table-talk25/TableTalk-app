@@ -1,7 +1,7 @@
 // File: /src/pages/Profile/index.js (Versione Unificata e Corretta)
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Container, Alert, Spinner } from 'react-bootstrap';
+import { Container, Alert, Spinner, Button } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { FaUsers, FaRegSmile, FaCheckCircle } from 'react-icons/fa';
@@ -16,8 +16,7 @@ import LanguagesSection from '../../components/profile/LanguagesSection';
 import ProfileSettings from '../../components/profile/ProfileSettings';
 import BackButton from '../../components/common/BackButton';
 
-import styles from './ProfilePage.module.css'; // Useremo lo stile della pagina profilo
-import welcomeStyles from './ProfileWelcomeComponent.module.css'; // E lo stile del benvenuto che abbiamo creato
+import styles from './ProfilePage.module.css'; // Useremo solo lo stile della pagina profilo
 
 const ProfilePage = () => {
     const { t } = useTranslation();
@@ -79,33 +78,33 @@ const ProfilePage = () => {
     // SCENARIO 1: L'utente è loggato ma il profilo NON è completo
     if (user && !user.profileCompleted) {
         return (
-            <div className={welcomeStyles.welcomePage}>
-                <div className={welcomeStyles.header}>
-                    <h1 className={welcomeStyles.title}>Un ultimo passo!</h1>
-                    <p className={welcomeStyles.subtitle}>
+            <div className={styles.welcomePage}>
+                <div className={styles.header}>
+                    <h1 className={styles.title}>Un ultimo passo!</h1>
+                    <p className={styles.subtitle}>
                         Completa il tuo profilo per rendere la tua esperienza su TableTalk unica.
                     </p>
                 </div>
 
-                <div className={welcomeStyles.benefitsGrid}>
-                    <div className={welcomeStyles.benefitCard}>
-                        <FaUsers className={welcomeStyles.icon} size={40} />
-                        <h3 className={welcomeStyles.cardTitle}>Trova le Persone Giuste</h3>
-                        <p className={welcomeStyles.cardText}>
+                <div className={styles.benefitsGrid}>
+                    <div className={styles.benefitCard}>
+                        <FaUsers className={styles.icon} size={40} />
+                        <h3 className={styles.cardTitle}>Trova le Persone Giuste</h3>
+                        <p className={styles.cardText}>
                             Aggiungendo i tuoi interessi, ti aiuteremo a trovare pasti con persone simili a te.
                         </p>
                     </div>
-                    <div className={welcomeStyles.benefitCard}>
-                        <FaRegSmile className={welcomeStyles.icon} size={40} />
-                        <h3 className={welcomeStyles.cardTitle}>Fai una Bella Impressione</h3>
-                        <p className={welcomeStyles.cardText}>
+                    <div className={styles.benefitCard}>
+                        <FaRegSmile className={styles.icon} size={40} />
+                        <h3 className={styles.cardTitle}>Fai una Bella Impressione</h3>
+                        <p className={styles.cardText}>
                             Una bio e una foto profilo aiutano gli altri a conoscerti meglio prima di un pasto.
                         </p>
                     </div>
-                    <div className={welcomeStyles.benefitCard}>
-                        <FaCheckCircle className={welcomeStyles.icon} size={40} />
-                        <h3 className={welcomeStyles.cardTitle}>Ottieni Più Inviti</h3>
-                        <p className={welcomeStyles.cardText}>
+                    <div className={styles.benefitCard}>
+                        <FaCheckCircle className={styles.icon} size={40} />
+                        <h3 className={styles.cardTitle}>Ottieni Più Inviti</h3>
+                        <p className={styles.cardText}>
                             I profili completi hanno il 75% in più di probabilità di essere invitati a pasti esclusivi.
                         </p>
                     </div>
