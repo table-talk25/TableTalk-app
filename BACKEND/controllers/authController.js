@@ -21,17 +21,17 @@ exports.register = asyncHandler(async (req, res, next) => {
       return next(new ErrorResponse('Uno o più campi non sono validi', 400, errors.array()));
     }
     
-    const { name, surname, email, password } = req.body;
+    const { name, surname, email, password, dateOfBirth } = req.body;
 
     console.log('\n--- TENTATIVO DI REGISTRAZIONE RICEVUTO ---');
-    console.log('Dati ricevuti per la registrazione:', { name, surname, email });
+    console.log('Dati ricevuti per la registrazione:', { name, surname, email, dateOfBirth });
 
     // Lasciamo che sia il nostro errorHandler (con la regola per il codice 11000)
     // a gestire il caso dell'email duplicata per dare un messaggio specifico.
     
     // Passiamo la password in chiaro. Il modello User.js si occuperà di criptarla
     // UNA SOLA VOLTA prima di salvare, grazie al middleware pre-save.
-    const user = await User.create({ name, surname, email, password });
+    const user = await User.create({ name, surname, email, password, dateOfBirth });
     
     console.log('✅ Utente creato con successo nel database!');
     console.log('Dettagli utente salvato:', user);
@@ -92,9 +92,9 @@ exports.login = asyncHandler(async (req, res, next) => {
     }
 
     // 🔒 SICUREZZA: Verifica che l'email sia stata verificata
-    if (!user.isEmailVerified) {
-        return next(new ErrorResponse('Account non verificato. Controlla la tua email e clicca sul link di verifica per completare la registrazione. Se non hai ricevuto l\'email, puoi richiederne una nuova.', 403));
-    }
+    // if (!user.isEmailVerified) {
+    //     return next(new ErrorResponse('Account non verificato. Controlla la tua email e clicca sul link di verifica per completare la registrazione. Se non hai ricevuto l\'email, puoi richiederne una nuova.', 403));
+    // }
 
     if (user.isLocked()) {
         return next(new ErrorResponse('Account bloccato a causa di troppi tentativi falliti. Riprova più tardi.', 403));
