@@ -39,8 +39,11 @@ const deleteAccount = async (password) => {
 
 const getFullImageUrl = (imageName) => {
   if (!imageName || imageName.includes('default-avatar.jpg')) {
-    return '/default-avatar.jpg';
+    // Per l'immagine di default, usa l'URL completo del backend
+    const baseUrl = (apiClient.defaults.baseURL || '').replace('/api', '');
+    return `${baseUrl}/uploads/profile-images/default-avatar.jpg`;
   }
+  // Per le immagini caricate, usa l'URL completo del backend
   const baseUrl = (apiClient.defaults.baseURL || '').replace('/api', '');
   return `${baseUrl}/${imageName}`;
 };
