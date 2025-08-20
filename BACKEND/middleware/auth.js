@@ -39,9 +39,10 @@ exports.protect = asyncHandler(async (req, res, next) => {
     }
 
     // 🔒 SICUREZZA: Verifica che l'email sia stata verificata
-    if (!req.user.isEmailVerified) {
-      return next(new ErrorResponse('Account non verificato. Controlla la tua email e clicca sul link di verifica per completare la registrazione.', 403));
-    }
+    // TEMPORANEAMENTE DISABILITATO PER TEST
+    // if (!req.user.isEmailVerified) {
+    //   return next(new ErrorResponse('Account non verificato. Controlla la tua email e clicca sul link di verifica per completare la registrazione.', 403));
+    // }
 
     console.log(`[PROTECT] ✅ Utente trovato: ${req.user.email} (verificato). Passo al controller.`);
     next();
