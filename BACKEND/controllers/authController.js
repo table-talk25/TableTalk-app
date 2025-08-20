@@ -37,6 +37,8 @@ exports.register = asyncHandler(async (req, res, next) => {
     console.log('Dettagli utente salvato:', user);
     console.log('-------------------------------------------\n');
     
+    await user.checkProfileCompletion();
+
     // Genera il token JWT per l'autenticazione
     const token = user.generateAuthToken();
     
