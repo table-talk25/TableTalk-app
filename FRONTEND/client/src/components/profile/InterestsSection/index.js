@@ -6,7 +6,7 @@ import ProfileSectionWrapper from '../ProfileSectionWrapper';
 import styles from './InterestsSection.module.css';
 
 const InterestsSection = ({ profileData, onUpdate, isPublicView = false }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [interests, setInterests] = useState(profileData?.interests || []);
   const [preferredCuisine, setPreferredCuisine] = useState(profileData?.preferredCuisine || '');
