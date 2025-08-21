@@ -1,113 +1,86 @@
-// File: src/contexts/NotificationContext.js
+// File: FRONTEND/client/src/contexts/NotificationContext.js (Versione Corretta)
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useAuth } from './AuthContext';
-import { io } from 'socket.io-client';
-import { API_URL } from '../config/capacitorConfig';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import { useAuth } from './AuthContext'; // 1. IMPORTA IL CONTEXT DI AUTENTICAZIONE
+import notificationService from '../services/notificationService';
 import { toast } from 'react-toastify';
 
-const NotificationContext = createContext();
-
-export const useNotifications = () => useContext(NotificationContext);
+export const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {
-  const { user, token } = useAuth();
-  const [notifications, setNotifications] = useState([]);
-  const [isConnected, setIsConnected] = useState(false);
+    const { isAuthenticated } = useAuth(); // 2. USA LO STATO DI AUTENTICAZIONE
+    const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!token) {
-      console.log('[NotificationContext] Nessun token disponibile, saltando connessione socket');
-      return;
-    }
-
-    // Verifica che l'API_URL sia valido
-    if (!API_URL) {
-      console.error('[NotificationContext] API_URL non definito, impossibile connettersi');
-      return;
-    }
-
-    let socket = null;
-
-    try {
-      // Usa la stessa base delle API (Render), rimuovendo il suffisso /api
-      const socketUrl = API_URL.replace(/\/?api\/?$/, '');
-      console.log(`[NotificationContext] Tentativo connessione socket a: ${socketUrl}`);
-      
-      socket = io(socketUrl, { 
-        auth: { token },
-        transports: ['websocket'], // Forza solo WebSocket
-        reconnection: true,
-        reconnectionAttempts: 5, // Limita i tentativi di riconnessione
-        reconnectionDelay: 2000,
-        timeout: 10000 // Timeout di 10 secondi
-      });
-
-      socket.on('connect', () => {
-        console.log('[NotificationContext] Socket connesso con successo');
-        setIsConnected(true);
-      });
-
-      socket.on('connect_error', (error) => {
-        console.error('[NotificationContext] Errore connessione socket:', error);
-        setIsConnected(false);
-        // Non mostrare errori all'utente per evitare confusione
-      });
-
-      socket.on('disconnect', (reason) => {
-        console.log('[NotificationContext] Socket disconnesso:', reason);
-        setIsConnected(false);
-      });
-
-      socket.on('new_notification', (notification) => {
-        try {
-          console.log('[NotificationContext] Nuova notifica ricevuta:', notification);
-          setNotifications(prev => [notification, ...prev]);
-          
-          // Toast personalizzati per inviti e accettazioni
-          if (notification.type === 'new_invitation') {
-            toast.info(`${notification.message} 👉 Vai alla pagina Inviti!`, {
-              onClick: () => window.location.href = '/invitations'
-            });
-          } else if (notification.type === 'invitation_accepted' && notification.data && notification.data.chatId) {
-            toast.success(`${notification.message} 👉 Vai alla chat!`, {
-              onClick: () => window.location.href = `/chat/${notification.data.chatId}`
-            });
-          } else {
-            toast.info(notification.message);
-          }
-        } catch (error) {
-          console.error('[NotificationContext] Errore nel processare la notifica:', error);
+    const fetchNotifications = useCallback(async () => {
+        // 3. CONTROLLO DI SICUREZZA:
+        // Se l'utente non è autenticato, non fare nulla e pulisci i dati.
+        if (!isAuthenticated) {
+            setNotifications([]);
+            setUnreadCount(0);
+            return;
         }
-      });
 
-    } catch (error) {
-      console.error('[NotificationContext] Errore nell\'inizializzazione del socket:', error);
-      setIsConnected(false);
-    }
-
-    return () => {
-      if (socket) {
+        setLoading(true);
         try {
-          socket.disconnect();
-          setIsConnected(false);
+            // Ora questa chiamata partirà solo con un token valido.
+            const fetchedNotifications = await notificationService.getNotifications();
+            setNotifications(fetchedNotifications);
+            const unread = fetchedNotifications.filter(n => !n.isRead).length;
+            setUnreadCount(unread);
         } catch (error) {
-          console.error('[NotificationContext] Errore nella disconnessione del socket:', error);
+            console.error("Errore nel caricamento delle notifiche:", error);
+            // Non mostriamo un toast aggressivo per non allarmare l'utente per problemi temporanei
+        } finally {
+            setLoading(false);
         }
-      }
+    }, [isAuthenticated]); // La funzione ora dipende da isAuthenticated
+
+    useEffect(() => {
+        // 4. EFFETTO INTELLIGENTE:
+        // Questo useEffect si attiverà ogni volta che `isAuthenticated` cambia.
+        // - Al login (da false a true), caricherà le notifiche.
+        // - Al logout (da true a false), pulirà le notifiche.
+        fetchNotifications();
+    }, [fetchNotifications]);
+
+    const markAsRead = async (notificationId) => {
+        try {
+            await notificationService.markAsRead(notificationId);
+            setNotifications(prev => 
+                prev.map(n => n._id === notificationId ? { ...n, isRead: true } : n)
+            );
+            setUnreadCount(prev => (prev > 0 ? prev - 1 : 0));
+        } catch (error) {
+            toast.error("Errore nel segnare la notifica come letta.");
+        }
     };
-  }, [token]);
+    
+    const markAllAsRead = async () => {
+        try {
+            await notificationService.markAllAsRead();
+            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+            setUnreadCount(0);
+        } catch (error) {
+            toast.error("Errore nel segnare tutte le notifiche come lette.");
+        }
+    };
 
-  const value = { 
-    notifications, 
-    isConnected,
-    // Funzione per testare la connessione
-    testConnection: () => isConnected
-  };
+    const value = {
+        notifications,
+        unreadCount,
+        loading,
+        fetchNotifications,
+        markAsRead,
+        markAllAsRead
+    };
 
-  return (
-    <NotificationContext.Provider value={value}>
-      {children}
-    </NotificationContext.Provider>
-  );
+    return (
+        <NotificationContext.Provider value={value}>
+            {children}
+        </NotificationContext.Provider>
+    );
 };
+
+export const useNotifications = () => useContext(NotificationContext);
